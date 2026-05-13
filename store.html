@@ -297,11 +297,13 @@ tr:hover td { background: var(--surface2); }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .modal-title { font-size: 15px; font-weight: 700; color: var(--agc-blue); }
-.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group.full { grid-column: 1/-1; }
+.form-section-title { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text3); padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: -4px; }
 label { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }
 input, select, textarea { background: var(--bg2); border: 1.5px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-family: var(--sans); font-size: 13px; outline: none; transition: border 0.2s; width: 100%; }
 input:focus, select:focus, textarea:focus { border-color: var(--agc-blue); }
@@ -392,6 +394,7 @@ textarea { resize: vertical; min-height: 60px; }
   .header { padding: 0 14px; }
   .home-page, .action-page { padding: 16px 14px 40px; }
   .form-row { grid-template-columns: 1fr; }
+  .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
   .tabs { overflow-x: auto; scrollbar-width: none; }
   .tabs::-webkit-scrollbar { display: none; }
   .table-wrap { display: none; }
@@ -567,7 +570,7 @@ html, body {
 }
 .dept-chip.mech { color: #7c2d12; background: #ffedd5; border-color: rgba(124,45,18,0.18); }
 .readonly-field { background: var(--surface2) !important; color: var(--text2) !important; cursor: not-allowed; }
-.form-helper { font-size: 11px; color: var(--text3); line-height: 1.35; margin-top: 2px; }
+.form-helper { font-size: 11px; color: var(--text3); line-height: 1.35; margin-top: 1px; }
 .csv-mode-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .csv-mode-box label { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text2); text-transform:none; letter-spacing:0; font-weight:600; cursor:pointer; }
 .csv-mode-box input { width:auto; margin-top:2px; }
@@ -575,15 +578,17 @@ html, body {
 
 /* Form/UI improvements */
 .required-mark { color: var(--danger); font-weight: 800; margin-left: 2px; }
-.form-row { gap: 14px; align-items: start; }
+.form-row { gap: 10px; align-items: start; }
 .form-group { gap: 6px; min-width: 0; }
 .form-group input,
 .form-group select { min-height: 38px; }
 .form-group textarea { min-height: 76px; }
-.form-helper { min-height: 14px; }
 .position-build-grid { display: grid; grid-template-columns: 1fr 90px; gap: 10px; align-items: start; }
 .position-preview-field { font-family: var(--mono); font-weight: 700; color: var(--agc-blue) !important; }
 @media (max-width: 480px) { .position-build-grid { grid-template-columns: 1fr; } }
+.position-3-grid { display: flex; align-items: center; gap: 6px; }
+.position-3-grid input { width: 62px; text-align: center; font-family: var(--mono); font-weight: 700; color: var(--agc-blue); }
+.pos-sep { font-weight: 700; color: var(--text2); font-size: 20px; line-height: 1; user-select: none; }
 
 
 
@@ -1073,15 +1078,14 @@ body.inv-scroll-compact #pageInventory .controls-main {
   margin-top: 14px;
 }
 .form-row {
-  row-gap: 14px;
-  column-gap: 14px;
+  row-gap: 10px;
+  column-gap: 12px;
 }
 .form-group input,
 .form-group select,
 .form-group textarea {
   min-height: 38px;
 }
-.form-helper,
 .field-error {
   min-height: 14px;
 }
@@ -2034,55 +2038,59 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   <div class="modal">
     <div class="modal-header"><div class="modal-title" id="editModalTitle">Add Item</div><button class="close-btn" onclick="closeModal('editModal')"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
+
+      <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
-        <div class="form-group"><label>Part ID <span class="required-mark">*</span></label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX"><div class="field-error" id="err_partid"></div><div class="form-helper">Auto-running ID. Manual edit is allowed.</div></div>
-        <div class="form-group"><label>Department <span class="required-mark">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
-        <div class="form-group"><label>Criticality</label><select id="f_criticality"><option value="">—</option><option value="Critical">Critical</option><option value="Important">Important</option><option value="Normal">Normal</option><option value="Consumable">Consumable</option></select><div class="form-helper">Optional priority for stock control.</div></div>
-        <div class="form-group"><label>Plant <span class="required-mark">*</span></label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option></select><div class="field-error" id="err_plant"></div></div>
-        <div class="form-group"><label>Sub Category <span class="required-mark">*</span></label><input type="text" id="f_subcat" list="subCategoryOptions" placeholder="เช่น Fitting, PLC, Sensor" oninput="autoFillMainCategory()" onchange="autoFillMainCategory()"><datalist id="subCategoryOptions"></datalist><div class="field-error" id="err_subcat"></div><div class="form-helper">Select item type first. Main category will be selected automatically.</div></div>
-        <div class="form-group"><label>Main Category</label><input type="text" id="f_maincat" class="readonly-field" readonly placeholder="Auto-filled"></div>
-        <div class="form-group"><label>Brand</label><input type="text" id="f_brand" list="brandOptions" placeholder="Type or select brand"><datalist id="brandOptions"></datalist></div>
-        <div class="form-group"><label>Model <span class="required-mark" title="Model หรือ Description อย่างน้อย 1 ช่อง">*</span></label><input type="text" id="f_model"></div>
-        <div class="form-group full"><label>Description <span class="required-mark" title="Model หรือ Description อย่างน้อย 1 ช่อง">*</span></label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
-        <div class="form-group"><label>Area</label><input type="text" id="f_area"></div>
-        <div class="form-group"><label>Location <span class="required-mark">*</span></label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
-        <div class="form-group full"><label>Position Base <span class="required-mark">*</span></label>
-          <div class="position-build-grid">
-            <div>
-              <select id="f_position_base" onchange="updatePositionPreview()">
-              <option value="">— เลือก Position Base —</option>
-              <optgroup label="ชั้น Z1">
-                <option value="Z1-01">Z1-01</option><option value="Z1-02">Z1-02</option><option value="Z1-03">Z1-03</option><option value="Z1-04">Z1-04</option><option value="Z1-05">Z1-05</option>
-              </optgroup>
-              <optgroup label="ชั้น Z2">
-                <option value="Z2-01">Z2-01</option><option value="Z2-02">Z2-02</option><option value="Z2-03">Z2-03</option><option value="Z2-04">Z2-04</option><option value="Z2-05">Z2-05</option>
-              </optgroup>
-              <optgroup label="ชั้น Z3">
-                <option value="Z3-01">Z3-01</option><option value="Z3-02">Z3-02</option><option value="Z3-03">Z3-03</option><option value="Z3-04">Z3-04</option><option value="Z3-05">Z3-05</option>
-              </optgroup>
-              <optgroup label="ชั้น Z4">
-                <option value="Z4-01">Z4-01</option><option value="Z4-02">Z4-02</option><option value="Z4-03">Z4-03</option><option value="Z4-04">Z4-04</option><option value="Z4-05">Z4-05</option>
-              </optgroup>
-              </select>
-            </div>
-            <div>
-              <input type="text" id="f_position_row" placeholder="Row 05" inputmode="numeric" oninput="updatePositionPreview()" onblur="updatePositionPreview(true)">
-            </div>
+        <div class="form-group"><label>Part ID <span class="required-mark">*</span></label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX"><div class="field-error" id="err_partid"></div><div class="form-helper">รหัสจะถูกสร้างอัตโนมัติ แก้ไขเองได้</div></div>
+        <div class="form-group"><label>แผนก <span class="required-mark">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
+        <div class="form-group"><label>โรงงาน <span class="required-mark">*</span></label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option></select><div class="field-error" id="err_plant"></div></div>
+        <div class="form-group"><label>ความสำคัญ</label><select id="f_criticality"><option value="">—</option><option value="Critical">Critical</option><option value="Important">Important</option><option value="Normal">Normal</option><option value="Consumable">Consumable</option></select></div>
+        <div class="form-group full"><label>ประเภทย่อย <span class="required-mark">*</span></label><input type="text" id="f_subcat" list="subCategoryOptions" placeholder="เช่น Fitting, PLC, Sensor" oninput="autoFillMainCategory()" onchange="autoFillMainCategory()"><datalist id="subCategoryOptions"></datalist><div class="field-error" id="err_subcat"></div><div class="form-helper">เลือกประเภทสินค้า ระบบจะเติมหมวดหลักให้อัตโนมัติ</div></div>
+        <div class="form-group" style="display:none"><label>Main Category</label><input type="text" id="f_maincat" class="readonly-field" readonly placeholder="Auto-filled"></div>
+      </div>
+
+      <div class="form-section-title">สินค้า</div>
+      <div class="form-row">
+        <div class="form-group"><label>ยี่ห้อ</label><input type="text" id="f_brand" list="brandOptions" placeholder="พิมพ์หรือเลือกยี่ห้อ"><datalist id="brandOptions"></datalist></div>
+        <div class="form-group"><label>รุ่น <span class="required-mark" title="รุ่น หรือ รายละเอียด อย่างน้อย 1 ช่อง">*</span></label><input type="text" id="f_model"></div>
+        <div class="form-group full"><label>รายละเอียด <span class="required-mark" title="รุ่น หรือ รายละเอียด อย่างน้อย 1 ช่อง">*</span></label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
+      </div>
+
+      <div class="form-section-title">ที่เก็บ</div>
+      <div class="form-row">
+        <div class="form-group"><label>ที่เก็บ <span class="required-mark">*</span></label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
+        <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area"></div>
+        <div class="form-group full"><label>ตำแหน่ง <span class="required-mark">*</span></label>
+          <div class="position-3-grid">
+            <input type="text" id="f_pos1" maxlength="2" placeholder="Z2" oninput="this.value=this.value.toUpperCase();syncPosition()">
+            <span class="pos-sep">-</span>
+            <input type="text" id="f_pos2" maxlength="2" placeholder="01" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'');syncPosition()" onblur="padPosField(this);syncPosition()">
+            <span class="pos-sep">-</span>
+            <input type="text" id="f_pos3" maxlength="2" placeholder="05" inputmode="numeric" oninput="this.value=this.value.replace(/[^0-9]/g,'');syncPosition()" onblur="padPosField(this);syncPosition()">
           </div>
-          <div class="form-helper">Position = Base + optional Row. Example: Z4-03 or Z4-03-05</div>
-          <input type="text" id="f_position" class="readonly-field position-preview-field" readonly placeholder="Position Preview">
+          <div class="form-helper">เช่น Z2-01-05 หรือ A-03</div>
+          <input type="hidden" id="f_position">
           <div class="field-error" id="err_position"></div>
         </div>
-        <div class="form-group"><label>Actual (Stock) <span class="required-mark">*</span></label><input type="number" id="f_actual" min="0"><div class="field-error" id="err_actual"></div></div>
-        <div class="form-group"><label>Min</label><input type="number" id="f_min" min="0"><div class="field-error" id="err_min"></div></div>
-        <div class="form-group"><label>Max</label><input type="number" id="f_max" min="0"><div class="field-error" id="err_max"></div></div>
-        <div class="form-group"><label>Cost (THB)</label><input type="text" id="f_cost"></div>
-        <div class="form-group"><label>Deliver Time</label><input type="text" id="f_deliver"></div>
-        <div class="form-group"><label>Install Year</label><input type="text" id="f_installyear"></div>
-        <div class="form-group"><label>Expected Life</label><input type="text" id="f_life"></div>
-        <div class="form-group"><label>Replace Plan</label><input type="text" id="f_replaceplan"></div>
+      </div>
+
+      <div class="form-section-title">สต็อก</div>
+      <div class="form-row form-row-3">
+        <div class="form-group"><label>จำนวนจริง <span class="required-mark">*</span></label><input type="number" id="f_actual" min="0"><div class="field-error" id="err_actual"></div></div>
+        <div class="form-group"><label>ขั้นต่ำ (Min)</label><input type="number" id="f_min" min="0"><div class="field-error" id="err_min"></div></div>
+        <div class="form-group"><label>สูงสุด (Max)</label><input type="number" id="f_max" min="0"><div class="field-error" id="err_max"></div></div>
+      </div>
+
+      <div class="form-section-title">ข้อมูลเพิ่มเติม</div>
+      <div class="form-row form-row-3">
+        <div class="form-group"><label>ราคา (บาท)</label><input type="text" id="f_cost"></div>
+        <div class="form-group"><label>เวลานำส่ง</label><input type="text" id="f_deliver"></div>
+        <div class="form-group"><label>ปีที่ติดตั้ง</label><input type="text" id="f_installyear"></div>
+        <div class="form-group"><label>อายุการใช้งาน</label><input type="text" id="f_life"></div>
+        <div class="form-group"><label>แผนการเปลี่ยน</label><input type="text" id="f_replaceplan"></div>
         <div class="form-group"><label>CLASS</label><input type="text" id="f_class"></div>
       </div>
+
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('editModal')"><i data-lucide="x"></i> ยกเลิก</button>
@@ -2691,42 +2699,34 @@ function taxonomyText(r) {
     .filter(Boolean).join(' / ') || '—';
 }
 
-function buildPositionValue(pad = true) {
-  const baseEl = document.getElementById('f_position_base');
-  const rowEl = document.getElementById('f_position_row');
-  const base = (baseEl?.value || '').trim();
-  let row = (rowEl?.value || '').trim();
-  if(row) {
-    row = row.replace(/[^0-9]/g, '');
-    if(pad && row.length === 1) row = row.padStart(2, '0');
-    if(rowEl) rowEl.value = row;
-  }
-  return base ? (row ? `${base}-${row}` : base) : '';
+function syncPosition() {
+  const p1 = (document.getElementById('f_pos1')?.value || '').trim().toUpperCase();
+  const p2 = (document.getElementById('f_pos2')?.value || '').trim();
+  const p3 = (document.getElementById('f_pos3')?.value || '').trim();
+  let val = p1;
+  if(p2) val += '-' + p2;
+  if(p3) val += '-' + p3;
+  const hidden = document.getElementById('f_position');
+  if(hidden) hidden.value = val;
 }
 
-window.updatePositionPreview = (pad = false) => {
-  const preview = document.getElementById('f_position');
-  if(preview) preview.value = buildPositionValue(pad);
-};
+function padPosField(el) {
+  if(el.value.length === 1) el.value = '0' + el.value;
+}
+
+window.updatePositionPreview = () => { syncPosition(); };
 
 function setPositionValue(val) {
-  const baseEl = document.getElementById('f_position_base');
-  const rowEl = document.getElementById('f_position_row');
-  if(!baseEl || !rowEl) return;
   const raw = String(val || '').trim().toUpperCase();
-  [...baseEl.querySelectorAll('option[data-legacy="1"]')].forEach(o => o.remove());
-  let base = '', row = '';
-  const m = raw.match(/^(Z\d+-\d{2})(?:-(\d{1,2}))?$/);
-  if(m) { base = m[1]; row = m[2] || ''; }
-  else if(raw) { base = raw; }
-  if(base && ![...baseEl.options].some(o => o.value === base)) {
-    const opt = document.createElement('option');
-    opt.value = base; opt.textContent = base + ' (ค่าเดิม)'; opt.dataset.legacy = '1';
-    baseEl.insertBefore(opt, baseEl.options[1] || null);
-  }
-  baseEl.value = base;
-  rowEl.value = row;
-  window.updatePositionPreview(true);
+  const parts = raw.split('-');
+  const f1 = document.getElementById('f_pos1');
+  const f2 = document.getElementById('f_pos2');
+  const f3 = document.getElementById('f_pos3');
+  if(!f1) return;
+  f1.value = parts[0] || '';
+  f2.value = parts[1] || '';
+  f3.value = parts[2] || '';
+  syncPosition();
 }
 
 window.toggleFilters = () => {
@@ -2888,7 +2888,7 @@ window.setAdjustQty = (v) => {
 
 window.openAddModal = () => {
   editItemId=null;
-  document.getElementById('editModalTitle').textContent='Add Item';
+  document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_partid').value=getNextPartId();
   document.getElementById('f_department').value='';
@@ -2908,7 +2908,7 @@ window.openAddModal = () => {
 window.openEdit = (id) => {
   const r=items.find(x=>x._id===id); if(!r) return;
   editItemId=id;
-  document.getElementById('editModalTitle').textContent='Edit Item';
+  document.getElementById('editModalTitle').textContent='แก้ไขรายการ';
   document.getElementById('f_partid').value=r['Part ID']||'';
   document.getElementById('f_department').value=(r['Department']||'').toUpperCase();
   const critEdit=document.getElementById('f_criticality'); if(critEdit) critEdit.value=r['Criticality']||'';
@@ -2947,9 +2947,8 @@ window.saveItem = async () => {
   const mainCat = SUB_TO_MAIN_CATEGORY[subCat.toLowerCase()] || (subCat ? 'Other' : '');
   document.getElementById('f_maincat').value = mainCat;
   const location = cleanSingleLine(document.getElementById('f_location').value);
-  window.updatePositionPreview(true);
+  window.updatePositionPreview();
   const position = cleanSingleLine(document.getElementById('f_position').value);
-  const positionRow = cleanSingleLine(document.getElementById('f_position_row')?.value || '');
   const brand = cleanSingleLine(document.getElementById('f_brand').value);
   const model = cleanSingleLine(document.getElementById('f_model').value);
   const desc = cleanSingleLine(document.getElementById('f_desc').value);
@@ -2967,8 +2966,7 @@ window.saveItem = async () => {
   if(!plant){ document.getElementById('err_plant').textContent='จำเป็นต้องเลือก Plant'; hasError=true; }
   if(!subCat){ document.getElementById('err_subcat').textContent='จำเป็นต้องระบุ Sub Category'; hasError=true; }
   if(!location){ document.getElementById('err_location').textContent='จำเป็นต้องเลือก Location'; hasError=true; }
-  if(!position){ document.getElementById('err_position').textContent='จำเป็นต้องเลือก Position Base'; hasError=true; }
-  if(positionRow && !/^\d{1,2}$/.test(positionRow)){ document.getElementById('err_position').textContent='Row ต้องเป็นตัวเลข 1-2 หลัก'; hasError=true; }
+  if(!position){ document.getElementById('err_position').textContent='จำเป็นต้องระบุตำแหน่ง'; hasError=true; }
   if(!model && !desc){ document.getElementById('err_modeldesc').textContent='กรุณาระบุ Model หรือ Description อย่างน้อย 1 ช่อง'; hasError=true; }
   if(actual==='' || isNaN(parseFloat(actual)) || parseFloat(actual)<0){
     document.getElementById('err_actual').textContent='Actual จำเป็นและต้องเป็นตัวเลข ≥ 0'; hasError=true;
