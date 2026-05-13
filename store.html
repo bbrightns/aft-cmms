@@ -96,7 +96,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 
 /* Action cards */
 .home-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-.home-action-card { background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow); padding: 20px 16px; max-height: 170px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.2s ease; width: 100%; font-family: var(--sans); }
+.home-action-card { background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow); padding: 20px 16px; max-height: 160px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.2s ease; width: 100%; font-family: var(--sans); }
 .home-action-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border2); }
 .hac-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; transition: transform 0.25s; flex-shrink: 0; }
 .home-action-card:hover .hac-icon { transform: scale(1.08); }
@@ -331,14 +331,14 @@ tr:hover td { background: var(--surface2); }
 .modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.2s ease; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.modal-title { font-size: 15px; font-weight: 700; color: var(--agc-blue); }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--agc-blue); }
 .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
 .modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group.full { grid-column: 1/-1; }
-.form-section-title { font-size: 10px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text3); padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: -4px; }
+.form-section-title { font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--agc-blue); padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: -4px; }
 label { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }
 input, select, textarea { background: var(--bg2); border: 1.5px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-family: var(--sans); font-size: 13px; outline: none; transition: border 0.2s; width: 100%; }
 input:focus, select:focus, textarea:focus { border-color: var(--agc-blue); }
@@ -422,7 +422,7 @@ textarea { resize: vertical; min-height: 60px; }
 @media (max-width: 767px) {
   .header { padding: 0 14px; }
   .home-page, .action-page { padding: 16px 14px 40px; }
-  .form-row { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr 1fr; gap: 10px; }
   .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
   .tabs { overflow-x: auto; scrollbar-width: none; }
   .tabs::-webkit-scrollbar { display: none; }
@@ -434,8 +434,6 @@ textarea { resize: vertical; min-height: 60px; }
   .card-list { display: none !important; }
   .table-wrap { display: block; }
 }
-
-
 
 html, body {
   width: 100%;
@@ -568,7 +566,8 @@ html, body {
 }
 .dept-chip.mech { color: #7c2d12; background: #ffedd5; border-color: rgba(124,45,18,0.18); }
 .readonly-field { background: var(--surface2) !important; color: var(--text2) !important; cursor: not-allowed; }
-.form-helper { font-size: 11px; color: var(--text3); line-height: 1.35; margin-top: 1px; }
+.form-helper { font-size: 11px; color: var(--text3); line-height: 1.35; margin-top: 3px; }
+.field-error:empty { display: none; }
 .csv-mode-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
 .csv-mode-box label { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:var(--text2); text-transform:none; letter-spacing:0; font-weight:600; cursor:pointer; }
 .csv-mode-box input { width:auto; margin-top:2px; }
@@ -599,11 +598,6 @@ html, body {
 .search-highlight { background:#fff3bf; border-radius:3px; padding:0 2px; }
 .empty-action-btn { margin-top:12px; display:inline-flex; align-items:center; gap:6px; padding:9px 14px; border-radius:8px; border:none; background:var(--agc-blue); color:#fff; font-family:var(--sans); font-size:13px; font-weight:700; cursor:pointer; }
 .empty-action-btn:hover { background:var(--agc-blue2); }
-.badge-criticality { border:1px solid var(--border); background:var(--bg2); color:var(--text2); }
-.badge-criticality.critical { background:#fde8ef; color:var(--danger); border-color:rgba(228,0,70,.25); }
-.badge-criticality.important { background:#fef3cd; color:var(--warn); border-color:rgba(180,83,9,.25); }
-.badge-criticality.normal { background:#e0e4f0; color:var(--agc-blue); border-color:rgba(0,31,107,.18); }
-.badge-criticality.consumable { background:#dcf5e8; color:#005a2b; border-color:rgba(0,147,74,.22); }
 .inv-card.critical-low { border-color:var(--danger); box-shadow:0 4px 14px rgba(228,0,70,.14); }
 .reorder-chip { display:inline-flex; align-items:center; gap:4px; width:fit-content; font-family:var(--mono); font-size:11px; font-weight:800; color:var(--danger); background:#fde8ef; border:1px solid rgba(228,0,70,.22); border-radius:8px; padding:3px 8px; margin-top:8px; }
 .csv-replace-confirm { display:none; margin-top:8px; }
@@ -1808,7 +1802,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <button class="home-action-card card-out" onclick="goAction('out')">
         <div class="hac-icon hac-icon-out"><i data-lucide="log-out" style="width:32px;height:32px"></i></div>
         <h2 style="color:#db2777">เบิกของ</h2>
-        <div class="home-sec-sub">ค้นหาและเบิกอะไหล่ออกจากคลัง</div>
         <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
 
@@ -1816,7 +1809,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <button class="home-action-card card-in" onclick="goAction('in')">
         <div class="hac-icon hac-icon-in"><i data-lucide="log-in" style="width:32px;height:32px"></i></div>
         <h2 style="color:#059669">รับของเข้า</h2>
-        <p>บันทึกการรับอะไหล่เข้าคลัง</p>
         <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
     </div>
@@ -1825,8 +1817,8 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <button class="home-sec-btn" style="margin-bottom:16px" onclick="goTransactionLog()">
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="clipboard-clock" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
-        <div class="home-sec-title">Transaction Log</div>
-        <div class="home-sec-sub">ดูประวัติการเบิก/รับ/แก้ไขล่าสุด</div>
+        <div class="home-sec-title">ประวัติการแก้ไขข้อมูล</div>
+        <div class="home-sec-sub">LOG SYSTEM ACTIVITIES</div>
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
@@ -1915,7 +1907,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div class="controls-filters" id="controlsFilters">
         <select id="catFilter" onchange="applyFilters()" style="flex:1;min-width:130px"><option value="">All Categories</option></select>
         <select id="departmentFilter" onchange="applyFilters()" style="min-width:95px"><option value="">All Dept</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select>
-        <select id="criticalityFilter" onchange="applyFilters()" style="min-width:120px"><option value="">All Criticality</option><option value="Critical">Critical</option><option value="Important">Important</option><option value="Normal">Normal</option><option value="Consumable">Consumable</option></select>
         <select id="subCatFilter" onchange="applyFilters()" style="flex:1;min-width:130px"><option value="">All Sub-cat</option></select>
         <select id="plantFilter" onchange="applyFilters()" style="min-width:90px">
           <option value="">All Plants</option><option value="RFG">RFG</option><option value="MIR">MIR</option>
@@ -1944,7 +1935,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
         <table><thead><tr>
           <th onclick="sortBy('Part ID')">Part ID <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Department')">Dept <span class="sort-icon">↕</span></th>
-          <th onclick="sortBy('Criticality')">Criticality <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Sub Category')">Sub Cat <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Brand')">Brand <span class="sort-icon">↕</span></th>
           <th>Model</th>
@@ -2070,26 +2060,27 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
-        <div class="form-group"><label>Part ID <span class="required-mark">*</span></label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX"><div class="field-error" id="err_partid"></div><div class="form-helper">รหัสจะถูกสร้างอัตโนมัติ แก้ไขเองได้</div></div>
-        <div class="form-group"><label>แผนก <span class="required-mark">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
-        <div class="form-group"><label>โรงงาน <span class="required-mark">*</span></label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option></select><div class="field-error" id="err_plant"></div></div>
-        <div class="form-group"><label>ความสำคัญ</label><select id="f_criticality"><option value="">—</option><option value="Critical">Critical</option><option value="Important">Important</option><option value="Normal">Normal</option><option value="Consumable">Consumable</option></select></div>
-        <div class="form-group full"><label>ประเภทย่อย <span class="required-mark">*</span></label><input type="text" id="f_subcat" list="subCategoryOptions" placeholder="เช่น Fitting, PLC, Sensor" oninput="autoFillMainCategory()" onchange="autoFillMainCategory()"><datalist id="subCategoryOptions"></datalist><div class="field-error" id="err_subcat"></div><div class="form-helper">เลือกประเภทสินค้า ระบบจะเติมหมวดหลักให้อัตโนมัติ</div></div>
-        <div class="form-group" style="display:none"><label>Main Category</label><input type="text" id="f_maincat" class="readonly-field" readonly placeholder="Auto-filled"></div>
+        <div class="form-group"><label>Part ID <span class="required-mark">*</span></label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div><div class="form-helper">รหัสถูกสร้างอัตโนมัติ</div></div>
+        <div class="form-group"><label>แผนก (EE/ME) <span class="required-mark">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
+
       </div>
 
-      <div class="form-section-title">สินค้า</div>
+      <div class="form-section-title">รายละเอียดสินค้า</div>
       <div class="form-row">
+        <div class="form-group"><label>ประเภทย่อย <span class="required-mark">*</span></label><input type="text" id="f_subcat" list="subCategoryOptions" placeholder="เช่น Fitting, PLC, Sensor" oninput="autoFillMainCategory()" onchange="autoFillMainCategory()"><datalist id="subCategoryOptions"></datalist><div class="field-error" id="err_subcat"></div><div class="form-helper">เลือกประเภทสินค้า ระบบจะเติมหมวดหลักให้อัตโนมัติ</div></div>
+        <div class="form-group" style="display:none"><label>Main Category</label><input type="text" id="f_maincat" class="readonly-field" readonly placeholder="Auto-filled"></div>
         <div class="form-group"><label>ยี่ห้อ</label><input type="text" id="f_brand" list="brandOptions" placeholder="พิมพ์หรือเลือกยี่ห้อ"><datalist id="brandOptions"></datalist></div>
         <div class="form-group"><label>รุ่น <span class="required-mark" title="รุ่น หรือ รายละเอียด อย่างน้อย 1 ช่อง">*</span></label><input type="text" id="f_model"></div>
+        <div class="form-group"><label>ความสำคัญ (A, B, C)</label><select id="f_class"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
         <div class="form-group full"><label>รายละเอียด <span class="required-mark" title="รุ่น หรือ รายละเอียด อย่างน้อย 1 ช่อง">*</span></label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
+        <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR) <span class="required-mark">*</span></label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option></select><div class="field-error" id="err_plant"></div></div>
+        <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area"></div>        
       </div>
 
       <div class="form-section-title">ที่เก็บ</div>
       <div class="form-row">
-        <div class="form-group"><label>ที่เก็บ <span class="required-mark">*</span></label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
-        <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area"></div>
-        <div class="form-group full"><label>ตำแหน่ง <span class="required-mark">*</span></label>
+        <div class="form-group"><label>ที่เก็บ (Store/RFG) <span class="required-mark">*</span></label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
+        <div class="form-group"><label>ตำแหน่ง <span class="required-mark">*</span></label>
           <div class="position-3-grid">
             <input type="text" id="f_pos1" maxlength="2" placeholder="Z2" oninput="this.value=this.value.toUpperCase();syncPosition()">
             <span class="pos-sep">-</span>
@@ -2117,7 +2108,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
         <div class="form-group"><label>ปีที่ติดตั้ง</label><input type="text" id="f_installyear"></div>
         <div class="form-group"><label>อายุการใช้งาน</label><input type="text" id="f_life"></div>
         <div class="form-group"><label>แผนการเปลี่ยน</label><input type="text" id="f_replaceplan"></div>
-        <div class="form-group"><label>CLASS</label><input type="text" id="f_class"></div>
       </div>
 
     </div>
@@ -2417,7 +2407,7 @@ window.goInventory = () => {
   document.getElementById('tabLog').style.display = 'none';
   activeStockFilter = 'all';
   activeDeptFilter = '';
-  ['catFilter','departmentFilter','criticalityFilter','subCatFilter','plantFilter','stockFilter'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ['catFilter','departmentFilter','subCatFilter','plantFilter','stockFilter'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   updateQuickFilterChipUI();
   applyFilters();
   updateStats();
@@ -2809,7 +2799,7 @@ function renderLog(logs) {
 
 function getItemChangeSummary(oldItem, newData) {
   if (!oldItem) return '';
-  const fields = ['Department','Plant','Criticality','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','DELIVER TIME','Install Year','Expected Life','Replace Plan'];
+  const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','DELIVER TIME','Install Year','Expected Life','Replace Plan'];
   const changed = [];
   fields.forEach(f => {
     const oldVal = cleanSingleLine(oldItem[f] ?? '');
@@ -2912,7 +2902,6 @@ window.openAddModal = () => {
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_partid').value=getNextPartId();
   document.getElementById('f_department').value='';
-  const critAdd=document.getElementById('f_criticality'); if(critAdd) critAdd.value='Normal';
   document.getElementById('f_plant').value='';
   document.getElementById('f_maincat').value='';
   document.getElementById('f_subcat').value='';
@@ -2931,7 +2920,6 @@ window.openEdit = (id) => {
   document.getElementById('editModalTitle').textContent='แก้ไขรายการ';
   document.getElementById('f_partid').value=r['Part ID']||'';
   document.getElementById('f_department').value=(r['Department']||'').toUpperCase();
-  const critEdit=document.getElementById('f_criticality'); if(critEdit) critEdit.value=r['Criticality']||'';
   document.getElementById('f_plant').value=r['Plant']||'';
   populateSubCategoryOptions();
   populateBrandOptions();
@@ -2962,7 +2950,6 @@ window.saveItem = async () => {
   const partId = cleanSingleLine(document.getElementById('f_partid').value);
   const department = cleanSingleLine(document.getElementById('f_department').value).toUpperCase();
   const plant = cleanSingleLine(document.getElementById('f_plant').value);
-  const criticality = cleanSingleLine(document.getElementById('f_criticality')?.value || '');
   const subCat = cleanSingleLine(document.getElementById('f_subcat').value);
   const mainCat = SUB_TO_MAIN_CATEGORY[subCat.toLowerCase()] || (subCat ? 'Other' : '');
   document.getElementById('f_maincat').value = mainCat;
@@ -3017,7 +3004,6 @@ window.saveItem = async () => {
     'Plant':plant,
     'Main Category':mainCat,
     'Sub Category':subCat,
-    'Criticality':criticality,
     'Brand':brand,
     'Model':model,
     'Description':desc,
@@ -3368,14 +3354,6 @@ function highlightText(value, q = currentSearchText()) {
   out += escapeHtml(s.slice(last));
   return out;
 }
-function criticalityClass(v) {
-  return String(v || '').toLowerCase().replace(/[^a-z]/g,'') || 'normal';
-}
-function criticalityBadge(v) {
-  const val = cleanSingleLine(v || '');
-  if(!val) return '';
-  return `<span class="badge badge-criticality ${criticalityClass(val)}">${escapeHtml(val)}</span>`;
-}
 function formatUpdatedAt(v) {
   try {
     if(!v) return '—';
@@ -3463,20 +3441,18 @@ window.applyFilters = () => {
   const q = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
   const cat = document.getElementById('catFilter')?.value || '';
   const dept = document.getElementById('departmentFilter')?.value || '';
-  const crit = document.getElementById('criticalityFilter')?.value || '';
   const sub = document.getElementById('subCatFilter')?.value || '';
   const plant = document.getElementById('plantFilter')?.value || '';
   const stock = document.getElementById('stockFilter')?.value || '';
   filteredItems = items.filter(r => {
     if (cat && getDisplayMainCategory(r) !== cat) return false;
     if (dept && (r['Department'] || '').toUpperCase() !== dept) return false;
-    if (crit && (r['Criticality'] || '') !== crit) return false;
     if (sub && r['Sub Category'] !== sub) return false;
     if (plant && r['Plant'] !== plant) return false;
     if (stock && stockStatus(r['Actual'], r['Min']) !== stock) return false;
     if (activeStockFilter === 'nostock' && !isNoStockItem(r)) return false;
     if (q) {
-      const hay = [r['Part ID'],r['Department'],r['Criticality'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position']].join(' ').toLowerCase();
+      const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position']].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -3511,7 +3487,6 @@ function renderTable() {
     return `<tr>
       <td><span class="part-id" style="cursor:pointer;color:var(--agc-blue);font-weight:700" onclick="openDetail('${r._id}')">${highlightText(r['Part ID']||'', q)}</span></td>
       <td><span class="badge badge-dept">${escapeHtml((r['Department']||'—').toUpperCase())}</span></td>
-      <td>${criticalityBadge(r['Criticality']) || '<span class="badge badge-none">—</span>'}</td>
       <td><span class="badge badge-sub">${highlightText(r['Sub Category']||'—', q)}</span></td>
       <td>${highlightText(r['Brand']||'—', q)}</td>
       <td>${highlightText(r['Model']||'—', q)}</td>
@@ -3547,14 +3522,12 @@ function renderCards() {
     const position = r['Position'] || '';
     const locLine = [location, position].filter(Boolean).join('  ');
     const reorder = getReorderSuggestion(r);
-    const cardCls = (String(r['Criticality']||'').toLowerCase()==='critical' && sc==='low') ? 'inv-card critical-low' : 'inv-card';
-    return `<div class="${cardCls}">
+    return `<div class="inv-card">
       <div class="inv-card-top">
         <div style="flex:1;min-width:0">
           ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
           <div class="inv-card-name">${highlightText((r['Brand']||'') + ' ' + (r['Model']||''), q)}</div>
           <div class="inv-card-pid" onclick="openDetail('${r._id}')" style="cursor:pointer">${highlightText(r['Part ID']||'', q)}</div>
-          <div style="margin-top:6px">${criticalityBadge(r['Criticality'])}</div>
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>
@@ -3589,7 +3562,7 @@ window.qaSearchInput = () => {
     return;
   }
   const results = items.filter(r =>
-    [r['Part ID'],r['Department'],r['Criticality'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position']].join(' ').toLowerCase().includes(ql)
+    [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position']].join(' ').toLowerCase().includes(ql)
   );
   if (countEl) { countEl.textContent = `พบ ${results.length} รายการ`; countEl.classList.add('show'); }
   if (!results.length) { document.getElementById('qaResults').innerHTML = emptyStateHtml('qa'); refreshIcons(); return; }
@@ -3606,7 +3579,6 @@ window.qaSearchInput = () => {
           ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
           <div class="qa-item-name">${highlightText((r['Brand']||'') + ' ' + (r['Model']||''), q)}</div>
           <div class="qa-item-pid">${highlightText(r['Part ID'] || '', q)}</div>
-          <div style="margin-top:6px">${criticalityBadge(r['Criticality'])}</div>
         </div>
         <div class="qa-item-stock-wrap"><div class="qa-item-stock ${scCls}">${escapeHtml(scTxt)}</div><div class="qa-item-stock-label">Stock</div></div>
       </div>
@@ -3744,7 +3716,6 @@ window.openDetail = (id) => {
     <div class="detail-grid">
       <div class="detail-item"><div class="detail-label">Part ID</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Part ID']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Department</div><div class="detail-val">${escapeHtml(r['Department']||'—')}</div></div>
-      <div class="detail-item"><div class="detail-label">Criticality</div><div class="detail-val">${criticalityBadge(r['Criticality']) || '—'}</div></div>
       <div class="detail-item"><div class="detail-label">Plant / Area</div><div class="detail-val">${escapeHtml(r['Plant']||'—')} / ${escapeHtml(r['Area']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Category</div><div class="detail-val">${escapeHtml(getDisplayMainCategory(r)||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Sub Category</div><div class="detail-val">${escapeHtml(r['Sub Category']||'—')}</div></div>
@@ -3801,7 +3772,7 @@ window.executeExportCSV = () => {
   closeModal('exportModal');
 };
 function exportRowsToCSV(rowsData, mode='all') {
-  const cols=['Part ID','Department','Criticality','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','DELIVER TIME','Install Year','Expected Life','Replace Plan'];
+  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','DELIVER TIME','Install Year','Expected Life','Replace Plan'];
   const rows=[cols.join(',')];
   rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
