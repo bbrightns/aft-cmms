@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AFT-CMMS — Main Menu</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+/* === SHARED DESIGN TOKENS — kept identical to store.html (AGC Coating Store r22) === */
+:root {
+  --bg: #f5f4f0;
+  --bg2: #eeece7;
+  --surface: #ffffff;
+  --surface2: #f9f8f5;
+  --border: #d8d5ce;
+  --border2: #c4c0b8;
+  --agc-blue: #001F6B;
+  --agc-blue2: #002a90;
+  --agc-red: #E40046;
+  --accent2: #00934a;
+  --warn: #b45309;
+  --danger: #E40046;
+  --text: #111827;
+  --text2: #4b5563;
+  --text3: #6b6b83;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'Sarabun', sans-serif;
+  --shadow: 0 1px 4px rgba(0,0,0,0.10);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.13);
+  --radius: 12px;
+}
+*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* HEADER — same as store */
+.header {
+  background: var(--agc-blue); padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 54px; position: sticky; top: 0; z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,31,107,0.3);
+}
+.header-nav { display: flex; align-items: center; gap: 8px; }
+.logo-img { height: 34px; width: auto; display: block; }
+.nav-home { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 10px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; font-family: var(--mono); letter-spacing: 0.5px; transition: background 0.15s; }
+.nav-home:hover { background: rgba(255,255,255,0.26); }
+.nav-home i { width: 14px; height: 14px; }
+.nav-sep { color: rgba(255,255,255,0.3); font-size: 15px; font-weight: 300; }
+.nav-mod { color: rgba(255,255,255,0.82); font-size: 14px; font-weight: 600; text-decoration: none; font-family: var(--sans); transition: color 0.15s; }
+.nav-mod:hover { color: #fff; }
+.header-right { display: flex; gap: 8px; align-items: center; }
+.hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; }
+.hbtn:hover { background: rgba(255,255,255,0.28); }
+.sync-status { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(255,255,255,0.12); border-radius: 6px; font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.85); }
+.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; }
+
+/* MAIN MENU LAYOUT */
+.main-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+.main-greeting { margin-bottom: 28px; }
+.main-greeting h1 {
+  font-size: 26px; font-weight: 700; color: var(--agc-blue);
+  margin-bottom: 6px; letter-spacing: -0.3px;
+}
+.main-greeting .subtitle { font-size: 14px; color: var(--text2); }
+.main-greeting .system-tag {
+  display: inline-block; font-family: var(--mono); font-size: 12px;
+  font-weight: 700; letter-spacing: 1px; color: var(--agc-red);
+  text-transform: uppercase; margin-bottom: 8px;
+}
+
+/* MODULE CARDS — engineering-card style, not flashy */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 36px;
+}
+.module-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex; flex-direction: column;
+  box-shadow: var(--shadow);
+  transition: all 0.18s ease;
+  min-height: 180px;
+  position: relative;
+}
+.module-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--agc-blue); }
+.module-card.store:hover { border-color: var(--agc-blue); }
+.module-card.pr:hover { border-color: var(--agc-red); }
+
+
+.module-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+}
+.module-icon i { width: 22px; height: 22px; }
+.module-icon.icon-store { background: #e0e4f0; color: var(--agc-blue); }
+.module-icon.icon-pr { background: #fde8ef; color: var(--agc-red); }
+
+
+.module-card h2 {
+  font-size: 17px; font-weight: 700; color: var(--text);
+  margin-bottom: 6px; letter-spacing: -0.2px;
+}
+.module-card .module-desc {
+  font-size: 13px; color: var(--text2); line-height: 1.5;
+  flex: 1; margin-bottom: 12px;
+}
+.module-card .module-meta {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text3); font-weight: 600;
+}
+.module-card .module-arrow {
+  position: absolute; top: 22px; right: 22px;
+  color: var(--text3); font-size: 20px; line-height: 1;
+}
+.module-card:hover .module-arrow { color: var(--agc-blue); }
+.module-card.pr:hover .module-arrow { color: var(--agc-red); }
+
+
+.badge-live {
+  display: inline-block; padding: 2px 7px; border-radius: 4px;
+  font-family: var(--mono); font-size: 9px; font-weight: 700;
+  letter-spacing: 0.5px; text-transform: uppercase;
+  background: #dcf5e8; color: #005a2b;
+}
+
+/* SECTION HEADER */
+.section-title {
+  font-family: var(--mono); font-size: 11px;
+  font-weight: 700; letter-spacing: 2px;
+  color: var(--text3); text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+/* INFO STRIP */
+.info-strip {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 18px;
+  font-size: 13px; color: var(--text2);
+  display: flex; gap: 12px; align-items: flex-start;
+  margin-top: 20px;
+}
+.info-strip i { color: var(--agc-blue); flex-shrink: 0; margin-top: 2px; }
+.info-strip strong { color: var(--text); }
+
+/* RESPONSIVE */
+@media (max-width: 600px) {
+  .main-greeting h1 { font-size: 22px; }
+  .module-grid { grid-template-columns: 1fr; }
+  .module-card { min-height: auto; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-nav">
+    <img src="logo.png" alt="AGC" class="logo-img">
+    <a href="index.html" class="nav-home">AFT-CMMS</a>
+  </div>
+  <div class="header-right">
+    <div class="sync-status"><div class="sync-dot"></div><span>Live</span></div>
+  </div>
+</header>
+
+<main class="main-wrap">
+
+  <div class="main-greeting">
+    <span class="system-tag">AGC FLAT GLASS (THAILAND)</span>
+    <h1>AFT-CMMS</h1>
+    <p class="subtitle">ศูนย์รวมระบบบริหารงานบำรุงรักษา > เลือก Module ที่ต้องการใช้งาน</p>
+  </div>
+
+  <div class="section-title">— Active Modules —</div>
+
+  <div class="module-grid">
+
+    <a href="store.html" class="module-card store">
+      <div class="module-icon icon-store"><i data-lucide="package"></i></div>
+      <h2>Store Management System</h2>
+      <p class="module-desc">
+        คลังอะไหล่ — Coating Inventory & Tools
+      </p>
+      <div class="module-meta">
+        <span class="badge-live">● Live</span>
+        <span>STORE V2.2</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </a>
+
+    <a href="pr.html" class="module-card pr">
+      <div class="module-icon icon-pr"><i data-lucide="file-text"></i></div>
+      <h2>Purchase Request</h2>
+      <p class="module-desc">
+        ออก PR, ตรวจสอบ PR History, จัดการ Item list, ติดตามสถานะการส่งของ
+      </p>
+      <div class="module-meta">
+        <span class="badge-live">● Live</span>
+        <span>PR V0.1</span>
+      </div>
+      <span class="module-arrow">›</span>
+    </a>
+
+  </div>
+
+
+  <div class="info-strip">
+    <i data-lucide="info" style="width:16px;height:16px"></i>
+    <div>
+      <strong>หมายเหตุ:</strong>
+      <ul style="margin-top:6px;list-style:disc;padding-left:20px;color:var(--text2);font-size:13px">
+        <li>โปรแกรมนี้พัฒนาขึ้นเพื่อใช้ภายใน AGC Flat Glass (Thailand) เท่านั้น</li>
+        <li>หากต้องการใช้งานหรือมีข้อเสนอแนะ กรุณาติดต่อ Praween Piyaprapaphan (Bright)</li>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // Render Lucide icons once on load
+  if (window.lucide) lucide.createIcons();
+</script>
+
+</body>
+</html>
