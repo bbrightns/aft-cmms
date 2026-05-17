@@ -49,7 +49,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 .nav-mod { color: rgba(255,255,255,0.82); font-size: 14px; font-weight: 600; text-decoration: none; font-family: var(--sans); transition: color 0.15s; }
 .nav-mod:hover { color: #fff; }
 .header-right { display: flex; gap: 8px; align-items: center; }
-.hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; }
+.hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; }
 .hbtn:hover { background: rgba(255,255,255,0.28); }
 .hbtn [data-lucide] { display: inline-block; width: 15px; height: 15px; vertical-align: -2px; }
 
@@ -125,7 +125,6 @@ select { cursor: pointer; }
 .pr-chip-count.warn { background: #fef3cd; color: var(--warn); }
 .pr-chip-count.danger { background: #fde8ef; color: var(--danger); }
 .pr-chip-count.blue { background: #e0e4f0; color: var(--agc-blue); }
-.pr-value-tag { margin-left: auto; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--agc-blue); background: #e0e4f0; border-radius: 999px; padding: 5px 12px; white-space: nowrap; }
 
 .result-count { padding: 6px 16px; font-size: 11px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.5px; background: var(--surface); border-bottom: 1px solid var(--border); }
 
@@ -148,8 +147,8 @@ tr:hover td { background: var(--surface2); }
 
 /* BADGES */
 .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
-.badge-ordered { background: #e0e4f0; color: var(--agc-blue); }
-.badge-approved { background: #dcf5e8; color: #005a2b; }
+.badge-ordered { background: #dcf5e8; color: #005a2b; }
+.badge-approved { background: #e0e4f0; color: var(--agc-blue); }
 .badge-approving { background: #fef3c7; color: #92400e; }
 .badge-unapproved { background: #fde8ef; color: var(--agc-red); }
 .badge-deliv-compl { background: #dcf5e8; color: #005a2b; }
@@ -158,7 +157,7 @@ tr:hover td { background: var(--surface2); }
 .badge-none { background: var(--bg2); color: var(--text3); }
 .badge-section { background: #e0e4f0; color: var(--agc-blue); }
 .badge-investment { background: #ffe4b8; color: #92400e; }
-.badge-repair { background: #dce7f5; color: var(--agc-blue); }
+.badge-repair { background: #e0e4f0; color: var(--agc-blue); }
 
 /* BUTTONS */
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
@@ -489,7 +488,7 @@ tr:hover td { background: var(--surface2); }
           </div>
           <div class="field">
             <label>Work Class</label>
-            <select id="f_workClass">
+            <select id="f_workClass" style="color: var(--agc-blue);">
               <option value="">—</option>
               <option>Repair A</option><option>Repair B</option><option>Repair C</option>
               <option>Improve</option><option>Safety</option>
@@ -710,7 +709,6 @@ async function loadFromFirebase(){
 
 function renderStatusChips(){
   const counts = { all: prRecords.length, ordered: 0, approving: 0, approved: 0, unapproved: 0, undeliv: 0 };
-  let totalValue = 0;
   prRecords.forEach(r => {
     const s = (r['Status']||'').toLowerCase();
     if (s.includes('ordered')) counts.ordered++;
@@ -718,7 +716,6 @@ function renderStatusChips(){
     else if (s.includes('unapproved')) counts.unapproved++;
     else if (s.includes('approved')) counts.approved++;
     if (/undeliv|partial/i.test(r['Deliv. Status']||'')) counts.undeliv++;
-    totalValue += Number(r['PR Amount']||0);
   });
   const chips = [
     {key:'all',        label:'ทั้งหมด',     count: counts.all,        color:'blue'},
@@ -733,7 +730,7 @@ function renderStatusChips(){
       <span>${escapeHtml(c.label)}</span>
       <span class="pr-chip-count ${c.color}">${c.count.toLocaleString()}</span>
     </button>
-  `).join('') + `<span class="pr-value-tag">${fmtAmount(totalValue)} THB</span>`;
+  `).join('');
   refreshIcons();
 }
 window._prSetStatus = (k) => { activeStatusFilter = k; applyFilters(); };

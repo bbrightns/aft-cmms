@@ -49,10 +49,10 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 .nav-mod { color: rgba(255,255,255,0.82); font-size: 14px; font-weight: 600; text-decoration: none; font-family: var(--sans); transition: color 0.15s; }
 .nav-mod:hover { color: #fff; }
 .header-right { display: flex; gap: 8px; align-items: center; }
-.header-back { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; display: none; align-items: center; gap: 6px; transition: background 0.15s; }
+.header-back { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; display: none; align-items: center; gap: 6px; transition: background 0.15s; height: 32px; box-sizing: border-box; }
 .header-back:hover { background: rgba(255,255,255,0.25); }
 .header-back.visible { display: flex; }
-.hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; }
+.hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; }
 .hbtn:hover { background: rgba(255,255,255,0.28); }
 
 /* OFFLINE BANNER */
@@ -950,11 +950,9 @@ body.inv-scroll-compact #pageInventory .controls-main {
 @media (max-width: 767px) {
   .merged-filter-chips {
     padding: 8px 12px 10px !important;
-    overflow-x: auto;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
   }
   .merged-filter-chips .quick-filter-chip {
-    flex: 0 0 auto;
     min-height: 30px;
     padding: 6px 10px;
   }
