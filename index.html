@@ -6,53 +6,8 @@
 <title>AFT-CMMS — Main Menu</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<link rel="stylesheet" href="shared.css">
 <style>
-/* === SHARED DESIGN TOKENS — kept identical to store.html (AGC Coating Store r22) === */
-:root {
-  --bg: #f5f4f0;
-  --bg2: #eeece7;
-  --surface: #ffffff;
-  --surface2: #f9f8f5;
-  --border: #d8d5ce;
-  --border2: #c4c0b8;
-  --agc-blue: #001F6B;
-  --agc-blue2: #002a90;
-  --agc-red: #E40046;
-  --accent2: #00934a;
-  --warn: #b45309;
-  --danger: #E40046;
-  --text: #111827;
-  --text2: #4b5563;
-  --text3: #6b6b83;
-  --mono: 'IBM Plex Mono', monospace;
-  --sans: 'Inter', 'Noto Sans Thai', sans-serif;
-  --shadow: 0 1px 4px rgba(0,0,0,0.10);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.13);
-  --radius: 12px;
-}
-*,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
-
-/* HEADER — same as store */
-.header {
-  background: var(--agc-blue); padding: 0 20px;
-  display: flex; align-items: center; justify-content: space-between;
-  height: 54px; position: sticky; top: 0; z-index: 100;
-  box-shadow: 0 2px 8px rgba(0,31,107,0.3);
-}
-.header-nav { display: flex; align-items: center; gap: 8px; }
-.logo-img { height: 34px; width: auto; display: block; }
-.nav-home { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 10px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; font-family: var(--mono); letter-spacing: 0.5px; transition: background 0.15s; }
-.nav-home:hover { background: rgba(255,255,255,0.26); }
-.nav-home i { width: 14px; height: 14px; }
-.nav-sep { color: rgba(255,255,255,0.3); font-size: 15px; font-weight: 300; }
-.nav-mod { color: rgba(255,255,255,0.82); font-size: 14px; font-weight: 600; text-decoration: none; font-family: var(--sans); transition: color 0.15s; }
-.nav-mod:hover { color: #fff; }
-.header-right { display: flex; gap: 8px; align-items: center; }
-.hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; }
-.hbtn:hover { background: rgba(255,255,255,0.28); }
-.sync-status { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(255,255,255,0.12); border-radius: 6px; font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.85); }
-.sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; }
 
 /* MAIN MENU LAYOUT */
 .main-wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
@@ -173,11 +128,6 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 
 /* RESPONSIVE */
 @media (max-width: 768px) {
-  .header { padding: 0 10px; }
-  .header-nav { flex: 1 1 auto; min-width: 0; gap: 6px; overflow: hidden; }
-  .logo-img { height: 28px; flex-shrink: 0; }
-  .nav-home { padding: 4px 8px; font-size: 11px; flex-shrink: 0; }
-  .header-right { flex: 0 0 auto; gap: 4px; }
   .sync-status { font-size: 10px; gap: 4px; }
 }
 @media (max-width: 600px) {
