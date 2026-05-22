@@ -762,12 +762,17 @@ function parseDateToMs(v){
   if (v == null || v === '') return 0;
   const n = Number(v);
   if (!isNaN(n) && n > 40000) return Math.round((n - 25569) * 86400000);
+  const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
   const parts = String(v).split(/[-/]/);
   if (parts.length === 3) {
-    const day = Number(parts[0]), mon = Number(parts[1]);
+    const day = Number(parts[0]);
+    const monRaw = parts[1];
+    const monNum = Number(monRaw);
     let yr = Number(parts[2]);
     if (yr < 100) yr += yr < 50 ? 2000 : 1900;
-    if (mon >= 1 && mon <= 12) return new Date(yr, mon - 1, day).getTime();
+    if (!isNaN(monNum) && monNum >= 1 && monNum <= 12) return new Date(yr, monNum - 1, day).getTime();
+    const monIdx = MONTHS[monRaw.toLowerCase().slice(0, 3)];
+    if (monIdx !== undefined) return new Date(yr, monIdx, day).getTime();
   }
   const d = new Date(v);
   return isNaN(d) ? 0 : d.getTime();
