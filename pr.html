@@ -714,7 +714,7 @@ let filteredRecords = [];
 let currentItems = [];
 let editingPRId = null;
 let csvParsed = null;
-let sortCol = 'PR No.';
+let sortCol = 'Post Date';
 let sortAsc = false;
 let activeStatusFilter = 'all';
 const DEVICE_ID = 'pr_dev_' + Math.random().toString(36).slice(2,8);
@@ -757,6 +757,20 @@ function fmtDate(v){
     if (m >= 1 && m <= 12) return parts[0]+'-'+MON[m-1]+'-'+parts[2];
   }
   return String(v);
+}
+function parseDateToMs(v){
+  if (v == null || v === '') return 0;
+  const n = Number(v);
+  if (!isNaN(n) && n > 40000) return Math.round((n - 25569) * 86400000);
+  const parts = String(v).split(/[-/]/);
+  if (parts.length === 3) {
+    const day = Number(parts[0]), mon = Number(parts[1]);
+    let yr = Number(parts[2]);
+    if (yr < 100) yr += yr < 50 ? 2000 : 1900;
+    if (mon >= 1 && mon <= 12) return new Date(yr, mon - 1, day).getTime();
+  }
+  const d = new Date(v);
+  return isNaN(d) ? 0 : d.getTime();
 }
 function fmtAmount(n){
   if (n == null || isNaN(n)) return '—';
@@ -837,6 +851,8 @@ function applyFilters(){
     const av = a[sortCol], bv = b[sortCol];
     if (sortCol === 'PR Amount' || sortCol === 'PR No.' || sortCol === 'PO No.')
       return (Number(av||0) - Number(bv||0)) * (sortAsc ? 1 : -1);
+    if (sortCol === 'Post Date')
+      return (parseDateToMs(av) - parseDateToMs(bv)) * (sortAsc ? 1 : -1);
     return String(av||'').localeCompare(String(bv||'')) * (sortAsc ? 1 : -1);
   });
   renderTable(); renderCards();
