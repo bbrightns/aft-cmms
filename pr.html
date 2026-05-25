@@ -519,7 +519,7 @@ tr:hover td { background: var(--surface2); }
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="saveDraft()"><i data-lucide="save"></i> Save Draft</button>
       <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="submitPR()"><i data-lucide="send"></i> Submit &amp; Send Email</button>
+      <button class="btn btn-primary" id="submitPRBtn" onclick="submitPR()"><i data-lucide="send"></i> Submit &amp; Send Email</button>
     </div>
   </div>
 </div>
@@ -545,7 +545,7 @@ tr:hover td { background: var(--surface2); }
     <div class="detail-status-bar" id="d_statusBar"></div>
     <div class="modal-body" style="padding:20px" id="detailBody"></div>
     <div class="modal-footer">
-      <button class="btn btn-danger" onclick="deletePR()"><i data-lucide="trash-2"></i> Delete PR</button>
+      <button class="btn btn-danger" id="deletePRBtn" onclick="deletePR()"><i data-lucide="trash-2"></i> Delete PR</button>
       <button class="btn btn-ghost" onclick="closeDetailModal()">Close</button>
     </div>
   </div>
@@ -1106,12 +1106,15 @@ window._prOpenFullView = () => {
 window.deletePR = async () => {
   if (!editingPRId) return;
   if (!confirm('ต้องการลบ PR นี้ใช่หรือไม่? (การลบ Firebase ไม่สามารถย้อนกลับได้)')) return;
+  const btn = document.getElementById('deletePRBtn');
+  btn.classList.add('btn-loading');
   setSync('syncing');
   try {
     await deleteDoc(doc(db, PR_COL, editingPRId));
     prRecords = prRecords.filter(r => r._id !== editingPRId);
     saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast('ลบ PR สำเร็จ');
   } catch(e){ console.error(e); setSync('error'); toast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
+  finally { btn.classList.remove('btn-loading'); }
 };
 
 window.openCreateModal = () => { window._activeDraftId = null; resetForm(); $('createModal').classList.add('show'); refreshIcons(); };
@@ -1311,6 +1314,8 @@ window.submitPR = async () => {
     'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
     'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID
   };
+  const btn = document.getElementById('submitPRBtn');
+  btn.classList.add('btn-loading');
   setSync('syncing');
   try {
     const ref = await addDoc(collection(db, PR_COL), record);
@@ -1319,6 +1324,7 @@ window.submitPR = async () => {
     window._activeDraftId = null; updateDraftTab(); closeCreateModal(); setSync('live');
     toast(`สร้าง PR ${prNo} สำเร็จ`);
   } catch(e){ console.error(e); setSync('error'); toast('Submit ไม่สำเร็จ: ' + e.message, 'error'); }
+  finally { btn.classList.remove('btn-loading'); }
 };
 
 function generatePRNo(){
@@ -1376,7 +1382,9 @@ window.confirmImport = async () => {
   if (!csvParsed || !csvParsed.length) return;
   const mode = document.querySelector('input[name=importMode]:checked').value;
   if (mode === 'replace' && !confirm(`โหมด REPLACE จะลบข้อมูล PR เดิมทั้งหมด (${prRecords.length} รายการ) แล้วใส่ใหม่ ${csvParsed.length} รายการ\n\nยืนยันหรือไม่?`)) return;
-  setSync('syncing'); $('importConfirmBtn').disabled = true;
+  const btn = $('importConfirmBtn');
+  btn.classList.add('btn-loading');
+  setSync('syncing'); btn.disabled = true;
   try {
     if (mode === 'replace') {
       const existing = await getDocs(collection(db, PR_COL));
@@ -1399,7 +1407,7 @@ window.confirmImport = async () => {
     await loadFromFirebase(); closeImportModal(); applyFilters(); setSync('live');
     toast(`Import สำเร็จ ${csvParsed.length} รายการ (${mode})`);
   } catch(e){ console.error(e); setSync('error'); toast('Import ไม่สำเร็จ: ' + e.message, 'error'); }
-  finally { $('importConfirmBtn').disabled = false; }
+  finally { btn.disabled = false; btn.classList.remove('btn-loading'); }
 };
 
 function chunkBatch(arr, size){ const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i+size)); return out; }

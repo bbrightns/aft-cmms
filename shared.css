@@ -75,6 +75,26 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 .sync-dot.error { background: var(--danger); }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
 
+/* Button loading state */
+.btn-loading {
+  opacity: 0.65;
+  pointer-events: none;
+  cursor: not-allowed !important;
+  position: relative;
+}
+.btn-loading::after {
+  content: '';
+  display: inline-block;
+  width: 11px; height: 11px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-left: 6px;
+  vertical-align: -2px;
+  flex-shrink: 0;
+}
+
 /* Responsive Header */
 @media (max-width: 768px) {
   .header { padding: 0 10px; }

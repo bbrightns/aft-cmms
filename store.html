@@ -204,7 +204,7 @@ select { cursor: pointer; }
 
 
 /* TABLE (desktop) */
-.table-wrap { flex: 1; overflow: auto; min-height: 0; padding: 0 16px 16px; }
+.table-wrap { flex: 1; overflow: auto; min-height: 0; padding: 0; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
 th { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); background: var(--surface2); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 5; }
 th:hover { color: var(--agc-blue); }
@@ -280,7 +280,7 @@ tr:hover td { background: var(--surface2); }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
 .form-group.full { grid-column: 1/-1; }
 .form-section-title { font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--agc-blue); padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: -4px; }
-label { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; }
+label { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; line-height: 14px; min-height: 14px; display: block; }
 input, select, textarea { background: var(--bg2); border: 1.5px solid var(--border); color: var(--text); border-radius: 8px; padding: 8px 12px; font-family: var(--sans); font-size: 13px; outline: none; transition: border 0.2s; width: 100%; }
 input:focus, select:focus, textarea:focus { border-color: var(--agc-blue); }
 .input-error { border-color: var(--danger) !important; }
@@ -483,7 +483,16 @@ html, body {
   padding: 2px 8px; margin-bottom: 6px;
 }
 .dept-chip.mech { color: #7c2d12; background: #ffedd5; border-color: rgba(124,45,18,0.18); }
-.readonly-field { background: var(--surface2) !important; color: var(--text2) !important; cursor: not-allowed; }
+.readonly-field {
+  background: repeating-linear-gradient(135deg, var(--surface2) 0px, var(--surface2) 4px, var(--bg2) 4px, var(--bg2) 8px) !important;
+  color: var(--text3) !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+  user-select: none;
+  border-color: var(--border) !important;
+  border-style: dashed !important;
+  opacity: 0.85;
+}
 .form-helper { font-size: 11px; color: var(--text3); line-height: 1.35; margin-top: 3px; }
 .field-error:empty { display: none; }
 .csv-mode-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; }
@@ -502,7 +511,8 @@ html, body {
 .position-preview-field { font-family: var(--mono); font-weight: 700; color: var(--agc-blue) !important; }
 @media (max-width: 480px) { .position-build-grid { grid-template-columns: 1fr; } }
 .position-3-grid { display: flex; align-items: center; gap: 6px; }
-.position-3-grid input { width: 62px; text-align: center; font-family: var(--mono); font-weight: 700; color: var(--agc-blue); }
+.position-3-grid input { width: 62px; text-align: center; font-family: var(--mono); font-weight: 500; color: var(--agc-blue); }
+.position-3-grid input::placeholder { font-weight: 400; color: var(--text3); opacity: 0.7; }
 .pos-sep { font-weight: 700; color: var(--text2); font-size: 20px; line-height: 1; user-select: none; }
 
 
@@ -1976,7 +1986,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
-        <div class="form-group"><label>Part ID <span class="required-mark">*</span></label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div><div class="form-helper">รหัสถูกสร้างอัตโนมัติ</div></div>
+        <div class="form-group"><label>Part ID</label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div></div>
         <div class="form-group"><label>แผนก (EE/ME) <span class="required-mark">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
 
       </div>
@@ -2029,7 +2039,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('editModal')"><i data-lucide="x"></i> ยกเลิก</button>
-      <button class="btn btn-primary" onclick="saveItem()"><i data-lucide="save"></i> บันทึก</button>
+      <button class="btn btn-primary" id="saveItemBtn" onclick="saveItem()"><i data-lucide="save"></i> บันทึก</button>
     </div>
   </div>
 </div>
@@ -2060,7 +2070,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('deleteModal')"><i data-lucide="x"></i> ยกเลิก</button>
-      <button class="btn btn-danger" onclick="confirmDelete()"><i data-lucide="trash-2"></i> ลบ</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDelete()"><i data-lucide="trash-2"></i> ลบ</button>
     </div>
   </div>
 </div>
@@ -2075,7 +2085,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('clearDataModal')"><i data-lucide="x"></i> ยกเลิก</button>
-      <button class="btn btn-danger" onclick="confirmClearAllData()"><i data-lucide="trash"></i> ล้างทั้งหมด</button>
+      <button class="btn btn-danger" id="confirmClearAllBtn" onclick="confirmClearAllData()"><i data-lucide="trash"></i> ล้างทั้งหมด</button>
     </div>
   </div>
 </div>
@@ -2397,6 +2407,8 @@ window.qaExecute = async () => {
   if (qaMode === 'out' && qaQty > cur) { toast('จำนวนเบิกเกิน Stock', 'error'); return; }
   const next = qaMode === 'out' ? Math.max(0, cur - qaQty) : cur + qaQty;
   const note = cleanSingleLine(document.getElementById('qaNote').value);
+  const btn = document.getElementById('confirmFinalBtn');
+  btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
     // Optimistic concurrency: transaction to prevent simultaneous edits
@@ -2422,7 +2434,7 @@ window.qaExecute = async () => {
     if (e.message === 'OVER_STOCK') toast('Stock ถูกแก้ไข — จำนวนไม่พอ กรุณาลองใหม่', 'error');
     else toast('เกิดข้อผิดพลาด: ' + e.message, 'error');
     setSyncing('error');
-  }
+  } finally { btn.classList.remove('btn-loading'); }
 };
 
 // ===== INVENTORY =====
@@ -2881,18 +2893,20 @@ window.saveItem = async () => {
 
   ['err_partid','err_department','err_plant','err_subcat','err_location','err_position','err_modeldesc','err_actual','err_min','err_max'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
 
-  if(!partId){ document.getElementById('err_partid').textContent='จำเป็นต้องระบุ Part ID'; hasError=true; }
-  if(items.some(r => (r['Part ID']||'').trim().toLowerCase() === partId.toLowerCase() && r._id !== editItemId)){
-    document.getElementById('err_partid').textContent='Part ID นี้มีอยู่แล้ว'; hasError=true;
-  }
-  if(!department){ document.getElementById('err_department').textContent='จำเป็นต้องเลือก Department'; hasError=true; }
-  if(!plant){ document.getElementById('err_plant').textContent='จำเป็นต้องเลือก Plant'; hasError=true; }
-  if(!subCat){ document.getElementById('err_subcat').textContent='จำเป็นต้องระบุ Sub Category'; hasError=true; }
-  if(!location){ document.getElementById('err_location').textContent='จำเป็นต้องเลือก Location'; hasError=true; }
-  if(!position){ document.getElementById('err_position').textContent='จำเป็นต้องระบุตำแหน่ง'; hasError=true; }
-  if(!model && !desc){ document.getElementById('err_modeldesc').textContent='กรุณาระบุ Model หรือ Description อย่างน้อย 1 ช่อง'; hasError=true; }
-  if(actual==='' || isNaN(parseFloat(actual)) || parseFloat(actual)<0){
-    document.getElementById('err_actual').textContent='Actual จำเป็นและต้องเป็นตัวเลข ≥ 0'; hasError=true;
+  if(!editItemId){
+    if(!partId){ document.getElementById('err_partid').textContent='จำเป็นต้องระบุ Part ID'; hasError=true; }
+    if(items.some(r => (r['Part ID']||'').trim().toLowerCase() === partId.toLowerCase() && r._id !== editItemId)){
+      document.getElementById('err_partid').textContent='Part ID นี้มีอยู่แล้ว'; hasError=true;
+    }
+    if(!department){ document.getElementById('err_department').textContent='จำเป็นต้องเลือก Department'; hasError=true; }
+    if(!plant){ document.getElementById('err_plant').textContent='จำเป็นต้องเลือก Plant'; hasError=true; }
+    if(!subCat){ document.getElementById('err_subcat').textContent='จำเป็นต้องระบุ Sub Category'; hasError=true; }
+    if(!location){ document.getElementById('err_location').textContent='จำเป็นต้องเลือก Location'; hasError=true; }
+    if(!position){ document.getElementById('err_position').textContent='จำเป็นต้องระบุตำแหน่ง'; hasError=true; }
+    if(!model && !desc){ document.getElementById('err_modeldesc').textContent='กรุณาระบุ Model หรือ Description อย่างน้อย 1 ช่อง'; hasError=true; }
+    if(actual==='' || isNaN(parseFloat(actual)) || parseFloat(actual)<0){
+      document.getElementById('err_actual').textContent='Actual จำเป็นและต้องเป็นตัวเลข ≥ 0'; hasError=true;
+    }
   }
   if(min!=='' && (isNaN(parseFloat(min))||parseFloat(min)<0)){
     document.getElementById('err_min').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
@@ -2935,6 +2949,8 @@ window.saveItem = async () => {
     'CLASS':cleanSingleLine(document.getElementById('f_class').value),
     _updatedAt:serverTimestamp(), _device:DEVICE_ID, _updatedBy:getCurrentUserName()
   };
+  const btn = document.getElementById('saveItemBtn');
+  btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
     if(editItemId){
@@ -2952,6 +2968,7 @@ window.saveItem = async () => {
     }
     closeModal('editModal');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
+  finally { btn.classList.remove('btn-loading'); }
 };
 
 window.openDelete = (id) => {
@@ -2964,6 +2981,8 @@ window.openDelete = (id) => {
 window.confirmDelete = async () => {
   if(!deleteItemId) return;
   const r=items.find(x=>x._id===deleteItemId);
+  const btn = document.getElementById('confirmDeleteBtn');
+  btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
     await deleteDoc(doc(db,'inventory',deleteItemId));
@@ -2972,6 +2991,7 @@ window.confirmDelete = async () => {
     closeModal('deleteModal');
     toast('ลบรายการเรียบร้อย','warn');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
+  finally { btn.classList.remove('btn-loading'); }
 };
 
 // ===== CSV UPLOAD =====
@@ -3040,6 +3060,8 @@ window.confirmCSVUpload = async () => {
     toast('กรุณาพิมพ์ REPLACE เพื่อยืนยัน Replace All', 'error');
     return;
   }
+  const btn = document.getElementById('csvConfirmBtn');
+  btn.classList.add('btn-loading');
   closeModal('csvModal');
   document.getElementById('loadingText').textContent = `${mode==='replace'?'กำลังแทนที่ข้อมูล':'กำลัง Merge ข้อมูล'} ${csvParsedData.length} รายการ...`;
   document.getElementById('loadingOverlay').style.display='flex';
@@ -3094,7 +3116,7 @@ window.confirmCSVUpload = async () => {
     updateHomeStats();
     toast(`${mode==='replace'?'แทนที่':'Merge'} ${csvParsedData.length} รายการสำเร็จ`,'success');
   } catch(e){ toast('Upload Error: '+e.message,'error'); setSyncing('error'); }
-  finally { document.getElementById('loadingOverlay').style.display='none'; }
+  finally { document.getElementById('loadingOverlay').style.display='none'; btn.classList.remove('btn-loading'); }
 };
 
 // ===== CLEAR ALL DATA =====
@@ -3103,6 +3125,8 @@ window.openClearDataModal = () => {
 };
 
 window.confirmClearAllData = async () => {
+  const btn = document.getElementById('confirmClearAllBtn');
+  btn.classList.add('btn-loading');
   closeModal('clearDataModal');
   document.getElementById('loadingText').textContent = 'กำลังล้างข้อมูล...';
   document.getElementById('loadingOverlay').style.display = 'flex';
@@ -3125,7 +3149,7 @@ window.confirmClearAllData = async () => {
     updateHomeStats();
     toast('ล้างข้อมูลเรียบร้อย','warn');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
-  finally { document.getElementById('loadingOverlay').style.display = 'none'; }
+  finally { document.getElementById('loadingOverlay').style.display = 'none'; btn.classList.remove('btn-loading'); }
 };
 
 // ===== EXPORT =====
@@ -3400,8 +3424,8 @@ function renderTable() {
     const mm = (r['Min']||r['Max']) ? `${r['Min']||'—'}/${r['Max']||'—'}` : '—';
     const desc = r['Description']||'';
     const reorder = getReorderSuggestion(r);
-    return `<tr>
-      <td><span class="part-id" style="cursor:pointer;color:var(--agc-blue);font-weight:700" onclick="openDetail('${r._id}')">${highlightText(r['Part ID']||'', q)}</span></td>
+    return `<tr onclick="openEdit('${r._id}')" style="cursor:pointer">
+      <td><span class="part-id" style="cursor:pointer;color:var(--agc-blue);font-weight:700" onclick="event.stopPropagation();openDetail('${r._id}')">${highlightText(r['Part ID']||'', q)}</span></td>
       <td><span class="badge badge-dept">${escapeHtml((r['Department']||'—').toUpperCase())}</span></td>
       <td><span class="badge badge-sub">${highlightText(r['Sub Category']||'—', q)}</span></td>
       <td>${highlightText(r['Brand']||'—', q)}</td>
@@ -3414,9 +3438,8 @@ function renderTable() {
       <td><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
       <td style="font-family:var(--mono)">${escapeHtml(mm)}</td>
       <td><div class="row-actions">
-        <button class="btn-icon" onclick="openAdjust('${r._id}')" title="Adjust"><i data-lucide="package"></i></button>
-        <button class="btn-icon" onclick="openEdit('${r._id}')" title="Edit"><i data-lucide="pencil"></i></button>
-        <button class="btn-icon del" onclick="openDelete('${r._id}')" title="Delete"><i data-lucide="trash-2"></i></button>
+        <button class="btn-icon" onclick="event.stopPropagation();openAdjust('${r._id}')" title="Adjust"><i data-lucide="package"></i></button>
+        <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="Delete"><i data-lucide="trash-2"></i></button>
       </div></td>
     </tr>`;
   }).join('');
@@ -3438,12 +3461,12 @@ function renderCards() {
     const position = r['Position'] || '';
     const locLine = [location, position].filter(Boolean).join('  ');
     const reorder = getReorderSuggestion(r);
-    return `<div class="inv-card">
+    return `<div class="inv-card" onclick="openEdit('${r._id}')" style="cursor:pointer">
       <div class="inv-card-top">
         <div style="flex:1;min-width:0">
           ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
           <div class="inv-card-name">${highlightText((r['Brand']||'') + ' ' + (r['Model']||''), q)}</div>
-          <div class="inv-card-pid" onclick="openDetail('${r._id}')" style="cursor:pointer">${highlightText(r['Part ID']||'', q)}</div>
+          <div class="inv-card-pid" onclick="event.stopPropagation();openDetail('${r._id}')" style="cursor:pointer">${highlightText(r['Part ID']||'', q)}</div>
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>
@@ -3456,9 +3479,8 @@ function renderCards() {
         ${reorder ? `<div class="reorder-chip"><i data-lucide="shopping-cart" style="width:12px;height:12px"></i>Suggest order: ${reorder} pcs</div>` : ''}
       </div>
       <div class="inv-card-actions">
-        <button class="inv-card-btn primary" onclick="openAdjust('${r._id}')"><i data-lucide="package" style="width:14px;height:14px"></i> Adjust</button>
-        <button class="inv-card-btn" onclick="openEdit('${r._id}')"><i data-lucide="pencil" style="width:14px;height:14px"></i> Edit</button>
-        <button class="inv-card-btn del" onclick="openDelete('${r._id}')"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+        <button class="inv-card-btn primary" onclick="event.stopPropagation();openAdjust('${r._id}')"><i data-lucide="package" style="width:14px;height:14px"></i> Adjust</button>
+        <button class="inv-card-btn del" onclick="event.stopPropagation();openDelete('${r._id}')"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
       </div>
     </div>`;
   }).join('');
@@ -3594,6 +3616,8 @@ window.confirmAdjust = async () => {
   const note=cleanSingleLine(document.getElementById('adjustNote').value);
   const moveNote = moved ? `Location/Position: ${oldLocation || '—'} ${oldPosition || '—'} → ${newLocation || '—'} ${newPosition || '—'}` : '';
   const finalNote = [note, moveNote].filter(Boolean).join(' | ');
+  const btn = document.getElementById('adjConfirmBtn');
+  btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
     await runTransaction(db, async(tx)=>{
@@ -3618,7 +3642,7 @@ window.confirmAdjust = async () => {
     else if(e.message==='OVER_STOCK') toast('Stock ถูกแก้ไขพร้อมกัน — จำนวนไม่พอ','error');
     else toast('Error: '+e.message,'error');
     setSyncing('error');
-  }
+  } finally { btn.classList.remove('btn-loading'); }
 };
 
 window.openDetail = (id) => {
