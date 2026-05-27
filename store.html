@@ -2536,13 +2536,25 @@ window.autoFillMainCategory = () => {
   mainEl.value = SUB_TO_MAIN_CATEGORY[sub] || (sub ? 'Other' : '');
 };
 
-function getNextPartId() {
-  let max = 0;
-  items.forEach(r => {
-    const m = String(r['Part ID'] || '').match(/^SPFL-C-(\d{1,})$/i);
-    if(m) max = Math.max(max, parseInt(m[1],10));
+async function getNextPartIdSafe() {
+  const counterRef = doc(db, 'store_meta', 'partIdCounter');
+  let newNum = 1;
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(counterRef);
+    if (snap.exists()) {
+      newNum = (snap.data().current || 0) + 1;
+    } else {
+      // ครั้งแรก: หา max จาก items ที่มีอยู่
+      let max = 0;
+      items.forEach(r => {
+        const m = String(r['Part ID'] || '').match(/^SPFL-C-(\d+)$/i);
+        if (m) max = Math.max(max, parseInt(m[1], 10));
+      });
+      newNum = max + 1;
+    }
+    tx.set(counterRef, { current: newNum }, { merge: true });
   });
-  return `SPFL-C-${String(max + 1).padStart(4,'0')}`;
+  return `SPFL-C-${String(newNum).padStart(4, '0')}`;
 }
 
 function setLocationValue(val) {
@@ -2828,7 +2840,7 @@ window.openAddModal = () => {
   editItemId=null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
-  document.getElementById('f_partid').value=getNextPartId();
+  getNextPartIdSafe().then(id => {document.getElementById('f_partid').value = id;});
   document.getElementById('f_department').value='';
   document.getElementById('f_plant').value='';
   document.getElementById('f_maincat').value='';
