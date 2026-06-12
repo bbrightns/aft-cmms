@@ -1988,26 +1988,26 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
         <div class="form-group"><label>Part ID</label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div></div>
-        <div class="form-group"><label>แผนก (EE/ME) <span class="required-mark">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
+        <div class="form-group"><label>แผนก (EE/ME)</label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
 
       </div>
 
       <div class="form-section-title">รายละเอียดสินค้า</div>
       <div class="form-row">
-        <div class="form-group"><label>ประเภทย่อย <span class="required-mark">*</span></label><input type="text" id="f_subcat" list="subCategoryOptions" placeholder="เช่น Fitting, PLC, Sensor" oninput="autoFillMainCategory()" onchange="autoFillMainCategory()"><datalist id="subCategoryOptions"></datalist><div class="field-error" id="err_subcat"></div><div class="form-helper">เลือกประเภทสินค้า ระบบจะเติมหมวดหลักให้อัตโนมัติ</div></div>
+        <div class="form-group"><label>ประเภทย่อย</label><input type="text" id="f_subcat" list="subCategoryOptions" placeholder="เช่น Fitting, PLC, Sensor" oninput="this.value=this.value.toUpperCase();autoFillMainCategory()" onchange="this.value=this.value.toUpperCase();autoFillMainCategory()"><datalist id="subCategoryOptions"></datalist><div class="field-error" id="err_subcat"></div><div class="form-helper">เลือกประเภทสินค้า ระบบจะเติมหมวดหลักให้อัตโนมัติ</div></div>
         <div class="form-group" style="display:none"><label>Main Category</label><input type="text" id="f_maincat" class="readonly-field" readonly placeholder="Auto-filled"></div>
-        <div class="form-group"><label>ยี่ห้อ</label><input type="text" id="f_brand" list="brandOptions" placeholder="พิมพ์หรือเลือกยี่ห้อ"><datalist id="brandOptions"></datalist></div>
-        <div class="form-group"><label>รุ่น <span class="required-mark" title="รุ่น หรือ รายละเอียด อย่างน้อย 1 ช่อง">*</span></label><input type="text" id="f_model"></div>
+        <div class="form-group"><label>ยี่ห้อ</label><input type="text" id="f_brand" list="brandOptions" placeholder="พิมพ์หรือเลือกยี่ห้อ" oninput="this.value=this.value.toUpperCase()"><datalist id="brandOptions"></datalist></div>
+        <div class="form-group"><label>รุ่น</label><input type="text" id="f_model" oninput="this.value=this.value.toUpperCase()"></div>
         <div class="form-group"><label>ความสำคัญ (A, B, C)</label><select id="f_class"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
-        <div class="form-group full"><label>รายละเอียด <span class="required-mark" title="รุ่น หรือ รายละเอียด อย่างน้อย 1 ช่อง">*</span></label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
-        <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR) <span class="required-mark">*</span></label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option><option value="Common">Common</option></select><div class="field-error" id="err_plant"></div></div>
+        <div class="form-group full"><label>รายละเอียด</label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
+        <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR)</label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option><option value="Common">Common</option></select><div class="field-error" id="err_plant"></div></div>
         <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area"></div>        
       </div>
 
       <div class="form-section-title">ที่เก็บ</div>
       <div class="form-row">
-        <div class="form-group"><label>ที่เก็บ (Store/RFG) <span class="required-mark">*</span></label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
-        <div class="form-group"><label>ตำแหน่ง <span class="required-mark">*</span></label>
+        <div class="form-group"><label>ที่เก็บ (Store/RFG)</label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
+        <div class="form-group"><label>ตำแหน่ง</label>
           <div class="position-3-grid">
             <input type="text" id="f_pos1" maxlength="2" placeholder="Z2" oninput="this.value=this.value.toUpperCase();syncPosition()">
             <span class="pos-sep">-</span>
@@ -2023,7 +2023,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 
       <div class="form-section-title">สต็อก</div>
       <div class="form-row form-row-3">
-        <div class="form-group"><label>จำนวนจริง <span class="required-mark">*</span></label><input type="number" id="f_actual" min="0"><div class="field-error" id="err_actual"></div></div>
+        <div class="form-group"><label>จำนวนจริง</label><input type="number" id="f_actual" min="0"><div class="field-error" id="err_actual"></div></div>
         <div class="form-group"><label>ขั้นต่ำ (Min)</label><input type="number" id="f_min" min="0"><div class="field-error" id="err_min"></div></div>
         <div class="form-group"><label>สูงสุด (Max)</label><input type="number" id="f_max" min="0"><div class="field-error" id="err_max"></div></div>
       </div>
@@ -2181,7 +2181,7 @@ const ALL_SUB_CATEGORIES = [...new Set(Object.values(CAT_MAP).flat())].sort((a,b
 // ===== STATE =====
 let items = [];
 let filteredItems = [];
-let sortCol = 'Part ID', sortAsc = true;
+let sortCol = 'Part ID', sortAsc = false;
 let adjustItem = null, adjustMode = 'out', adjustQty = 1;
 let editItemId = null, deleteItemId = null;
 let qaMode = 'out', qaSelectedItem = null, qaQty = 1;
@@ -2224,7 +2224,7 @@ function startRealtimeSync() {
   onSnapshot(q, (snapshot) => {
     const newItems = [];
     snapshot.forEach(d => newItems.push({ _id: d.id, ...d.data() }));
-    newItems.sort((a,b) => (a['Part ID']||'').localeCompare(b['Part ID']||''));
+    newItems.sort((a,b) => (b['Part ID']||'').localeCompare(a['Part ID']||''));
 
     // Show banner only when a DIFFERENT device wrote while we were syncing
     const hasExternalChange = snapshot.docChanges().some(ch => {
@@ -2873,10 +2873,10 @@ window.openEdit = (id) => {
   document.getElementById('f_plant').value=r['Plant']||'';
   populateSubCategoryOptions();
   populateBrandOptions();
-  document.getElementById('f_subcat').value=r['Sub Category']||'';
+  document.getElementById('f_subcat').value=(r['Sub Category']||'').toUpperCase();
   document.getElementById('f_maincat').value=r['Main Category']||SUB_TO_MAIN_CATEGORY[String(r['Sub Category']||'').toLowerCase()]||'';
-  document.getElementById('f_brand').value=r['Brand']||'';
-  document.getElementById('f_model').value=r['Model']||'';
+  document.getElementById('f_brand').value=(r['Brand']||'').toUpperCase();
+  document.getElementById('f_model').value=(r['Model']||'').toUpperCase();
   document.getElementById('f_desc').value=r['Description']||'';
   document.getElementById('f_area').value=r['Area']||'';
   setLocationValue(r['Location']||'');
@@ -2900,14 +2900,14 @@ window.saveItem = async () => {
   const partId = cleanSingleLine(document.getElementById('f_partid').value);
   const department = cleanSingleLine(document.getElementById('f_department').value).toUpperCase();
   const plant = cleanSingleLine(document.getElementById('f_plant').value);
-  const subCat = cleanSingleLine(document.getElementById('f_subcat').value);
+  const subCat = cleanSingleLine(document.getElementById('f_subcat').value).toUpperCase();
   const mainCat = SUB_TO_MAIN_CATEGORY[subCat.toLowerCase()] || (subCat ? 'Other' : '');
   document.getElementById('f_maincat').value = mainCat;
   const location = cleanSingleLine(document.getElementById('f_location').value);
   window.updatePositionPreview();
   const position = cleanSingleLine(document.getElementById('f_position').value);
-  const brand = cleanSingleLine(document.getElementById('f_brand').value);
-  const model = cleanSingleLine(document.getElementById('f_model').value);
+  const brand = cleanSingleLine(document.getElementById('f_brand').value).toUpperCase();
+  const model = cleanSingleLine(document.getElementById('f_model').value).toUpperCase();
   const desc = cleanSingleLine(document.getElementById('f_desc').value);
   const actual = cleanSingleLine(document.getElementById('f_actual').value);
   const min = cleanSingleLine(document.getElementById('f_min').value);
@@ -2917,18 +2917,6 @@ window.saveItem = async () => {
 
   if(!editItemId){
     if(!partId){ document.getElementById('err_partid').textContent='จำเป็นต้องระบุ Part ID'; hasError=true; }
-    if(items.some(r => (r['Part ID']||'').trim().toLowerCase() === partId.toLowerCase() && r._id !== editItemId)){
-      document.getElementById('err_partid').textContent='Part ID นี้มีอยู่แล้ว'; hasError=true;
-    }
-    if(!department){ document.getElementById('err_department').textContent='จำเป็นต้องเลือก Department'; hasError=true; }
-    if(!plant){ document.getElementById('err_plant').textContent='จำเป็นต้องเลือก Plant'; hasError=true; }
-    if(!subCat){ document.getElementById('err_subcat').textContent='จำเป็นต้องระบุ Sub Category'; hasError=true; }
-    if(!location){ document.getElementById('err_location').textContent='จำเป็นต้องเลือก Location'; hasError=true; }
-    if(!position){ document.getElementById('err_position').textContent='จำเป็นต้องระบุตำแหน่ง'; hasError=true; }
-    if(!model && !desc){ document.getElementById('err_modeldesc').textContent='กรุณาระบุ Model หรือ Description อย่างน้อย 1 ช่อง'; hasError=true; }
-    if(actual==='' || isNaN(parseFloat(actual)) || parseFloat(actual)<0){
-      document.getElementById('err_actual').textContent='Actual จำเป็นและต้องเป็นตัวเลข ≥ 0'; hasError=true;
-    }
   }
   if(min!=='' && (isNaN(parseFloat(min))||parseFloat(min)<0)){
     document.getElementById('err_min').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
@@ -2939,7 +2927,7 @@ window.saveItem = async () => {
   if(min!==''&&max!==''&&parseFloat(min)>parseFloat(max)){
     document.getElementById('err_min').textContent='Min ต้องน้อยกว่า Max'; hasError=true;
   }
-  if(hasError){ toast('กรุณาตรวจสอบช่อง Mandatory', 'error'); return; }
+  if(hasError){ toast('กรุณาตรวจสอบข้อมูล', 'error'); return; }
 
   const possibleDup = brand && model ? items.find(r =>
     r._id !== editItemId &&
@@ -2988,7 +2976,11 @@ window.saveItem = async () => {
       await addDoc(collection(db,'inventory'),data);
       await addDoc(collection(db,'logs'),{type:'add',partId:finalPartId,msg:`เพิ่มรายการใหม่ — ${data['Brand']||''} ${data['Model']||data['Description']||''}`.trim(),note:`${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`,ts:serverTimestamp(),device:DEVICE_ID,user:getCurrentUserName()});
       invalidateLogsCache();
-      toast('เพิ่มรายการสำเร็จ','success');
+      if (finalPartId !== partId) {
+        toast(`เพิ่มรายการสำเร็จ (หมายเลข Part ID: ${finalPartId})`,'success');
+      } else {
+        toast('เพิ่มรายการสำเร็จ','success');
+      }
     }
     closeModal('editModal');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
