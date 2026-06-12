@@ -2836,11 +2836,20 @@ window.setAdjustQty = (v) => {
 
 
 
+function getPreviewNextPartId() {
+  let max = 0;
+  items.forEach(r => {
+    const m = String(r['Part ID'] || '').match(/^SPFL-C-(\d+)$/i);
+    if (m) max = Math.max(max, parseInt(m[1], 10));
+  });
+  return `SPFL-C-${String(max + 1).padStart(4, '0')}`;
+}
+
 window.openAddModal = () => {
   editItemId=null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
-  getNextPartIdSafe().then(id => {document.getElementById('f_partid').value = id;});
+  document.getElementById('f_partid').value = getPreviewNextPartId();
   document.getElementById('f_department').value='';
   document.getElementById('f_plant').value='';
   document.getElementById('f_maincat').value='';
@@ -2973,8 +2982,10 @@ window.saveItem = async () => {
       invalidateLogsCache();
       toast('บันทึกสำเร็จ','success');
     } else {
+      const finalPartId = await getNextPartIdSafe();
+      data['Part ID'] = finalPartId;
       await addDoc(collection(db,'inventory'),data);
-      await addDoc(collection(db,'logs'),{type:'add',partId,msg:`เพิ่มรายการใหม่ — ${data['Brand']||''} ${data['Model']||data['Description']||''}`.trim(),note:`${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`,ts:serverTimestamp(),device:DEVICE_ID,user:getCurrentUserName()});
+      await addDoc(collection(db,'logs'),{type:'add',partId:finalPartId,msg:`เพิ่มรายการใหม่ — ${data['Brand']||''} ${data['Model']||data['Description']||''}`.trim(),note:`${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`,ts:serverTimestamp(),device:DEVICE_ID,user:getCurrentUserName()});
       invalidateLogsCache();
       toast('เพิ่มรายการสำเร็จ','success');
     }
