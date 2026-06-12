@@ -2541,15 +2541,15 @@ async function getNextPartIdSafe() {
   let newNum = 1;
   await runTransaction(db, async (tx) => {
     const snap = await tx.get(counterRef);
+    let max = 0;
+    items.forEach(r => {
+      const m = String(r['Part ID'] || '').match(/^SPFL-C-(\d+)$/i);
+      if (m) max = Math.max(max, parseInt(m[1], 10));
+    });
     if (snap.exists()) {
-      newNum = (snap.data().current || 0) + 1;
+      const dbCurrent = snap.data().current || 0;
+      newNum = Math.max(dbCurrent, max) + 1;
     } else {
-      // ครั้งแรก: หา max จาก items ที่มีอยู่
-      let max = 0;
-      items.forEach(r => {
-        const m = String(r['Part ID'] || '').match(/^SPFL-C-(\d+)$/i);
-        if (m) max = Math.max(max, parseInt(m[1], 10));
-      });
       newNum = max + 1;
     }
     tx.set(counterRef, { current: newNum }, { merge: true });
