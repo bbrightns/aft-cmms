@@ -1907,7 +1907,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 </div>
 
 <!-- MODAL: Adjust Stock -->
-<div class="modal-overlay" id="adjustModal" style="display:none" onclick="closeOnOverlay(event,'adjustModal')">
+<div class="modal-overlay" id="adjustModal" style="display:none">
   <div class="modal">
     <div class="modal-header">
       <div><div class="modal-title" id="adjustTitle"></div><div style="font-size:12px;color:var(--text2);margin-top:3px" id="adjustSubtitle"></div></div>
@@ -1934,7 +1934,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
             <label>Location</label>
             <select id="adj_location" onchange="updateAdjPreview()">
               <option value="">—</option>
-              <option value="Store">Store</option>
+              <option value="STORE">STORE</option>
               <option value="RFG">RFG</option>
             </select>
           </div>
@@ -2001,13 +2001,13 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
         <div class="form-group"><label>รุ่น</label><input type="text" id="f_model" oninput="this.value=this.value.toUpperCase()"></div>
         <div class="form-group"><label>ความสำคัญ (A, B, C)</label><select id="f_class"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
         <div class="form-group full"><label>รายละเอียด</label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
-        <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR)</label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option><option value="Common">Common</option></select><div class="field-error" id="err_plant"></div></div>
-        <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area"></div>        
+        <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR)</label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option><option value="COMMON">COMMON</option></select><div class="field-error" id="err_plant"></div></div>
+        <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area" oninput="this.value=this.value.toUpperCase()"></div>        
       </div>
 
       <div class="form-section-title">ที่เก็บ</div>
       <div class="form-row">
-        <div class="form-group"><label>ที่เก็บ (Store/RFG)</label><select id="f_location"><option value="">—</option><option value="Store">Store</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
+        <div class="form-group"><label>ที่เก็บ (STORE/RFG)</label><select id="f_location"><option value="">—</option><option value="STORE">STORE</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
         <div class="form-group"><label>ตำแหน่ง</label>
           <div class="position-3-grid">
             <input type="text" id="f_pos1" maxlength="2" placeholder="Z2" oninput="this.value=this.value.toUpperCase();syncPosition()">
@@ -2032,7 +2032,23 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div class="form-section-title">ข้อมูลเพิ่มเติม</div>
       <div class="form-row form-row-3">
         <div class="form-group"><label>ราคา (บาท)</label><input type="text" id="f_cost"></div>
-        <div class="form-group"><label>เวลานำส่ง</label><input type="text" id="f_deliver"></div>
+        <div class="form-group"><label>ร้านค้าอ้างอิง</label><input type="text" id="f_vendor" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="form-group">
+          <label>เวลานำส่ง</label>
+          <div style="display:flex;gap:6px">
+            <input type="text" id="f_deliver" style="flex:1" placeholder="จำนวน">
+            <select id="f_deliver_unit" style="width:90px">
+              <option value="">—</option>
+              <option value="DAY">DAY</option>
+              <option value="WEEK">WEEK</option>
+              <option value="MONTH">MONTH</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section-title">Long term plan</div>
+      <div class="form-row form-row-3">
         <div class="form-group"><label>ปีที่ติดตั้ง</label><input type="text" id="f_installyear"></div>
         <div class="form-group"><label>อายุการใช้งาน</label><input type="text" id="f_life"></div>
         <div class="form-group"><label>แผนการเปลี่ยน</label><input type="text" id="f_replaceplan"></div>
@@ -2741,7 +2757,7 @@ function renderLog(logs) {
 
 function getItemChangeSummary(oldItem, newData) {
   if (!oldItem) return '';
-  const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','DELIVER TIME','Install Year','Expected Life','Replace Plan'];
+  const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan'];
   const changed = [];
   fields.forEach(f => {
     const oldVal = cleanSingleLine(oldItem[f] ?? '');
@@ -2850,12 +2866,18 @@ function getPreviewNextPartId() {
 window.openAddModal = () => {
   editItemId=null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
-  ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
+  ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class','vendor','deliver_unit'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_partid').value = getPreviewNextPartId();
   document.getElementById('f_department').value='';
   document.getElementById('f_plant').value='';
   document.getElementById('f_maincat').value='';
   document.getElementById('f_subcat').value='';
+  
+  // Set defaults for new item
+  document.getElementById('f_min').value='0';
+  document.getElementById('f_max').value='2';
+  document.getElementById('f_class').value='C';
+
   populateSubCategoryOptions();
   populateBrandOptions();
   setLocationValue('');
@@ -2886,7 +2908,9 @@ window.openEdit = (id) => {
   document.getElementById('f_min').value=r['Min']||'';
   document.getElementById('f_max').value=r['Max']||'';
   document.getElementById('f_cost').value=r['COST']||'';
+  document.getElementById('f_vendor').value=r['VENDOR']||'';
   document.getElementById('f_deliver').value=r['DELIVER TIME']||'';
+  document.getElementById('f_deliver_unit').value=r['DELIVER UNIT']||'';
   document.getElementById('f_installyear').value=r['Install Year']||'';
   document.getElementById('f_life').value=r['Expected Life']||'';
   document.getElementById('f_replaceplan').value=r['Replace Plan']||'';
@@ -2900,17 +2924,21 @@ window.saveItem = async () => {
   let hasError = false;
   const partId = cleanSingleLine(document.getElementById('f_partid').value);
   const department = cleanSingleLine(document.getElementById('f_department').value).toUpperCase();
-  const plant = cleanSingleLine(document.getElementById('f_plant').value);
+  const plant = cleanSingleLine(document.getElementById('f_plant').value).toUpperCase();
   const subCat = cleanSingleLine(document.getElementById('f_subcat').value).toUpperCase();
-  const mainCat = SUB_TO_MAIN_CATEGORY[subCat.toLowerCase()] || (subCat ? 'Other' : '');
+  const mainCat = (SUB_TO_MAIN_CATEGORY[subCat.toLowerCase()] || (subCat ? 'Other' : '')).toUpperCase();
   document.getElementById('f_maincat').value = mainCat;
-  const location = cleanSingleLine(document.getElementById('f_location').value);
+  const location = cleanSingleLine(document.getElementById('f_location').value).toUpperCase();
   window.updatePositionPreview();
   const position = cleanSingleLine(document.getElementById('f_position').value);
   const brand = cleanSingleLine(document.getElementById('f_brand').value).toUpperCase();
   const model = cleanSingleLine(document.getElementById('f_model').value).toUpperCase();
   const desc = cleanSingleLine(document.getElementById('f_desc').value);
   const actual = cleanSingleLine(document.getElementById('f_actual').value);
+  const cost = cleanSingleLine(document.getElementById('f_cost').value);
+  const vendor = cleanSingleLine(document.getElementById('f_vendor').value).toUpperCase();
+  const deliver = cleanSingleLine(document.getElementById('f_deliver').value);
+  const deliverUnit = cleanSingleLine(document.getElementById('f_deliver_unit').value).toUpperCase();
   const min = cleanSingleLine(document.getElementById('f_min').value);
   const max = cleanSingleLine(document.getElementById('f_max').value);
 
@@ -2949,12 +2977,14 @@ window.saveItem = async () => {
     'Brand':brand,
     'Model':model,
     'Description':desc,
-    'Area':cleanSingleLine(document.getElementById('f_area').value),
+    'Area':cleanSingleLine(document.getElementById('f_area').value).toUpperCase(),
     'Location':location,
     'Position':position,
     'Actual':String(Math.max(0, parseFloat(actual)||0)),'Min':min,'Max':max,
-    'COST':cleanSingleLine(document.getElementById('f_cost').value),
-    'DELIVER TIME':cleanSingleLine(document.getElementById('f_deliver').value),
+    'COST':cost,
+    'VENDOR':vendor,
+    'DELIVER TIME':deliver,
+    'DELIVER UNIT':deliverUnit,
     'Install Year':cleanSingleLine(document.getElementById('f_installyear').value),
     'Expected Life':cleanSingleLine(document.getElementById('f_life').value),
     'Replace Plan':cleanSingleLine(document.getElementById('f_replaceplan').value),
@@ -3687,7 +3717,8 @@ window.openDetail = (id) => {
       <div class="detail-item"><div class="detail-label">Min / Max</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Min']||'—')} / ${escapeHtml(r['Max']||'—')}</div></div>
       ${reorder ? `<div class="detail-item"><div class="detail-label">Reorder Suggestion</div><div class="detail-val"><span class="reorder-chip">Suggest order: ${reorder} pcs</span></div></div>` : ''}
       <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}</div></div>
-      <div class="detail-item"><div class="detail-label">Deliver Time</div><div class="detail-val">${escapeHtml(r['DELIVER TIME']||'—')}</div></div>
+      <div class="detail-item"><div class="detail-label">Vendor</div><div class="detail-val">${escapeHtml(r['VENDOR']||'—')}</div></div>
+      <div class="detail-item"><div class="detail-label">Deliver Time</div><div class="detail-val">${escapeHtml(r['DELIVER TIME']||'—')} ${escapeHtml(r['DELIVER UNIT']||'')}</div></div>
       <div class="detail-item"><div class="detail-label">Install Year</div><div class="detail-val">${escapeHtml(r['Install Year']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Expected Life</div><div class="detail-val">${escapeHtml(r['Expected Life']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Replace Plan</div><div class="detail-val">${escapeHtml(r['Replace Plan']||'—')}</div></div>
@@ -3732,7 +3763,7 @@ window.executeExportCSV = () => {
   closeModal('exportModal');
 };
 function exportRowsToCSV(rowsData, mode='all') {
-  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','DELIVER TIME','Install Year','Expected Life','Replace Plan'];
+  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan'];
   const rows=[cols.join(',')];
   rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
