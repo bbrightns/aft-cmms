@@ -222,7 +222,8 @@ tr:hover td { background: var(--surface2); }
 .inv-card:active { transform: scale(0.99); }
 .inv-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
 .inv-card-name { font-weight: 700; font-size: 15px; line-height: 1.35; flex: 1; color: var(--text); }
-.inv-card-pid { font-family: var(--mono); font-size: 11px; color: var(--agc-blue); font-weight: 700; margin-top: 3px; letter-spacing: 0.3px; }
+.inv-card-pid { font-family: var(--sans); font-size: 13px; color: var(--text3); font-weight: 500; margin-top: 3px; letter-spacing: 0.3px; }
+.inv-card-pid .class-val { color: var(--agc-blue); font-weight: 700; font-family: var(--mono); font-size: 14px; }
 .inv-card-stock-wrap { flex-shrink: 0; text-align: right; }
 .inv-card-stock { font-family: var(--mono); font-size: 18px; font-weight: 700; padding: 4px 12px; border-radius: 10px; display: inline-block; line-height: 1.2; }
 .inv-card-stock-label { font-size: 9px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; font-weight: 600; }
@@ -1860,7 +1861,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <div id="tabInventory">
       <div class="table-wrap">
         <table><thead><tr>
-          <th onclick="sortBy('Part ID')">Part ID <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Department')">Dept <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Sub Category')">Sub Cat <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Brand')">Brand <span class="sort-icon">↕</span></th>
@@ -1868,6 +1868,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
           <th>Description</th>
           <th onclick="sortBy('Plant')">Plant <span class="sort-icon">↕</span></th>
           <th>Area</th>
+          <th onclick="sortBy('CLASS')">Class <span class="sort-icon">↕</span></th>
           <th>Location</th>
           <th onclick="sortBy('Position')">Position <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Actual')">Stock <span class="sort-icon">↕</span></th>
@@ -1988,7 +1989,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
         <div class="form-group"><label>Part ID</label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div></div>
-        <div class="form-group"><label>แผนก (EE/ME)</label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
+        <div class="form-group"><label>แผนก (EE/ME) <span style="color:#dc2626;font-weight:700">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
 
       </div>
 
@@ -2443,7 +2444,7 @@ function stockStatus(actual, min) {
   const a = parseFloat(actual);
   if (isNaN(a) || actual === '' || actual == null) return 'none';
   const mn = parseFloat(min);
-  if ((!isNaN(mn) && a <= mn) || a === 0) return 'low';
+  if (!isNaN(mn) && mn > 0 && a < mn) return 'low';
   return 'ok';
 }
 
@@ -2918,6 +2919,7 @@ window.saveItem = async () => {
   if(!editItemId){
     if(!partId){ document.getElementById('err_partid').textContent='จำเป็นต้องระบุ Part ID'; hasError=true; }
   }
+  if(!department){ document.getElementById('err_department').textContent='จำเป็นต้องระบุ แผนก'; hasError=true; }
   if(min!=='' && (isNaN(parseFloat(min))||parseFloat(min)<0)){
     document.getElementById('err_min').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
   }
@@ -3273,7 +3275,7 @@ function isNoStockItem(r) {
 function isLowStockItem(r) {
   const a = getActualNumber(r?.['Actual']);
   const m = getActualNumber(r?.['Min']);
-  return Number.isFinite(a) && Number.isFinite(m) && a < m;
+  return Number.isFinite(a) && Number.isFinite(m) && m > 0 && a < m;
 }
 function getReorderSuggestion(r) {
   const a = getActualNumber(r?.['Actual']);
@@ -3408,7 +3410,7 @@ window.applyFilters = () => {
     if (stock && stockStatus(r['Actual'], r['Min']) !== stock) return false;
     if (activeStockFilter === 'nostock' && !isNoStockItem(r)) return false;
     if (q) {
-      const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position']].join(' ').toLowerCase();
+      const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS']].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -3441,7 +3443,6 @@ function renderTable() {
     const desc = r['Description']||'';
     const reorder = getReorderSuggestion(r);
     return `<tr onclick="openEdit('${r._id}')" style="cursor:pointer">
-      <td><span class="part-id" style="cursor:pointer;color:var(--agc-blue);font-weight:700" onclick="event.stopPropagation();openDetail('${r._id}')">${highlightText(r['Part ID']||'', q)}</span></td>
       <td><span class="badge badge-dept">${escapeHtml((r['Department']||'—').toUpperCase())}</span></td>
       <td><span class="badge badge-sub">${highlightText(r['Sub Category']||'—', q)}</span></td>
       <td>${highlightText(r['Brand']||'—', q)}</td>
@@ -3449,6 +3450,7 @@ function renderTable() {
       <td title="${escapeHtml(desc)}">${highlightText(desc||'—', q)}</td>
       <td><span class="badge ${pb}">${escapeHtml(plant||'—')}</span></td>
       <td>${highlightText(r['Area']||'—', q)}</td>
+      <td>${highlightText(r['CLASS']||'—', q)}</td>
       <td>${highlightText(r['Location']||'—', q)}</td>
       <td><span class="pos-chip"><i data-lucide="map-pin" style="width:10px;height:10px"></i>${highlightText(r['Position']||'—', q)}</span>${reorder?`<div class="reorder-chip">Order ${reorder}</div>`:''}</td>
       <td><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
@@ -3477,12 +3479,14 @@ function renderCards() {
     const position = r['Position'] || '';
     const locLine = [location, position].filter(Boolean).join('  ');
     const reorder = getReorderSuggestion(r);
+    const hasBrand = r['Brand'] && r['Brand'].trim();
+    const displayName = hasBrand ? ((r['Brand']||'') + ' ' + (r['Model']||'')) : (r['Description'] || '—');
     return `<div class="inv-card" onclick="openEdit('${r._id}')" style="cursor:pointer">
       <div class="inv-card-top">
         <div style="flex:1;min-width:0">
           ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
-          <div class="inv-card-name">${highlightText((r['Brand']||'') + ' ' + (r['Model']||''), q)}</div>
-          <div class="inv-card-pid" onclick="event.stopPropagation();openDetail('${r._id}')" style="cursor:pointer">${highlightText(r['Part ID']||'', q)}</div>
+          <div class="inv-card-name">${highlightText(displayName, q)}</div>
+          <div class="inv-card-pid" onclick="event.stopPropagation();openDetail('${r._id}')" style="cursor:pointer">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span></div>
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>
@@ -3516,7 +3520,7 @@ window.qaSearchInput = () => {
     return;
   }
   const results = items.filter(r =>
-    [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position']].join(' ').toLowerCase().includes(ql)
+    [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS']].join(' ').toLowerCase().includes(ql)
   );
   if (countEl) { countEl.textContent = `พบ ${results.length} รายการ`; countEl.classList.add('show'); }
   if (!results.length) { document.getElementById('qaResults').innerHTML = emptyStateHtml('qa'); refreshIcons(); return; }
