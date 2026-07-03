@@ -1899,7 +1899,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 
 <div class="offline-banner" id="offlineBanner"><i data-lucide="alert-triangle" style="width:14px;height:14px"></i> ไม่มีสัญญาณอินเทอร์เน็ต — ข้อมูลอาจไม่อัปเดต</div>
 
-<header class="header">
+<header class="header" style="display: none;">
   <div class="header-nav">
     <img src="logo.png" alt="AGC" class="logo-img">
     <span class="nav-home" style="cursor: default;">AFT-CMMS</span>
@@ -3857,6 +3857,9 @@ async function boot() {
         currentUser = session.user;
         document.getElementById('userProfileMenu').style.display = 'flex';
         
+        const header = document.querySelector('.header');
+        if (header) header.style.display = 'flex';
+        
         let displayName = currentUser.user_metadata?.display_name;
         if (!displayName) {
           const autoName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
@@ -3886,6 +3889,9 @@ async function boot() {
         if (session) {
           currentUser = session.user;
           document.getElementById('userProfileMenu').style.display = 'flex';
+          
+          const header = document.querySelector('.header');
+          if (header) header.style.display = 'flex';
           
           let displayName = currentUser.user_metadata?.display_name;
           if (!displayName) {
