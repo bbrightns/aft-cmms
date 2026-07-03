@@ -3949,10 +3949,24 @@ async function boot() {
       if (session) {
         currentUser = session.user;
         document.getElementById('userProfileMenu').style.display = 'flex';
-        document.getElementById('userDisplayNameText').textContent = getCurrentUserName();
         
-        // Force display name prompt if it's empty
-        if (!currentUser.user_metadata?.display_name) {
+        let displayName = currentUser.user_metadata?.display_name;
+        if (!displayName) {
+          const autoName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
+          if (autoName) {
+            // Auto update display_name in metadata so they are not forced to type
+            supabase.auth.updateUser({ data: { display_name: autoName } }).then(({ data }) => {
+              if (data?.user) currentUser = data.user;
+            });
+            localStorage.setItem('storeUserName', autoName);
+            displayName = autoName;
+          }
+        }
+        
+        document.getElementById('userDisplayNameText').textContent = displayName || getCurrentUserName();
+        
+        // Force display name prompt only if it's completely empty
+        if (!displayName) {
           setTimeout(() => openProfileModal(true), 200);
         }
       } else {
@@ -3965,10 +3979,23 @@ async function boot() {
           currentUser = session.user;
           document.getElementById('loginOverlay').style.display = 'none';
           document.getElementById('userProfileMenu').style.display = 'flex';
-          document.getElementById('userDisplayNameText').textContent = getCurrentUserName();
           
-          if (!currentUser.user_metadata?.display_name) {
-            openProfileModal(true); // force first name input
+          let displayName = currentUser.user_metadata?.display_name;
+          if (!displayName) {
+            const autoName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name;
+            if (autoName) {
+              supabase.auth.updateUser({ data: { display_name: autoName } }).then(({ data }) => {
+                if (data?.user) currentUser = data.user;
+              });
+              localStorage.setItem('storeUserName', autoName);
+              displayName = autoName;
+            }
+          }
+          
+          document.getElementById('userDisplayNameText').textContent = displayName || getCurrentUserName();
+          
+          if (!displayName) {
+            openProfileModal(true); // force name input only if completely empty
           } else {
             closeModal('profileModal');
           }
@@ -4023,7 +4050,10 @@ window.canPerform = (action) => {
   return (map[role] || map.Admin).includes(action);
 };
 function getCurrentUserName() {
-  const name = currentUser?.user_metadata?.display_name || localStorage.getItem('storeUserName');
+  const name = currentUser?.user_metadata?.display_name || 
+               currentUser?.user_metadata?.full_name || 
+               currentUser?.user_metadata?.name || 
+               localStorage.getItem('storeUserName');
   return name || currentUser?.email?.split('@')[0] || 'Unknown User';
 }
 window.setStoreUserName = (name) => {
