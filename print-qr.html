@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print QR Labels - Coating Store</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="shared.css">
+  
+  <!-- Font and Icon libraries -->
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  
+  <!-- QR Code Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <style>
+    /* Page Specific Premium CSS */
+    .print-control-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      position: sticky;
+      top: 54px;
+      z-index: 90;
+      box-shadow: var(--shadow);
+    }
+    
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .search-filter-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .input-field {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 13px;
+      background: var(--surface2);
+      color: var(--text);
+      outline: none;
+      transition: all 0.15s;
+    }
+    .input-field:focus {
+      border-color: var(--agc-blue);
+      background: var(--surface);
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .action-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    
+    .btn-primary {
+      background: var(--accent2);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #00793c;
+    }
+
+    .btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-secondary:hover {
+      background: var(--bg2);
+    }
+
+    /* Column Selector Segmented Control */
+    .segment-control {
+      display: inline-flex;
+      background: var(--bg2);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .segment-btn {
+      padding: 5px 12px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .segment-btn.active {
+      background: var(--surface);
+      color: var(--agc-blue);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    /* Labels Container */
+    .labels-wrapper {
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Printable Grid Layouts */
+    .labels-grid {
+      display: grid;
+      gap: 10px;
+      background: transparent;
+    }
+
+    /* Columns settings mapping */
+    .cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .cols-5 { grid-template-columns: repeat(5, 1fr); }
+
+    /* Rectangular Label Card */
+    .label-card {
+      background: white;
+      border: 1px solid var(--border2);
+      border-radius: 6px;
+      padding: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+      transition: all 0.15s;
+      page-break-inside: avoid;
+    }
+
+    .label-card.selected {
+      border-color: var(--agc-blue);
+      background: #eff6ff;
+    }
+
+    /* Checkbox overlay for screen view */
+    .label-card::before {
+      content: '';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 14px;
+      height: 14px;
+      border: 1.5px solid var(--border2);
+      border-radius: 3px;
+      background: white;
+      transition: all 0.15s;
+      z-index: 5;
+    }
+    .label-card.selected::before {
+      background: var(--agc-blue);
+      border-color: var(--agc-blue);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E");
+      background-size: 10px 10px;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    /* Left Side: QR Container */
+    .label-qr {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: white;
+    }
+
+    /* Prevent qrcode.js layout shifts from displaying both canvas and img */
+    .label-qr canvas {
+      display: none !important;
+    }
+    .label-qr img {
+      display: block !important;
+    }
+
+    /* Right Side: Text Stack (exactly 3 lines) */
+    .label-details {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 3px;
+    }
+
+    .label-line-1 {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .label-line-2 {
+      font-family: var(--sans);
+      color: var(--text2);
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .label-line-3 {
+      font-family: var(--sans);
+      color: var(--text3);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Responsive Sizing by Column count */
+    .cols-3 .label-card {
+      min-height: 84px;
+    }
+    .cols-3 .label-qr img {
+      width: 64px !important;
+      height: 64px !important;
+    }
+    .cols-3 .label-line-1 { font-size: 15px; }
+    .cols-3 .label-line-2 { font-size: 13px; }
+    .cols-3 .label-line-3 { font-size: 11px; }
+
+    .cols-4 .label-card {
+      min-height: 74px;
+      padding: 6px;
+      gap: 8px;
+    }
+    .cols-4 .label-qr img {
+      width: 54px !important;
+      height: 54px !important;
+    }
+    .cols-4 .label-line-1 { font-size: 13px; }
+    .cols-4 .label-line-2 { font-size: 11.5px; }
+    .cols-4 .label-line-3 { font-size: 9.5px; }
+
+    .cols-5 .label-card {
+      min-height: 64px;
+      padding: 4px;
+      gap: 6px;
+    }
+    .cols-5 .label-qr img {
+      width: 44px !important;
+      height: 44px !important;
+    }
+    .cols-5 .label-line-1 { font-size: 11.5px; }
+    .cols-5 .label-line-2 { font-size: 9.5px; }
+    .cols-5 .label-line-3 { font-size: 8.5px; }
+
+    /* Selection summary ribbon */
+    .selection-banner {
+      background: var(--agc-blue);
+      color: white;
+      padding: 8px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* PRINT STYLES */
+    @media print {
+      body {
+        background: white !important;
+        color: black !important;
+      }
+      
+      .header,
+      .print-control-panel,
+      .selection-banner,
+      .offline-banner,
+      .info-alert,
+      .label-card::before {
+        display: none !important;
+      }
+
+      .labels-wrapper {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+      }
+
+      /* Clean pre-cut grids for prints */
+      .labels-grid {
+        gap: 2mm !important;
+        background: transparent !important;
+      }
+
+      .label-card {
+        border: 1px solid #ccc !important; /* Delineate borders for easy cutting */
+        background: white !important;
+        box-shadow: none !important;
+        page-break-inside: avoid !important;
+      }
+
+      .label-card.selected {
+        display: flex !important; /* Only print selected items */
+      }
+
+      /* Hide non-selected elements during print */
+      .label-card:not(.selected) {
+        display: none !important;
+      }
+
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- App Header - Mirrored perfectly from store.html -->
+  <header class="header">
+    <div class="header-nav">
+      <img src="logo.png" alt="AGC" class="logo-img">
+      <span class="nav-home" style="cursor: default;">AFT-CMMS</span>
+      <span class="nav-sep">/</span>
+      <a href="store.html" class="nav-mod">Storage Management</a>
+      <span class="nav-sep">/</span>
+      <span class="nav-mod" style="color: #fff;">Batch QR Print</span>
+    </div>
+    <div class="header-right">
+      <div class="sync-status" id="syncStatus">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncText">Live</span>
+      </div>
+      <button class="hbtn" onclick="window.location.href='store.html'"><i data-lucide="arrow-left"></i> ย้อนกลับ</button>
+    </div>
+  </header>
+
+  <!-- Connection banner -->
+  <div class="offline-banner" id="offlineBanner">ไม่มีการเชื่อมต่อเครือข่าย</div>
+
+  <!-- Loading State -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">กำลังดึงข้อมูลอะไหล่จาก Firestore...</div>
+  </div>
+
+  <!-- Selection / Summary Banner -->
+  <div class="selection-banner">
+    <div id="selectionSummary">เลือกพิมพ์ 0 / 0 รายการ</div>
+    <div class="action-group">
+      <button class="btn btn-secondary" onclick="toggleSelectAll(true)" style="background: rgba(255,255,255,0.15); border: none; color: white;">เลือกทั้งหมด</button>
+      <button class="btn btn-secondary" onclick="toggleSelectAll(false)" style="background: rgba(255,255,255,0.1; border: none; color: rgba(255,255,255,0.7)">ล้างการเลือก</button>
+    </div>
+  </div>
+
+  <!-- Auto-Filter Notice Alert -->
+  <div class="info-alert" style="background: #e0f2fe; border-bottom: 1px solid #bae6fd; color: #0369a1; padding: 10px 20px; font-size: 13px; display: flex; align-items: center; gap: 8px;">
+    <i data-lucide="info" style="width: 16px; height: 16px; color: #0284c7; flex-shrink: 0;"></i>
+    <span><strong>ระบบคัดกรองข้อมูลอัตโนมัติ:</strong> แสดงเฉพาะรายการอะไหล่ที่มีการระบุตำแหน่งที่จัดเก็บ (Position) เรียบร้อยแล้วเท่านั้น</span>
+  </div>
+
+  <!-- Print Control Panel -->
+  <div class="print-control-panel">
+    <div class="control-row">
+      <div class="search-filter-group">
+        <input type="text" id="searchInput" placeholder="ค้นหา Part ID, แบรนด์, รุ่น, หรือคำอธิบาย..." class="input-field search-input" oninput="applyFilters()">
+        
+        <select id="deptFilter" class="input-field" onchange="applyFilters()">
+          <option value="">ทุกแผนก (Dept)</option>
+        </select>
+
+        <select id="plantFilter" class="input-field" onchange="applyFilters()">
+          <option value="">ทุกโรงงาน (Plant)</option>
+        </select>
+      </div>
+
+      <div class="action-group">
+        <!-- Columns Selector -->
+        <span style="font-size: 13px; font-weight: 500; color: var(--text2);">จัดคอลัมน์:</span>
+        <div class="segment-control">
+          <button class="segment-btn active" onclick="setColumns(3, this)">3 Col</button>
+          <button class="segment-btn" onclick="setColumns(4, this)">4 Col</button>
+          <button class="segment-btn" onclick="setColumns(5, this)">5 Col</button>
+        </div>
+
+        <button class="btn btn-primary" onclick="triggerPrint()">
+          <i data-lucide="printer"></i> สั่งพิมพ์ป้าย QR (Print)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Labels Area -->
+  <div class="labels-wrapper">
+    <div class="labels-grid cols-3" id="labelsGrid">
+      <!-- Generated dynamically -->
+    </div>
+  </div>
+
+  <!-- Firebase Integration -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDU0ny-bb8lecs2CVhpDt3J97Minh0WT94",
+      authDomain: "aft-cmms.firebaseapp.com",
+      projectId: "aft-cmms",
+      storageBucket: "aft-cmms.firebasestorage.app",
+      messagingSenderId: "285697232176",
+      appId: "1:285697232176:web:dc05c62128c49ac10e4cf5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    // Global States
+    let items = [];
+    let selectedIds = new Set();
+    let currentCols = 3;
+
+    // Truncate string helper to exact limit
+    function truncateText(str, maxLen = 30) {
+      if (!str) return '—';
+      if (str.length > maxLen) {
+        return str.slice(0, maxLen - 3) + '...';
+      }
+      return str;
+    }
+
+    // Load data
+    async function loadData() {
+      try {
+        if (typeof signInAnonymously === 'function' && auth) {
+          await signInAnonymously(auth).catch(err => console.warn("Auth skipped:", err));
+        }
+
+        const querySnapshot = await getDocs(collection(db, 'inventory'));
+        items = [];
+        querySnapshot.forEach(doc => {
+          items.push({ _id: doc.id, ...doc.data() });
+        });
+
+        // Sort items by Part ID descending by default
+        items.sort((a, b) => (b['Part ID'] || '').localeCompare(a['Part ID'] || ''));
+
+        // Initial setup
+        populateFilters();
+        renderLabels();
+        
+        // Hide loading
+        document.getElementById('loadingOverlay').style.display = 'none';
+        updateSummary();
+      } catch (error) {
+        console.error("Error loading data:", error);
+        document.getElementById('loadingText').textContent = "โหลดข้อมูลล้มเหลว: " + error.message;
+      }
+    }
+
+    // Populate drop downs
+    function populateFilters() {
+      const depts = [...new Set(items.map(i => i['Department']).filter(Boolean))].sort();
+      const plants = [...new Set(items.map(i => i['Plant']).filter(Boolean))].sort();
+
+      const deptSelect = document.getElementById('deptFilter');
+      depts.forEach(d => {
+        const opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = d;
+        deptSelect.appendChild(opt);
+      });
+
+      const plantSelect = document.getElementById('plantFilter');
+      plants.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p;
+        opt.textContent = p;
+        plantSelect.appendChild(opt);
+      });
+    }
+
+    // Filter items logic
+    function getFilteredItems() {
+      const query = document.getElementById('searchInput').value.toLowerCase().trim();
+      const deptFilter = document.getElementById('deptFilter').value;
+      const plantFilter = document.getElementById('plantFilter').value;
+
+      return items.filter(i => {
+        // Requirement: Filter only items that already have a position
+        const hasPosition = !!(i['Position'] && i['Position'].trim());
+        if (!hasPosition) return false;
+
+        const matchSearch = !query || 
+          (i['Part ID'] || '').toLowerCase().includes(query) ||
+          (i['Brand'] || '').toLowerCase().includes(query) ||
+          (i['Model'] || '').toLowerCase().includes(query) ||
+          (i['Description'] || '').toLowerCase().includes(query) ||
+          (i['Location'] || '').toLowerCase().includes(query);
+          
+        const matchDept = !deptFilter || i['Department'] === deptFilter;
+        const matchPlant = !plantFilter || i['Plant'] === plantFilter;
+
+        return matchSearch && matchDept && matchPlant;
+      });
+    }
+
+    // Render rectangular label cards
+    function renderLabels() {
+      const grid = document.getElementById('labelsGrid');
+      grid.innerHTML = '';
+
+      const filtered = getFilteredItems();
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--text3);">ไม่พบรายการอะไหล่ที่ตรงตามเงื่อนไข</div>';
+        return;
+      }
+
+      filtered.forEach(item => {
+        const card = document.createElement('div');
+        const id = item._id;
+        const partId = item['Part ID'] || '—';
+        const brand = item['Brand'] || '';
+        const model = item['Model'] || '';
+        const desc = item['Description'] || '';
+        const location = item['Location'] || '';
+        const position = item['Position'] || '';
+
+        // Line 2: Brand/Model, or fallback to Description (Truncated to exactly 30 characters)
+        let line2Text = [brand, model].filter(Boolean).join(' ');
+        if (!line2Text) {
+          line2Text = desc || '—';
+        }
+        line2Text = truncateText(line2Text, 30);
+
+        // Line 3: Location / Position (Truncated to exactly 30 characters)
+        let line3Text = [location, position].filter(Boolean).join(' / ');
+        line3Text = truncateText(line3Text, 30);
+
+        card.className = `label-card ${selectedIds.has(id) ? 'selected' : ''}`;
+        card.id = `card-${id}`;
+        card.onclick = () => toggleSelect(id);
+
+        card.innerHTML = `
+          <div class="label-qr" id="qr-${id}"></div>
+          <div class="label-details">
+            <div class="label-line-1">${partId}</div>
+            <div class="label-line-2" title="${[brand, model].filter(Boolean).join(' ') || desc || ''}">${line2Text}</div>
+            <div class="label-line-3" title="${[location, position].filter(Boolean).join(' / ') || ''}">${line3Text}</div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+
+        // Generate QR code inside this card
+        setTimeout(() => {
+          let qrSize = 64;
+          if (currentCols === 4) qrSize = 54;
+          else if (currentCols === 5) qrSize = 44;
+
+          new QRCode(document.getElementById(`qr-${id}`), {
+            text: partId,
+            width: qrSize,
+            height: qrSize,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        }, 0);
+      });
+    }
+
+    // Toggle single card selection
+    function toggleSelect(id) {
+      const card = document.getElementById(`card-${id}`);
+      if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+        if (card) card.classList.remove('selected');
+      } else {
+        selectedIds.add(id);
+        if (card) card.classList.add('selected');
+      }
+      updateSummary();
+    }
+
+    // Bulk selection
+    window.toggleSelectAll = function(select) {
+      const filtered = getFilteredItems();
+
+      filtered.forEach(item => {
+        const card = document.getElementById(`card-${item._id}`);
+        if (select) {
+          selectedIds.add(item._id);
+          if (card) card.classList.add('selected');
+        } else {
+          selectedIds.delete(item._id);
+          if (card) card.classList.remove('selected');
+        }
+      });
+      updateSummary();
+    };
+
+    // Update selection count
+    function updateSummary() {
+      const filtered = getFilteredItems();
+      const summary = document.getElementById('selectionSummary');
+      summary.textContent = `เลือกพิมพ์ ${selectedIds.size} / ${filtered.length} รายการ (กรองเฉพาะชิ้นงานที่มี Position จากทั้งหมด ${items.length} รายการ)`;
+    }
+
+    // Columns change handler
+    window.setColumns = function(cols, el) {
+      currentCols = cols;
+      const grid = document.getElementById('labelsGrid');
+      
+      // Update Grid Class
+      grid.className = `labels-grid cols-${cols}`;
+      
+      // Update Segment Control active class
+      document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
+      el.classList.add('active');
+
+      // Re-render labels so QR Code size recalculates and fits column size
+      renderLabels();
+    };
+
+    // Filters wrapper
+    window.applyFilters = function() {
+      renderLabels();
+      updateSummary();
+    };
+
+    // Print Command
+    window.triggerPrint = function() {
+      if (selectedIds.size === 0) {
+        alert("กรุณาเลือกฉลากอย่างน้อย 1 รายการก่อนสั่งพิมพ์");
+        return;
+      }
+      window.print();
+    };
+
+    // Init application
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+      loadData();
+    });
+
+    // Offline logic
+    window.addEventListener('online', () => {
+      document.getElementById('offlineBanner').style.display = 'none';
+      document.getElementById('syncDot').className = 'sync-dot';
+      document.getElementById('syncText').textContent = 'Live';
+    });
+    window.addEventListener('offline', () => {
+      document.getElementById('offlineBanner').style.display = 'block';
+      document.getElementById('syncDot').className = 'sync-dot error';
+      document.getElementById('syncText').textContent = 'Error';
+    });
+  </script>
+</body>
+</html>
