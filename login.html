@@ -122,7 +122,12 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Redirect target
-const redirectUrl = window.location.origin + window.location.pathname.replace("login.html", "store.html");
+let redirectUrl = window.location.origin + "/store.html";
+if (window.location.pathname.endsWith("/")) {
+  redirectUrl = window.location.origin + window.location.pathname + "store.html";
+} else if (window.location.pathname.includes("login.html")) {
+  redirectUrl = window.location.origin + window.location.pathname.replace("login.html", "store.html");
+}
 
 async function init() {
   if (supabase && supabase.auth) {
