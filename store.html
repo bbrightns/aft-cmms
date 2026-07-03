@@ -243,10 +243,10 @@ tr:hover td { background: var(--surface2); }
 .inv-card-btn.del:hover, .inv-card-btn.del:active { border-color: var(--danger); color: var(--danger); background: #fde8ef; }
 .inv-card-btn.primary { background: var(--agc-blue); color: #fff; border-color: var(--agc-blue); }
 .inv-card-btn.primary:hover, .inv-card-btn.primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
-.inv-card-btn.withdraw { background: var(--agc-red); color: #fff; border-color: var(--agc-red); }
-.inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #b91c1c; border-color: #b91c1c; color: #fff; }
-.inv-card-btn.deposit { background: var(--accent2); color: #fff; border-color: var(--accent2); }
-.inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #047857; border-color: #047857; color: #fff; }
+.inv-card-btn.withdraw { background: #FF457D; color: #fff; border-color: #FF457D; }
+.inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #e03569; border-color: #e03569; color: #fff; }
+.inv-card-btn.deposit { background: #4ED3A3; color: #fff; border-color: #4ED3A3; }
+.inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #3ec292; border-color: #3ec292; color: #fff; }
 
 /* BADGES */
 .badge-cat { background: #e0e4f0; color: var(--agc-blue); }
@@ -264,7 +264,8 @@ tr:hover td { background: var(--surface2); }
 .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
 .btn-primary { background: var(--agc-blue); color: #fff; }
 .btn-primary:hover { background: var(--agc-blue2); }
-.btn-success { background: var(--accent2); color: #fff; }
+.btn-success { background: #4ED3A3; color: #fff; }
+.btn-success:hover { background: #3ec292; }
 .btn-ghost { background: var(--bg2); color: var(--text2); border: 1.5px solid var(--border); }
 .btn-ghost:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
 .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
@@ -491,6 +492,7 @@ html, body {
   padding: 2px 8px; margin-bottom: 6px;
 }
 .dept-chip.mech { color: #7c2d12; background: #ffedd5; border-color: rgba(124,45,18,0.18); }
+.dept-chip.rfg { color: var(--agc-red); background: #fde8ef; border-color: rgba(228,0,70,0.18); }
 .readonly-field {
   background: repeating-linear-gradient(135deg, var(--surface2) 0px, var(--surface2) 4px, var(--bg2) 4px, var(--bg2) 8px) !important;
   color: var(--text3) !important;
@@ -2047,7 +2049,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       </div>
       <div class="controls-filters" id="controlsFilters">
         <select id="catFilter" onchange="applyFilters()" style="flex:1;min-width:130px"><option value="">All Categories</option></select>
-        <select id="departmentFilter" onchange="applyFilters()" style="min-width:95px"><option value="">All Dept</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select>
+        <select id="departmentFilter" onchange="applyFilters()" style="min-width:95px"><option value="">All Dept</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option><option value="RFG">RFG</option></select>
         <select id="subCatFilter" onchange="applyFilters()" style="flex:1;min-width:130px"><option value="">All Sub-cat</option></select>
         <select id="plantFilter" onchange="applyFilters()" style="min-width:90px">
           <option value="">All Plants</option><option value="RFG">RFG</option><option value="MIR">MIR</option>
@@ -2065,6 +2067,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <span class="quick-filter-sep" aria-hidden="true"></span>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="ELEC" onclick="setQuickFilter('ELEC')">ELEC</button>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="MECH" onclick="setQuickFilter('MECH')">MECH</button>
+      <button class="quick-filter-chip" data-filter-group="dept" data-chip="RFG" onclick="setQuickFilter('RFG')">RFG</button>
     </div>
     <div class="search-result-meta" id="searchResultMeta">Showing 0 / 0 items</div>
     <div class="tabs">
@@ -2128,7 +2131,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     </div>
     <div class="modal-body">
       <div style="display:flex;gap:12px;justify-content:center">
-        <button class="btn" style="background:var(--agc-red);color:#fff" onclick="setAdjustMode('out')" id="btnOut"><i data-lucide="log-out"></i> เบิกของ</button>
+        <button class="btn" style="background:#FF457D;color:#fff" onclick="setAdjustMode('out')" id="btnOut"><i data-lucide="log-out"></i> เบิกของ</button>
         <button class="btn btn-success" onclick="setAdjustMode('in')" id="btnIn"><i data-lucide="log-in"></i> รับของ</button>
       </div>
       <div style="text-align:center">
@@ -2149,6 +2152,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
               <option value="">—</option>
               <option value="STORE">STORE</option>
               <option value="RFG">RFG</option>
+              <option value="RFG-STORE">RFG-STORE</option>
             </select>
           </div>
           <div class="form-group">
@@ -2202,7 +2206,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
         <div class="form-group"><label>Part ID</label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div></div>
-        <div class="form-group"><label>แผนก (EE/ME) <span style="color:#dc2626;font-weight:700">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
+        <div class="form-group"><label>แผนก (EE/ME/RFG) <span style="color:#dc2626;font-weight:700">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option><option value="RFG">RFG</option></select><div class="field-error" id="err_department"></div></div>
 
       </div>
 
@@ -2220,7 +2224,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 
       <div class="form-section-title">ที่เก็บ</div>
       <div class="form-row">
-        <div class="form-group"><label>ที่เก็บ (STORE/RFG)</label><select id="f_location"><option value="">—</option><option value="STORE">STORE</option><option value="RFG">RFG</option></select><div class="field-error" id="err_location"></div></div>
+        <div class="form-group"><label>ที่เก็บ (STORE/RFG/RFG-STORE)</label><select id="f_location"><option value="">—</option><option value="STORE">STORE</option><option value="RFG">RFG</option><option value="RFG-STORE">RFG-STORE</option></select><div class="field-error" id="err_location"></div></div>
         <div class="form-group"><label>ตำแหน่ง</label>
           <div class="position-3-grid">
             <input type="text" id="f_pos1" maxlength="2" placeholder="Z2" oninput="this.value=this.value.toUpperCase();syncPosition()">
@@ -3992,7 +3996,7 @@ function renderCards() {
     const scCls = sc==='ok'?'stock-ok':sc==='low'?'stock-low':'stock-none';
     const actual = (r['Actual']!==''&&r['Actual']!=null) ? r['Actual'] : '—';
     const dept = (r['Department'] || '').toUpperCase();
-    const deptCls = dept === 'MECH' ? 'dept-chip mech' : 'dept-chip';
+    const deptCls = dept === 'MECH' ? 'dept-chip mech' : dept === 'RFG' ? 'dept-chip rfg' : 'dept-chip';
     const location = r['Location'] || '';
     const position = r['Position'] || '';
     const locHtml = (location ? highlightText(location, q) : '') + (position ? ` <span style="color:var(--agc-blue);font-weight:700;font-family:var(--mono);margin-left:6px">${highlightText(position, q)}</span>` : '');
@@ -4051,7 +4055,7 @@ window.qaSearchInput = () => {
     const scCls = sc === 'ok' ? 'stock-ok' : sc === 'low' ? 'stock-low' : 'stock-none';
     const scTxt = r['Actual'] !== '' && r['Actual'] != null ? r['Actual'] : '—';
     const dept = (r['Department'] || '').toUpperCase();
-    const deptCls = dept === 'MECH' ? 'dept-chip mech' : 'dept-chip';
+    const deptCls = dept === 'MECH' ? 'dept-chip mech' : dept === 'RFG' ? 'dept-chip rfg' : 'dept-chip';
     const locLine = [r['Location'] || '', r['Position'] || ''].filter(Boolean).join('  ');
     return `<div class="qa-item" data-id="${r._id}" onclick="qaSelectItem('${r._id}', this)">
       <div class="qa-item-top">
@@ -4273,7 +4277,7 @@ window.executeExportCSV = () => {
   closeModal('exportModal');
 };
 function exportRowsToCSV(rowsData, mode='all') {
-  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan'];
+  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
   const rows=[cols.join(',')];
   rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
