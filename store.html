@@ -306,13 +306,171 @@ textarea { resize: vertical; min-height: 60px; }
 .qty-display { font-family: var(--mono); font-size: 32px; font-weight: 700; min-width: 60px; text-align: center; color: var(--agc-blue); }
 
 /* LOG */
-.log-entry { padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; font-size: 13px; background: var(--surface); }
-.log-in { border-left: 4px solid var(--accent2); }
-.log-out { border-left: 4px solid var(--danger); }
-.log-edit { border-left: 4px solid var(--agc-blue); }
-.log-delete { border-left: 4px solid var(--warn); }
-.log-add { border-left: 4px solid var(--accent2); }
-.log-time { font-family: var(--mono); font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 600; }
+#logList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.log-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.log-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+.log-card.log-in, .log-card.log-add {
+  border-left: 4px solid var(--accent2);
+}
+.log-card.log-out {
+  border-left: 4px solid var(--danger);
+}
+.log-card.log-edit {
+  border-left: 4px solid var(--agc-blue);
+}
+.log-card.log-delete {
+  border-left: 4px solid var(--warn);
+}
+.log-card.log-system {
+  border-left: 4px solid var(--text3);
+}
+
+.log-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.log-part-id {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+.log-part-id.system-id {
+  color: var(--text3);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 13px;
+}
+.log-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.log-type-in {
+  background-color: #ecfdf5;
+  color: #10b981;
+}
+.log-type-out {
+  background-color: #fdf2f8;
+  color: #ec4899;
+}
+.log-type-edit {
+  background-color: #eff6ff;
+  color: #3b82f6;
+}
+.log-type-delete {
+  background-color: #fffbeb;
+  color: #f59e0b;
+}
+.log-type-system {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+.log-badge i {
+  width: 12px;
+  height: 12px;
+}
+
+.log-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.log-message {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+/* Diff Styling */
+.log-diff-container {
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+.diff-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.diff-line-raw {
+  font-size: 12px;
+  color: var(--text2);
+}
+.diff-label {
+  font-weight: 600;
+  color: var(--text2);
+}
+.diff-old {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+.diff-arrow {
+  width: 12px;
+  height: 12px;
+  color: var(--text3);
+}
+.diff-new {
+  color: var(--agc-blue);
+  font-weight: 600;
+  background-color: #e0e7ff;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+
+.log-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--bg2);
+  padding-top: 10px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--text3);
+}
+.log-user, .log-time-new {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.log-user i, .log-time-new i {
+  width: 13px;
+  height: 13px;
+}
 
 /* EMPTY */
 .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
@@ -1020,12 +1178,7 @@ body.inv-scroll-compact #pageInventory .controls-main {
 .field-error {
   min-height: 14px;
 }
-.log-entry strong {
-  color: var(--agc-blue);
-}
-.log-meta {
-  opacity: .85;
-}
+
 @media (max-width: 767px) {
   .inv-card { padding: 14px 13px; }
   .inv-card-actions { gap: 8px; }
@@ -3116,6 +3269,48 @@ window.setTab = (tab, el) => {
   if(tab==='log') loadLogs();
 };
 
+function formatLogTime(ts) {
+  if (!ts) return '';
+  let date;
+  if (ts.toDate) {
+    date = ts.toDate();
+  } else if (typeof ts === 'string') {
+    date = new Date(ts);
+  } else if (ts instanceof Date) {
+    date = ts;
+  } else {
+    return ts;
+  }
+  try {
+    return date.toLocaleString('th-TH', {
+      year: 'numeric',
+      month: 'short',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+  } catch (e) {
+    return ts;
+  }
+}
+
+function getLogTypeConfig(type) {
+  switch (type) {
+    case 'in':
+    case 'add':
+      return { label: 'รับเข้า', class: 'log-type-in', icon: 'plus-circle' };
+    case 'out':
+      return { label: 'เบิกออก', class: 'log-type-out', icon: 'minus-circle' };
+    case 'edit':
+      return { label: 'แก้ไข', class: 'log-type-edit', icon: 'edit' };
+    case 'delete':
+      return { label: 'ลบ', class: 'log-type-delete', icon: 'trash-2' };
+    default:
+      return { label: 'ระบบ', class: 'log-type-system', icon: 'settings' };
+  }
+}
+
 function renderLog(logs) {
   const el = document.getElementById('logList');
   if(!el) return;
@@ -3125,13 +3320,51 @@ function renderLog(logs) {
     return;
   }
   el.innerHTML = logs.map(l=>{
-    const t = l.ts?.toDate ? l.ts.toDate().toLocaleString('th-TH',{hour12:false}) : (l.ts||'');
+    const t = formatLogTime(l.ts);
     const user = l.user || l._updatedBy || l.updatedBy || 'System';
-    const note = l.note ? `<div style="color:var(--text2);font-size:12px;margin-top:3px">${escapeHtml(l.note)}</div>` : '';
-    const meta = `<span class="log-meta"><i data-lucide="user" style="width:11px;height:11px"></i>${escapeHtml(user)}</span>`;
-    return `<div class="log-entry log-${l.type||'edit'}">
-      <div><strong>${escapeHtml(l.partId||'')}</strong> — ${escapeHtml(l.msg||'')}${meta}${note}</div>
-      <div class="log-time">${escapeHtml(t)}</div>
+    const typeConfig = getLogTypeConfig(l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'));
+    
+    let noteHtml = '';
+    if (l.note) {
+      const lines = l.note.split('\n').filter(Boolean);
+      const formattedLines = lines.map(line => {
+        if (line.includes('->')) {
+          const parts = line.split(':');
+          const label = parts[0] || '';
+          const rest = parts.slice(1).join(':') || '';
+          const valParts = rest.split('->');
+          const oldVal = (valParts[0] || '').trim();
+          const newVal = (valParts[1] || '').trim();
+          return `<div class="diff-line">
+            <span class="diff-label">${escapeHtml(label)}:</span>
+            <span class="diff-old">${escapeHtml(oldVal)}</span>
+            <i data-lucide="arrow-right" class="diff-arrow"></i>
+            <span class="diff-new">${escapeHtml(newVal)}</span>
+          </div>`;
+        }
+        return `<div class="diff-line-raw">${escapeHtml(line)}</div>`;
+      }).join('');
+      noteHtml = `<div class="log-diff-container">${formattedLines}</div>`;
+    }
+    
+    const isSystem = l.partId === 'SYSTEM';
+    const partDisplay = isSystem ? 'SYSTEM' : l.partId;
+    
+    return `<div class="log-card log-${l.type || (isSystem ? 'system' : 'edit')}">
+      <div class="log-card-header">
+        <span class="log-part-id ${isSystem ? 'system-id' : ''}">${escapeHtml(partDisplay || '')}</span>
+        <span class="log-badge ${typeConfig.class}">
+          <i data-lucide="${typeConfig.icon}"></i> ${typeConfig.label}
+        </span>
+      </div>
+      <div class="log-card-body">
+        <div class="log-message">${escapeHtml(l.msg || '')}</div>
+        ${noteHtml}
+      </div>
+      <div class="log-card-footer">
+        <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
+        <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
+      </div>
     </div>`;
   }).join('');
   refreshIcons();
