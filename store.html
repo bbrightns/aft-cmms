@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
 html { scroll-behavior: smooth; }
@@ -1669,6 +1670,155 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   }
 }
 
+/* QR Scanner Premium Modal */
+.qr-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(17, 24, 37, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: qr-fade-in 0.2s ease-out;
+}
+@keyframes qr-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.qr-modal-content {
+  background: var(--surface);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: var(--shadow-md), 0 20px 25px -5px rgba(0,0,0,0.1);
+  border: 1.5px solid var(--border);
+  overflow: hidden;
+  animation: qr-scale-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes qr-scale-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.qr-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1.5px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface2);
+}
+.qr-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--agc-blue);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.qr-modal-title i, .qr-modal-title svg {
+  width: 20px;
+  height: 20px;
+  color: var(--agc-blue);
+}
+.qr-modal-close {
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: all 0.15s;
+}
+.qr-modal-close:hover {
+  background: var(--bg2);
+  color: var(--text);
+}
+.qr-modal-body {
+  padding: 20px;
+}
+.qr-scanner-container {
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #000;
+  border: 1.5px solid var(--border);
+  position: relative;
+  min-height: 250px;
+}
+/* Style html5-qrcode overrides */
+#qr-reader {
+  border: none !important;
+  padding: 0 !important;
+}
+#qr-reader__scan_region {
+  background: #000 !important;
+}
+#qr-reader img[src*="scan"] {
+  display: none !important;
+}
+#qr-reader__dashboard {
+  padding: 14px 10px 0 10px !important;
+  background: var(--surface) !important;
+  font-family: var(--sans) !important;
+  border-top: 1px solid var(--border) !important;
+}
+#qr-reader__dashboard_section_csr button,
+#qr-reader__dashboard_section_fsr button {
+  background: var(--agc-blue) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 8px 16px !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background 0.15s !important;
+  font-family: var(--sans) !important;
+  margin: 4px !important;
+}
+#qr-reader__dashboard_section_csr button:hover,
+#qr-reader__dashboard_section_fsr button:hover {
+  background: var(--agc-blue2) !important;
+}
+#qr-reader__camera_selection {
+  background: var(--bg2) !important;
+  border: 1.5px solid var(--border) !important;
+  border-radius: 8px !important;
+  padding: 6px 10px !important;
+  font-family: var(--sans) !important;
+  font-size: 13px !important;
+  color: var(--text) !important;
+  outline: none !important;
+  margin-bottom: 8px !important;
+  width: 100%;
+  max-width: 100%;
+}
+.qr-modal-footer {
+  padding: 12px 20px;
+  background: var(--surface2);
+  border-top: 1.5px solid var(--border);
+  font-size: 12px;
+  color: var(--text3);
+  text-align: center;
+}
+.btn-scan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-scan:hover {
+  background: var(--agc-blue2) !important;
+  transform: scale(1.05);
+}
+
 </style>
 </head>
 <body>
@@ -1785,10 +1935,13 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   <div class="action-page">
     <div class="action-title" id="actionTitle"></div>
     <div class="action-subtitle" id="actionSubtitle"></div>
-    <div class="qa-search-wrap">
-      <svg class="qa-search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input type="text" id="qaSearch" placeholder="พิมพ์ Part ID, Brand, Model, Location..." oninput="qaSearchInput()">
-      <button class="qa-clear" id="qaClear" onclick="qaClearSearch()" aria-label="clear"><i data-lucide="x"></i></button>
+    <div class="qa-search-wrap" style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
+      <div style="position: relative; flex: 1;">
+        <svg class="qa-search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="qaSearch" placeholder="พิมพ์ Part ID, Brand, Model, Location..." oninput="qaSearchInput()" style="width: 100%;">
+        <button class="qa-clear" id="qaClear" onclick="qaClearSearch()" aria-label="clear"><i data-lucide="x"></i></button>
+      </div>
+      <button class="btn-scan" onclick="openQRScanner('qa')" title="Scan QR Code" style="flex-shrink: 0; background: var(--agc-blue); color: white; border: none; border-radius: 10px; height: 46px; width: 46px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s;"><i data-lucide="qr-code"></i></button>
     </div>
     <div class="qa-result-count" id="qaResultCount"></div>
     <div class="qa-results" id="qaResults"></div>
@@ -1820,12 +1973,13 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <div class="stats-bar" id="statsBar"></div>
     <div class="conflict-banner" id="conflictBanner"><i data-lucide="refresh-cw" style="width:14px;height:14px"></i> ข้อมูลถูกแก้ไขจากอุปกรณ์อื่น กำลังโหลดใหม่...</div>
     <div class="controls-bar">
-      <div class="controls-main">
-        <div class="search-wrap">
+      <div class="controls-main" style="display: flex; gap: 8px; align-items: center; width: 100%;">
+        <div class="search-wrap" style="flex: 1;">
           <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="searchInput" placeholder="ค้นหา Part ID, Dept, Model, Brand..." oninput="onSearchInput()">
           <button class="clear-btn" id="clearBtn" onclick="clearSearch()" aria-label="clear"><i data-lucide="x"></i></button>
         </div>
+        <button class="btn-scan" onclick="openQRScanner('search')" title="Scan QR Code" style="flex-shrink: 0; background: var(--agc-blue); color: white; border: 1.5px solid var(--border); border-radius: 8px; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s;"><i data-lucide="qr-code" style="width: 16px; height: 16px;"></i></button>
         <button class="filter-toggle" id="filterToggle" onclick="toggleFilters()">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
           Filter <span class="filter-badge" id="filterBadge">0</span>
@@ -2152,6 +2306,27 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- QR Scanner Modal -->
+<div id="qrScanModal" class="qr-modal" onclick="closeOnOverlay(event, 'qrScanModal')">
+  <div class="qr-modal-content">
+    <div class="qr-modal-header">
+      <div class="qr-modal-title">
+        <i data-lucide="qr-code"></i>
+        <span>สแกน QR Code / Barcode</span>
+      </div>
+      <button class="qr-modal-close" onclick="closeQRScanner()"><i data-lucide="x"></i></button>
+    </div>
+    <div class="qr-modal-body">
+      <div class="qr-scanner-container">
+        <div id="qr-reader" style="width: 100%;"></div>
+      </div>
+    </div>
+    <div class="qr-modal-footer">
+      จัดตำแหน่ง QR Code ให้อยู่ในกรอบเพื่อสแกนอัตโนมัติ
+    </div>
+  </div>
+</div>
 
 <!-- Firebase -->
 <script type="module">
@@ -3894,6 +4069,103 @@ window.addEventListener('resize', () => {
     document.body.classList.remove('inv-scroll-compact');
   }
 }, { passive: true });
+
+// ===== QR CODE SCANNER UTILITIES =====
+let html5QrcodeScanner = null;
+let currentScannerTarget = null; // 'qa' or 'search'
+
+window.openQRScanner = (target) => {
+  currentScannerTarget = target;
+  document.getElementById('qrScanModal').style.display = 'flex';
+  
+  if (!html5QrcodeScanner) {
+    html5QrcodeScanner = new Html5QrcodeScanner(
+      "qr-reader",
+      { 
+        fps: 15, 
+        qrbox: (width, height) => {
+          const size = Math.min(width, height) * 0.75;
+          return { width: size, height: size };
+        },
+        aspectRatio: 1.0
+      },
+      /* verbose= */ false
+    );
+  }
+  
+  html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+  
+  if (window.lucide) {
+    lucide.createIcons();
+  }
+};
+
+window.closeQRScanner = () => {
+  document.getElementById('qrScanModal').style.display = 'none';
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.clear().catch(err => console.error("Error clearing scanner:", err));
+  }
+};
+
+// Override closeOnOverlay to handle QR scanner closing safely
+window.closeOnOverlay = (e, id) => {
+  if (e.target.id === id) {
+    if (id === 'qrScanModal') {
+      window.closeQRScanner();
+    } else {
+      window.closeModal(id);
+    }
+  }
+};
+
+function playBeep() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.frequency.value = 1000;
+    gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.08);
+  } catch (e) {
+    console.warn("Audio Context beep failed", e);
+  }
+}
+
+function onScanSuccess(decodedText, decodedResult) {
+  playBeep();
+  window.toast("สแกนสำเร็จ: " + decodedText, "success");
+  window.closeQRScanner();
+
+  const code = decodedText.trim();
+  if (currentScannerTarget === 'qa') {
+    const input = document.getElementById('qaSearch');
+    input.value = code;
+    window.qaSearchInput();
+    
+    // Attempt auto-selection if exact match is found
+    setTimeout(() => {
+      // Find item with exact match Part ID (case-insensitive)
+      const match = items.find(x => (x['Part ID'] || '').trim().toLowerCase() === code.toLowerCase());
+      if (match) {
+        const el = document.querySelector(`.qa-item[data-id="${match._id}"]`);
+        if (el) {
+          window.qaSelectItem(match._id, el);
+        }
+      }
+    }, 200);
+  } else if (currentScannerTarget === 'search') {
+    const input = document.getElementById('searchInput');
+    input.value = code;
+    window.onSearchInput();
+  }
+}
+
+function onScanFailure(error) {
+  // Ignore scan match fail events to avoid spamming the console
+}
 
 preventEnterInTextFields();
 setupInventoryAutoHide();
