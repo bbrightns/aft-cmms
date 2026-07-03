@@ -17,10 +17,21 @@
   --text: #111827;
   --text2: #4b5563;
   --text3: #6b6b83;
+  --text-muted: #64748b;
+  --accent-light: #bfdbfe;
+  --out-bg: #fdf2f8;
+  --out-fg: #ec4899;
+  --in-bg: #ecfdf5;
+  --in-fg: #10b981;
+  --list-bg: #eff6ff;
+  --list-fg: #3b82f6;
+  --border-dashed: #e2e8f0;
+  --icon-placeholder: #94a3b8;
   --mono: 'IBM Plex Mono', monospace;
   --sans: 'Inter', 'Noto Sans Thai', sans-serif;
   --shadow: 0 1px 4px rgba(0,0,0,0.10);
   --shadow-md: 0 4px 16px rgba(0,0,0,0.13);
+  --shadow-hover: 0 4px 8px rgba(0,0,0,0.08);
   --radius: 12px;
 }
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }

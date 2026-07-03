@@ -1973,8 +1973,21 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <input type="file" id="csvFileInput" accept=".csv" style="display:none" onchange="handleCSVUpload(event)">
     </div>
 
+    <!-- Upload page help hint -->
+    <div style="margin-top: 14px; text-align: center; margin-bottom: 28px;" id="uploadHelpSection">
+      <button class="home-footer-btn" onclick="openModal('helpModal')" style="display: inline-flex; margin: 0 auto;">
+        <i data-lucide="help-circle" style="width:14px;height:14px"></i>
+        คู่มือการใช้งานระบบ
+      </button>
+    </div>
+
     <!-- Footer actions -->
     <div class="home-footer-links" id="homeFooterActions" style="display:none">
+      <button class="home-footer-btn" onclick="openModal('helpModal')">
+        <i data-lucide="help-circle" style="width:14px;height:14px"></i>
+        คู่มือการใช้งาน
+      </button>
+      <div class="home-footer-dot"></div>
       <button class="home-footer-btn" onclick="document.getElementById('csvFileInput').click()">
         <i data-lucide="upload-cloud" style="width:14px;height:14px"></i>
         อัปโหลด CSV ใหม่
@@ -2003,7 +2016,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div style="position: relative; flex: 1;">
         <svg class="qa-search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input type="text" id="qaSearch" placeholder="พิมพ์ Part ID, Brand, Model, Location..." oninput="qaSearchInput()" style="width: 100%;">
-        <button class="qa-clear" id="qaClear" onclick="qaClearSearch()" aria-label="clear"><i data-lucide="x"></i></button>
+        <button class="qa-clear" id="qaClear" onclick="qaClearSearch()" aria-label="ล้างการค้นหา"><i data-lucide="x"></i></button>
       </div>
       <button class="btn-scan" onclick="openQRScanner('qa')" title="Scan QR Code" style="flex-shrink: 0; background: var(--agc-blue); color: white; border: none; border-radius: 10px; height: 46px; width: 46px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s;"><i data-lucide="qr-code"></i></button>
     </div>
@@ -2041,7 +2054,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
         <div class="search-wrap" style="flex: 1;">
           <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input type="text" id="searchInput" placeholder="ค้นหา Part ID, Dept, Model, Brand..." oninput="onSearchInput()">
-          <button class="clear-btn" id="clearBtn" onclick="clearSearch()" aria-label="clear"><i data-lucide="x"></i></button>
+          <button class="clear-btn" id="clearBtn" onclick="clearSearch()" aria-label="ล้างการค้นหา"><i data-lucide="x"></i></button>
         </div>
         <button class="btn-scan" onclick="openQRScanner('search')" title="Scan QR Code" style="flex-shrink: 0; background: var(--agc-blue); color: white; border: 1.5px solid var(--border); border-radius: 8px; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s;"><i data-lucide="qr-code" style="width: 16px; height: 16px;"></i></button>
         <button class="filter-toggle" id="filterToggle" onclick="toggleFilters()">
@@ -2113,7 +2126,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   <div class="modal" style="max-width:400px">
     <div class="modal-header">
       <div class="modal-title" id="confirmModalTitle">ยืนยันการดำเนินการ</div>
-      <button class="close-btn" onclick="closeModal('confirmModal')"><i data-lucide="x"></i></button>
+      <button class="close-btn" onclick="closeModal('confirmModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
       <div class="confirm-summary" id="confirmSummary"></div>
@@ -2131,7 +2144,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   <div class="modal">
     <div class="modal-header">
       <div><div class="modal-title" id="adjustTitle"></div><div style="font-size:12px;color:var(--text2);margin-top:3px" id="adjustSubtitle"></div></div>
-      <button class="close-btn" onclick="closeModal('adjustModal')"><i data-lucide="x"></i></button>
+      <button class="close-btn" onclick="closeModal('adjustModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
       <div style="display:flex;gap:12px;justify-content:center">
@@ -2204,7 +2217,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 <!-- MODAL: Add/Edit -->
 <div class="modal-overlay" id="editModal" style="display:none" onclick="closeOnOverlay(event,'editModal')">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="editModalTitle">Add Item</div><button class="close-btn" onclick="closeModal('editModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-header"><div class="modal-title" id="editModalTitle">Add Item</div><button class="close-btn" onclick="closeModal('editModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
 
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
@@ -2305,13 +2318,13 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   <div class="modal" style="max-width:520px">
     <div class="modal-header">
       <div><div class="modal-title" id="detailTitle"></div><div style="font-size:12px;color:var(--text2);margin-top:3px" id="detailPartId"></div></div>
-      <button class="close-btn" onclick="closeModal('detailModal')"><i data-lucide="x"></i></button>
+      <button class="close-btn" onclick="closeModal('detailModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('detailModal')"><i data-lucide="x"></i> ปิด</button>
-      <button class="btn" style="background:var(--warn);color:#fff" id="detailAdjustBtn"><i data-lucide="package"></i> Adjust</button>
-      <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> Edit</button>
+      <button class="btn" style="background:var(--warn);color:#fff" id="detailAdjustBtn"><i data-lucide="package"></i> ปรับสต็อก</button>
+      <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> แก้ไขข้อมูล</button>
     </div>
   </div>
 </div>
@@ -2320,14 +2333,14 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 <div class="modal-overlay" id="lightboxModal" style="display:none; background: rgba(0,0,0,0.85); z-index:300;" onclick="closeModal('lightboxModal')">
   <div class="lightbox-content" onclick="event.stopPropagation()">
     <img id="lightboxImage" src="" alt="Zoomed Photo" class="lightbox-img">
-    <button class="close-btn" onclick="closeModal('lightboxModal')" style="position:absolute; top:-16px; right:-16px; border-radius:50%; width:32px; height:32px; background:rgba(0,0,0,0.6); color:#fff; border:1px solid #fff; cursor:pointer;"><i data-lucide="x" style="width:16px;height:16px"></i></button>
+    <button class="close-btn" onclick="closeModal('lightboxModal')" aria-label="ปิดรูปขยาย" style="position:absolute; top:-16px; right:-16px; border-radius:50%; width:32px; height:32px; background:rgba(0,0,0,0.6); color:#fff; border:1px solid #fff; cursor:pointer;"><i data-lucide="x" style="width:16px;height:16px"></i></button>
   </div>
 </div>
 
 <!-- MODAL: Delete -->
 <div class="modal-overlay" id="deleteModal" style="display:none" onclick="closeOnOverlay(event,'deleteModal')">
   <div class="modal" style="max-width:360px">
-    <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="alert-triangle"></i> ลบรายการ</div><button class="close-btn" onclick="closeModal('deleteModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="alert-triangle"></i> ลบรายการ</div><button class="close-btn" onclick="closeModal('deleteModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <p style="color:var(--text2)">ยืนยันลบ <strong id="deleteItemName" style="color:var(--text)"></strong>?</p>
       <p style="font-size:12px;color:var(--danger);margin-top:6px">ไม่สามารถย้อนกลับได้</p>
@@ -2342,7 +2355,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 <!-- MODAL: Clear All Data -->
 <div class="modal-overlay" id="clearDataModal" style="display:none" onclick="closeOnOverlay(event,'clearDataModal')">
   <div class="modal" style="max-width:400px">
-    <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="trash-2"></i> ล้างข้อมูลทั้งหมด</div><button class="close-btn" onclick="closeModal('clearDataModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="trash-2"></i> ล้างข้อมูลทั้งหมด</div><button class="close-btn" onclick="closeModal('clearDataModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <p style="color:var(--text2)">การดำเนินการนี้จะ <strong style="color:var(--danger)">ลบรายการอะไหล่ทั้งหมด</strong> ออกจาก Database</p>
       <p style="font-size:12px;color:var(--danger);margin-top:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i> ไม่สามารถย้อนกลับได้ — แนะนำให้ Export CSV เก็บไว้ก่อน</p>
@@ -2357,7 +2370,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 <!-- MODAL: CSV Upload Confirm -->
 <div class="modal-overlay" id="csvModal" style="display:none" onclick="closeOnOverlay(event,'csvModal')">
   <div class="modal" style="max-width:400px">
-    <div class="modal-header"><div class="modal-title"><i data-lucide="upload-cloud"></i> ยืนยันอัปโหลด CSV</div><button class="close-btn" onclick="closeModal('csvModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-header"><div class="modal-title"><i data-lucide="upload-cloud"></i> ยืนยันอัปโหลด CSV</div><button class="close-btn" onclick="closeModal('csvModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <div id="csvPreview" style="font-size:14px;color:var(--text2);"></div>
       <div class="csv-mode-title">Upload Mode</div>
@@ -2382,7 +2395,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 <!-- MODAL: Export Options -->
 <div class="modal-overlay" id="exportModal" style="display:none" onclick="closeOnOverlay(event,'exportModal')">
   <div class="modal" style="max-width:420px">
-    <div class="modal-header"><div class="modal-title"><i data-lucide="download"></i> Export CSV</div><button class="close-btn" onclick="closeModal('exportModal')"><i data-lucide="x"></i></button></div>
+    <div class="modal-header"><div class="modal-title"><i data-lucide="download"></i> Export CSV</div><button class="close-btn" onclick="closeModal('exportModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <div class="export-mode-box">
         <label><input type="radio" name="exportMode" value="all" checked> <span><strong>Export All</strong><br>Export ทุก item ใน inventory</span></label>
@@ -2393,6 +2406,43 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('exportModal')"><i data-lucide="x"></i> ยกเลิก</button>
       <button class="btn btn-primary" onclick="executeExportCSV()"><i data-lucide="download"></i> Export</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Help / Documentation -->
+<div class="modal-overlay" id="helpModal" style="display:none" onclick="closeOnOverlay(event,'helpModal')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--agc-blue)"><i data-lucide="help-circle"></i> คู่มือการใช้งานระบบ</div>
+      <button class="close-btn" onclick="closeModal('helpModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body" style="font-size:13px;line-height:1.6;color:var(--text2)">
+      <div style="margin-bottom:16px">
+        <h4 style="color:var(--agc-blue);font-weight:700;margin-bottom:4px;font-size:14px">📍 รหัสตำแหน่งเก็บอะไหล่</h4>
+        <p>ตำแหน่งเก็บแสดงในรูปแบบ <strong>Aisle - Shelf - Column</strong> (เช่น <code>Z2-01-05</code>):</p>
+        <ul style="padding-left:20px;margin-top:4px">
+          <li><strong>Z2</strong>: แถว/โซนเก็บ (Aisle)</li>
+          <li><strong>01</strong>: ชั้นเก็บแนวราบ (Shelf ชั้นที่ 1 นับจากล่างขึ้นบน)</li>
+          <li><strong>05</strong>: ล็อก/ช่องแนวตั้ง (Column ช่องที่ 5)</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:16px">
+        <h4 style="color:var(--agc-blue);font-weight:700;margin-bottom:4px;font-size:14px">📤 รูปแบบไฟล์ CSV สำหรับอัปโหลด</h4>
+        <p>หัวตาราง CSV (Header) ต้องมีรูปแบบดังนี้:</p>
+        <code style="display:block;background:var(--bg2);padding:8px;border-radius:6px;font-size:11px;font-family:var(--mono);word-break:break-all;margin-top:4px;color:var(--text)">
+          partid,department,subcat,brand,model,class,desc,plant,area,location,position,actual,min,max,cost,vendor,deliver,deliver_unit,installyear,life,replaceplan
+        </code>
+      </div>
+      <div>
+        <h4 style="color:var(--agc-blue);font-weight:700;margin-bottom:4px;font-size:14px">🔄 การเบิก/รับของ</h4>
+        <p>1. ค้นหาอะไหล่ที่ต้องการจากแถบค้นหาหรือตัวกรองแผนก</p>
+        <p>2. คลิกที่รายการอะไหล่ในตารางหรือการ์ด &rarr; เลือก <strong>"ปรับสต็อก"</strong></p>
+        <p>3. กดเลือกปุ่ม <strong>"เบิกของ"</strong> หรือ <strong>"รับของ"</strong> ใส่จำนวน และกดยืนยัน</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('helpModal')">เข้าใจแล้ว</button>
     </div>
   </div>
 </div>
@@ -3046,6 +3096,10 @@ function getItemChangeSummary(oldItem, newData) {
 }
 
 // ===== MODALS =====
+window.openModal = (id) => {
+  const el = document.getElementById(id);
+  if (el) el.style.display = 'flex';
+};
 window.closeModal = (id) => document.getElementById(id).style.display='none';
 window.closeOnOverlay = (e,id) => { if(e.target.id===id) closeModal(id); };
 
@@ -3913,6 +3967,8 @@ function updateHomeStats() {
   if (uploadZoneEl) {
     const hasData = total > 0 || localStorage.getItem('csvUploaded') === '1';
     uploadZoneEl.style.display = hasData ? 'none' : '';
+    const uploadHelpEl = document.getElementById('uploadHelpSection');
+    if (uploadHelpEl) uploadHelpEl.style.display = hasData ? 'none' : '';
     if (homeLogEl) homeLogEl.style.display = hasData ? 'flex' : 'none';
     if (homeFooterEl) homeFooterEl.style.display = hasData ? 'flex' : 'none';
   }
