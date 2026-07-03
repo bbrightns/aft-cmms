@@ -12,7 +12,10 @@
 .login-overlay {
   position: fixed;
   inset: 0;
-  background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
+  background-image: linear-gradient(rgba(0, 31, 107, 0.2), rgba(0, 31, 107, 0.4)), url('login_bg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   z-index: 1000;
   display: flex;
   align-items: center;
@@ -20,10 +23,12 @@
   padding: 24px;
 }
 .login-card {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-radius: 16px;
-  border: 1px solid rgba(0, 31, 107, 0.08);
-  box-shadow: 0 20px 25px -5px rgba(0, 31, 107, 0.05), 0 10px 10px -5px rgba(0, 31, 107, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
   padding: 40px 32px;
   width: 100%;
   max-width: 400px;
