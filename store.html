@@ -4718,6 +4718,19 @@ function exportRowsToCSV(rowsData, mode='all') {
   const suffix = mode==='filtered'?'Filtered':mode==='low'?'LowStock':'All';
   a.download=`SPFL_Store_${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
+  
+  // Log export action to database
+  supabase.from('logs').insert([{
+    type: 'system',
+    partId: 'SYSTEM',
+    msg: `📤 Export CSV (${suffix}) จำนวน ${rowsData.length} รายการ`,
+    note: `โหมดการ Export: ${mode === 'all' ? 'ทั้งหมด' : mode === 'filtered' ? 'กรองตามเงื่อนไข' : 'รายการที่ต้องเติม (Low Stock)'}`,
+    device: DEVICE_ID,
+    user: getCurrentUserName()
+  }]).then(() => {
+    invalidateLogsCache();
+  }).catch(console.error);
+
   toast(`Export CSV (${rowsData.length} รายการ) เรียบร้อย`,'success');
 }
 window.exportCSV = () => openExportModal();
