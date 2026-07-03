@@ -2412,30 +2412,14 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   </div>
 </div>
 
-<!-- Firebase -->
+<!-- Supabase -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, collection, getDocs, doc, setDoc, addDoc,
-  deleteDoc, writeBatch, onSnapshot, serverTimestamp,
-  query, orderBy, limit, getDoc, runTransaction
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDU0ny-bb8lecs2CVhpDt3J97Minh0WT94",
-  authDomain: "aft-cmms.firebaseapp.com",
-  projectId: "aft-cmms",
-  storageBucket: "aft-cmms.firebasestorage.app",
-  messagingSenderId: "285697232176",
-  appId: "1:285697232176:web:dc05c62128c49ac10e4cf5"
-};
+const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybHhlYWlnaHBmZ3NkdXFjY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNjg0MDgsImV4cCI6MjA5ODY0NDQwOH0.ep0JJO2Scb7PGUIxtx1t7cHMxuEmc-Jhxjl_12U46O0";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-const storage = getStorage(app);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let selectedPhotoFile = null;
 let currentPhotoUrl = '';
@@ -2500,20 +2484,18 @@ function refreshIcons() {
   _lucideTimer = setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 30);
 }
 
-// ===== FIRESTORE REALTIME =====
-function startRealtimeSync() {
-  const q = query(collection(db, 'inventory'));
-  onSnapshot(q, (snapshot) => {
-    const newItems = [];
-    snapshot.forEach(d => newItems.push({ _id: d.id, ...d.data() }));
+// ===== SUPABASE REALTIME =====
+async function fetchItems(showConflictBanner = false) {
+  try {
+    const { data, error } = await supabase
+      .from('inventory')
+      .select('*');
+    if (error) throw error;
+
+    const newItems = data.map(d => ({ _id: d.id, ...d }));
     newItems.sort((a,b) => (b['Part ID']||'').localeCompare(a['Part ID']||''));
 
-    // Show banner only when a DIFFERENT device wrote while we were syncing
-    const hasExternalChange = snapshot.docChanges().some(ch => {
-      const d = ch.doc.data();
-      return d._device && d._device !== DEVICE_ID;
-    });
-    if (hasExternalChange && isSyncing && items.length > 0) {
+    if (showConflictBanner && isSyncing && items.length > 0) {
       const banner = document.getElementById('conflictBanner');
       if (banner) { banner.classList.add('show'); setTimeout(() => banner.classList.remove('show'), 4000); }
     }
@@ -2535,10 +2517,24 @@ function startRealtimeSync() {
     updateStats();
     updateHomeStats();
     setSyncing('live');
-  }, (err) => {
-    console.error(err);
+  } catch (err) {
+    console.error('Fetch items error:', err);
     setSyncing('error');
-  });
+  }
+}
+
+function startRealtimeSync() {
+  fetchItems(false);
+
+  // Subscribe to changes
+  supabase
+    .channel('inventory-changes')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, payload => {
+      const d = payload.new || payload.old;
+      const hasExternalChange = d && d._device && d._device !== DEVICE_ID;
+      fetchItems(hasExternalChange);
+    })
+    .subscribe();
 }
 
 function invalidateLogsCache() { _logsCacheTs = 0; }
@@ -2549,13 +2545,19 @@ async function loadLogs(force = false) {
     renderLog(_logsCacheData);
     return;
   }
-  const q = query(collection(db, 'logs'), orderBy('ts', 'desc'), limit(200));
-  const snap = await getDocs(q);
-  const logs = [];
-  snap.forEach(d => logs.push(d.data()));
-  _logsCacheData = logs;
-  _logsCacheTs = now;
-  renderLog(logs);
+  try {
+    const { data, error } = await supabase
+      .from('logs')
+      .select('*')
+      .order('ts', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    _logsCacheData = data;
+    _logsCacheTs = now;
+    renderLog(data);
+  } catch (err) {
+    console.error('Load logs error:', err);
+  }
 }
 
 // ===== PAGES =====
@@ -2694,27 +2696,37 @@ window.qaExecute = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    // Optimistic concurrency: transaction to prevent simultaneous edits
-    await runTransaction(db, async (tx) => {
-      const ref = doc(db, 'inventory', qaSelectedItem._id);
-      const snap = await tx.get(ref);
-      if (!snap.exists()) throw new Error('Item not found');
-      const latestActual = parseFloat(snap.data()['Actual']) || 0;
-      if (qaMode === 'out' && qaQty > latestActual) throw new Error('OVER_STOCK');
-      const finalNext = qaMode === 'out' ? Math.max(0, latestActual - qaQty) : latestActual + qaQty;
-      tx.update(ref, { 'Actual': String(finalNext), _updatedAt: serverTimestamp(), _device: DEVICE_ID, _updatedBy:getCurrentUserName() });
+    const { data: finalActual, error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
+      item_id: qaSelectedItem._id,
+      qty: parseFloat(qaQty),
+      mode: qaMode,
+      new_loc: null,
+      new_pos: null,
+      device_id: DEVICE_ID,
+      user_name: getCurrentUserName()
     });
-    await addDoc(collection(db, 'logs'), {
-      type: qaMode, partId: qaSelectedItem['Part ID'],
+    if (rpcErr) {
+      if (rpcErr.message.includes('OVER_STOCK')) throw new Error('OVER_STOCK');
+      if (rpcErr.message.includes('ZERO_STOCK')) throw new Error('ZERO_STOCK');
+      throw rpcErr;
+    }
+
+    await supabase.from('logs').insert([{
+      type: qaMode,
+      partId: qaSelectedItem['Part ID'],
       msg: `${qaMode === 'out' ? '📤 เบิก' : '📥 รับ'} ${qaQty} pcs`,
-      note, ts: serverTimestamp(), device: DEVICE_ID
-    });
+      note,
+      device: DEVICE_ID,
+      user: getCurrentUserName()
+    }]);
+
     invalidateLogsCache();
     toast(`${qaMode === 'out' ? 'เบิก' : 'รับเข้า'} ${qaQty} pcs เรียบร้อย`, 'success');
     qaClearSearch();
     document.getElementById('qaNote').value = '';
   } catch(e) {
     if (e.message === 'OVER_STOCK') toast('Stock ถูกแก้ไข — จำนวนไม่พอ กรุณาลองใหม่', 'error');
+    else if (e.message === 'ZERO_STOCK') toast('Stock เป็นศูนย์ ไม่สามารถเบิกได้', 'error');
     else toast('เกิดข้อผิดพลาด: ' + e.message, 'error');
     setSyncing('error');
   } finally { btn.classList.remove('btn-loading'); }
@@ -2820,24 +2832,17 @@ window.autoFillMainCategory = () => {
 };
 
 async function getNextPartIdSafe() {
-  const counterRef = doc(db, 'store_meta', 'partIdCounter');
-  let newNum = 1;
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(counterRef);
+  const { data, error } = await supabase.rpc('get_next_part_id');
+  if (error) {
+    console.error("RPC Error in getNextPartIdSafe:", error);
     let max = 0;
     items.forEach(r => {
       const m = String(r['Part ID'] || '').match(/^SPFL-C-(\d+)$/i);
       if (m) max = Math.max(max, parseInt(m[1], 10));
     });
-    if (snap.exists()) {
-      const dbCurrent = snap.data().current || 0;
-      newNum = Math.max(dbCurrent, max) + 1;
-    } else {
-      newNum = max + 1;
-    }
-    tx.set(counterRef, { current: newNum }, { merge: true });
-  });
-  return `SPFL-C-${String(newNum).padStart(4, '0')}`;
+    return `SPFL-C-${String(max + 1).padStart(4, '0')}`;
+  }
+  return `SPFL-C-${String(data).padStart(4, '0')}`;
 }
 
 function setLocationValue(val) {
@@ -3358,15 +3363,28 @@ window.saveItem = async () => {
       if (selectedPhotoFile) {
         const compressedBlob = await compressImage(selectedPhotoFile);
         const cleanPartId = finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_');
-        const storageRef = ref(storage, `parts/${cleanPartId}.jpg`);
-        await uploadBytes(storageRef, compressedBlob);
-        uploadedUrl = await getDownloadURL(storageRef);
+        
+        // Upload photo to Supabase storage 'parts' bucket
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from('parts')
+          .upload(`${cleanPartId}.jpg`, compressedBlob, {
+            upsert: true,
+            contentType: 'image/jpeg'
+          });
+        if (uploadErr) throw uploadErr;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('parts')
+          .getPublicUrl(`${cleanPartId}.jpg`);
+        uploadedUrl = urlData.publicUrl;
       } else {
         if (currentPhotoUrl) {
           try {
             const cleanPartId = finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_');
-            const storageRef = ref(storage, `parts/${cleanPartId}.jpg`);
-            await deleteObject(storageRef);
+            await supabase.storage
+              .from('parts')
+              .remove([`${cleanPartId}.jpg`]);
           } catch (delErr) {
             console.warn("Storage deletion warning:", delErr);
           }
@@ -3397,19 +3415,46 @@ window.saveItem = async () => {
       'Replace Plan': cleanSingleLine(document.getElementById('f_replaceplan').value),
       'CLASS': cleanSingleLine(document.getElementById('f_class').value),
       'imageUrl': uploadedUrl,
-      _updatedAt: serverTimestamp(), _device: DEVICE_ID, _updatedBy: getCurrentUserName()
+      _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName()
     };
 
     if (editItemId) {
       const oldItem = items.find(x => x._id === editItemId);
       const changeNote = getItemChangeSummary(oldItem, data);
-      await setDoc(doc(db,'inventory',editItemId),data,{merge:true});
-      await addDoc(collection(db,'logs'),{type:'edit',partId:finalPartId,msg:'แก้ไขข้อมูล',note:changeNote,ts:serverTimestamp(),device:DEVICE_ID,user:getCurrentUserName()});
+      
+      const { error: updateErr } = await supabase
+        .from('inventory')
+        .update(data)
+        .eq('id', editItemId);
+      if (updateErr) throw updateErr;
+
+      await supabase.from('logs').insert([{
+        type: 'edit',
+        partId: finalPartId,
+        msg: 'แก้ไขข้อมูล',
+        note: changeNote,
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      }]);
+
       invalidateLogsCache();
       toast('บันทึกสำเร็จ','success');
     } else {
-      await addDoc(collection(db,'inventory'),data);
-      await addDoc(collection(db,'logs'),{type:'add',partId:finalPartId,msg:`เพิ่มรายการใหม่ — ${data['Brand']||''} ${data['Model']||data['Description']||''}`.trim(),note:`${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`,ts:serverTimestamp(),device:DEVICE_ID,user:getCurrentUserName()});
+      const newId = crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15);
+      const { error: insertErr } = await supabase
+        .from('inventory')
+        .insert([{ id: newId, ...data }]);
+      if (insertErr) throw insertErr;
+
+      await supabase.from('logs').insert([{
+        type: 'add',
+        partId: finalPartId,
+        msg: `เพิ่มรายการใหม่ — ${data['Brand']||''} ${data['Model']||data['Description']||''}`.trim(),
+        note: `${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`,
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      }]);
+
       invalidateLogsCache();
       if (finalPartId !== partId) {
         toast(`เพิ่มรายการสำเร็จ (หมายเลข Part ID: ${finalPartId})`,'success');
@@ -3436,8 +3481,22 @@ window.confirmDelete = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    await deleteDoc(doc(db,'inventory',deleteItemId));
-    if(r) await addDoc(collection(db,'logs'),{type:'delete',partId:r['Part ID']||'',msg:'ลบรายการ',note:'',ts:serverTimestamp(),device:DEVICE_ID});
+    const { error: delErr } = await supabase
+      .from('inventory')
+      .delete()
+      .eq('id', deleteItemId);
+    if (delErr) throw delErr;
+
+    if (r) {
+      await supabase.from('logs').insert([{
+        type: 'delete',
+        partId: r['Part ID']||'',
+        msg: 'ลบรายการ',
+        note: '',
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      }]);
+    }
     invalidateLogsCache();
     closeModal('deleteModal');
     toast('ลบรายการเรียบร้อย','warn');
@@ -3518,50 +3577,76 @@ window.confirmCSVUpload = async () => {
   document.getElementById('loadingOverlay').style.display='flex';
   setSyncing('syncing');
   try {
-    let count = 0;
     if(mode === 'replace') {
-      const existing = await getDocs(collection(db,'inventory'));
-      const delBatches = [];
-      let batch = writeBatch(db);
-      existing.forEach(d=>{
-        batch.delete(d.ref); count++;
-        if(count%490===0){ delBatches.push(batch); batch=writeBatch(db); count=0; }
-      });
-      if(count>0) delBatches.push(batch);
-      for(const b of delBatches) await b.commit();
+      // Delete all existing rows
+      const { error: delErr } = await supabase.from('inventory').delete().neq('id', 'dummy_nonexistent');
+      if (delErr) throw delErr;
 
-      const addBatches=[];
-      let ab=writeBatch(db); count=0;
-      for(const row of csvParsedData){
-        const ref=doc(collection(db,'inventory'));
-        ab.set(ref,{...cleanItemRowData(row),_updatedAt:serverTimestamp(),_device:DEVICE_ID,_updatedBy:getCurrentUserName()});
-        count++;
-        if(count%490===0){ addBatches.push(ab); ab=writeBatch(db); count=0; }
+      // Insert new rows in chunks
+      const chunks = [];
+      for (let i = 0; i < csvParsedData.length; i += 500) {
+        chunks.push(csvParsedData.slice(i, i + 500));
       }
-      if(count>0) addBatches.push(ab);
-      for(const b of addBatches) await b.commit();
+      for (const chunk of chunks) {
+        const rows = chunk.map(row => {
+          const newId = crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15);
+          return {
+            id: newId,
+            ...cleanItemRowData(row),
+            _updatedAt: new Date().toISOString(),
+            _device: DEVICE_ID,
+            _updatedBy: getCurrentUserName()
+          };
+        });
+        const { error: insertErr } = await supabase.from('inventory').insert(rows);
+        if (insertErr) throw insertErr;
+      }
     } else {
-      const existing = await getDocs(collection(db,'inventory'));
+      // Merge: get existing ids
+      const { data: existing, error: getErr } = await supabase.from('inventory').select('id, Part ID');
+      if (getErr) throw getErr;
+
       const byPartId = new Map();
       existing.forEach(d => {
-        const data = d.data();
-        const pid = (data['Part ID']||'').trim().toLowerCase();
-        if(pid) byPartId.set(pid, d.ref);
+        const pid = (d['Part ID']||'').trim().toLowerCase();
+        if(pid) byPartId.set(pid, d.id);
       });
-      const batches=[];
-      let mb=writeBatch(db); count=0;
-      for(const row of csvParsedData){
+
+      const toUpsert = [];
+      for (const row of csvParsedData) {
         const pid = (row['Part ID']||'').trim().toLowerCase();
         if(!pid) continue;
-        const ref = byPartId.get(pid) || doc(collection(db,'inventory'));
-        mb.set(ref,{...cleanItemRowData(row),_updatedAt:serverTimestamp(),_device:DEVICE_ID,_updatedBy:getCurrentUserName()},{merge:true});
-        count++;
-        if(count%490===0){ batches.push(mb); mb=writeBatch(db); count=0; }
+        const existingId = byPartId.get(pid);
+        const newId = existingId || (crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15));
+        toUpsert.push({
+          id: newId,
+          ...cleanItemRowData(row),
+          _updatedAt: new Date().toISOString(),
+          _device: DEVICE_ID,
+          _updatedBy: getCurrentUserName()
+        });
       }
-      if(count>0) batches.push(mb);
-      for(const b of batches) await b.commit();
+
+      // Upsert in chunks
+      const chunks = [];
+      for (let i = 0; i < toUpsert.length; i += 500) {
+        chunks.push(toUpsert.slice(i, i + 500));
+      }
+      for (const chunk of chunks) {
+        const { error: upsertErr } = await supabase.from('inventory').upsert(chunk);
+        if (upsertErr) throw upsertErr;
+      }
     }
-    await addDoc(collection(db,'logs'),{type:'add',partId:'SYSTEM',msg:`📂 ${mode==='replace'?'Replace CSV':'Merge CSV'} ${csvParsedData.length} รายการ`,note:'',ts:serverTimestamp(),device:DEVICE_ID});
+    
+    await supabase.from('logs').insert([{
+      type: 'add',
+      partId: 'SYSTEM',
+      msg: `📂 ${mode==='replace'?'Replace CSV':'Merge CSV'} ${csvParsedData.length} รายการ`,
+      note: '',
+      device: DEVICE_ID,
+      user: getCurrentUserName()
+    }]);
+
     invalidateLogsCache();
     localStorage.setItem('csvUploaded','1');
     updateHomeStats();
@@ -3583,17 +3668,18 @@ window.confirmClearAllData = async () => {
   document.getElementById('loadingOverlay').style.display = 'flex';
   setSyncing('syncing');
   try {
-    const existing = await getDocs(collection(db,'inventory'));
-    const delBatches = [];
-    let batch = writeBatch(db);
-    let count = 0;
-    existing.forEach(d => {
-      batch.delete(d.ref); count++;
-      if(count % 490 === 0){ delBatches.push(batch); batch = writeBatch(db); count = 0; }
-    });
-    if(count > 0) delBatches.push(batch);
-    for(const b of delBatches) await b.commit();
-    await addDoc(collection(db,'logs'),{type:'delete',partId:'SYSTEM',msg:`🗑 ล้างข้อมูลทั้งหมด`,note:'',ts:serverTimestamp(),device:DEVICE_ID});
+    const { error: delErr } = await supabase.from('inventory').delete().neq('id', 'dummy_nonexistent');
+    if (delErr) throw delErr;
+
+    await supabase.from('logs').insert([{
+      type: 'delete',
+      partId: 'SYSTEM',
+      msg: `🗑 ล้างข้อมูลทั้งหมด`,
+      note: '',
+      device: DEVICE_ID,
+      user: getCurrentUserName()
+    }]);
+
     invalidateLogsCache();
     localStorage.removeItem('csvUploaded');
     items = [];
@@ -3634,20 +3720,19 @@ async function boot() {
   };
 
   try {
-    document.getElementById('loadingText').textContent = 'กำลังเชื่อมต่อ Firebase...';
+    document.getElementById('loadingText').textContent = 'กำลังเชื่อมต่อ Supabase...';
 
-    // r21.6: same fast behavior as earlier versions.
-    // Start Firestore realtime sync immediately. Do not wait for Anonymous Auth.
+    // Start Supabase realtime sync immediately
     startRealtimeSync();
 
-    // Auth is optional/background only. It must not delay item counts.
-    if (typeof signInAnonymously === 'function' && auth) {
-      signInAnonymously(auth).catch(authErr => {
+    // Optional background anonymous authentication
+    if (supabase && supabase.auth) {
+      supabase.auth.signInAnonymously().catch(authErr => {
         console.warn('Anonymous auth skipped/not ready:', authErr.message);
       });
     }
 
-    // Open UI shortly after sync starts. First Firestore snapshot will update counts as soon as it arrives.
+    // Open UI shortly after sync starts
     setTimeout(() => {
       try {
         initFilters();
@@ -3667,7 +3752,7 @@ async function boot() {
   } catch(e){
     console.error('Boot error:', e);
     document.getElementById('loadingText').textContent = 'เชื่อมต่อไม่ได้: '+e.message;
-    toast('Firebase error: '+e.message,'error');
+    toast('Supabase error: '+e.message,'error');
     hideLoadingAndOpen();
   }
 }
@@ -4077,20 +4162,32 @@ window.confirmAdjust = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    await runTransaction(db, async(tx)=>{
-      const ref=doc(db,'inventory',adjustItem._id);
-      const snap=await tx.get(ref);
-      const latest=parseFloat(snap.data()['Actual'])||0;
-      if(adjustMode==='out' && latest<=0 && adjustQty>0) throw new Error('ZERO_STOCK');
-      if(adjustMode==='out' && adjustQty>latest) throw new Error('OVER_STOCK');
-      const fn=adjustQty===0 ? latest : (adjustMode==='in'?latest+adjustQty:Math.max(0,latest-adjustQty));
-      const updateData = {'Actual':String(fn),_updatedAt:serverTimestamp(),_device:DEVICE_ID,_updatedBy:getCurrentUserName()};
-      if(newLocation) updateData['Location'] = newLocation;
-      if(newPosition) updateData['Position'] = newPosition;
-      tx.update(ref, updateData);
+    const { data: finalActual, error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
+      item_id: adjustItem._id,
+      qty: parseFloat(adjustQty),
+      mode: adjustMode,
+      new_loc: newLocation,
+      new_pos: newPosition,
+      device_id: DEVICE_ID,
+      user_name: getCurrentUserName()
     });
+    if (rpcErr) {
+      if (rpcErr.message.includes('ZERO_STOCK')) throw new Error('ZERO_STOCK');
+      if (rpcErr.message.includes('OVER_STOCK')) throw new Error('OVER_STOCK');
+      throw rpcErr;
+    }
+
     const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
-    await addDoc(collection(db,'logs'),{ type:adjustQty===0?'edit':(adjustMode==='in'?'in':'out'), partId:adjustItem['Part ID'], msg:actionText, note:finalNote, ts:serverTimestamp(), device:DEVICE_ID, user:getCurrentUserName() });
+    
+    await supabase.from('logs').insert([{
+      type: adjustQty===0 ? 'edit' : (adjustMode==='in' ? 'in' : 'out'),
+      partId: adjustItem['Part ID'],
+      msg: actionText,
+      note: finalNote,
+      device: DEVICE_ID,
+      user: getCurrentUserName()
+    }]);
+
     invalidateLogsCache();
     closeModal('adjustModal');
     toast(adjustQty===0 ? 'อัปเดตตำแหน่งเรียบร้อย' : `${adjustMode==='in'?'รับของ':'เบิกของ'} ${adjustQty} pcs เรียบร้อย`,'success');

@@ -428,24 +428,14 @@
     </div>
   </div>
 
-  <!-- Firebase Integration -->
+  <!-- Supabase Integration -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDU0ny-bb8lecs2CVhpDt3J97Minh0WT94",
-      authDomain: "aft-cmms.firebaseapp.com",
-      projectId: "aft-cmms",
-      storageBucket: "aft-cmms.firebasestorage.app",
-      messagingSenderId: "285697232176",
-      appId: "1:285697232176:web:dc05c62128c49ac10e4cf5"
-    };
+    const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybHhlYWlnaHBmZ3NkdXFjY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNjg0MDgsImV4cCI6MjA5ODY0NDQwOH0.ep0JJO2Scb7PGUIxtx1t7cHMxuEmc-Jhxjl_12U46O0";
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // Global States
     let items = [];
@@ -464,15 +454,16 @@
     // Load data
     async function loadData() {
       try {
-        if (typeof signInAnonymously === 'function' && auth) {
-          await signInAnonymously(auth).catch(err => console.warn("Auth skipped:", err));
+        if (supabase && supabase.auth) {
+          await supabase.auth.signInAnonymously().catch(err => console.warn("Auth skipped:", err));
         }
 
-        const querySnapshot = await getDocs(collection(db, 'inventory'));
-        items = [];
-        querySnapshot.forEach(doc => {
-          items.push({ _id: doc.id, ...doc.data() });
-        });
+        const { data, error } = await supabase
+          .from('inventory')
+          .select('*');
+        if (error) throw error;
+
+        items = data.map(d => ({ _id: d.id, ...d }));
 
         // Sort items by Part ID descending by default
         items.sort((a, b) => (b['Part ID'] || '').localeCompare(a['Part ID'] || ''));
