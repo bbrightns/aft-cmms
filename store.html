@@ -1874,83 +1874,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 }
 
 /* Auth & Profile Styles */
-.login-overlay {
-  position: fixed;
-  inset: 0;
-  background: radial-gradient(circle at center, #ffffff 0%, #f1f5f9 100%);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 24px;
-}
-.login-card {
-  background: #ffffff;
-  border-radius: 16px;
-  border: 1px solid rgba(0, 31, 107, 0.08);
-  box-shadow: 0 20px 25px -5px rgba(0, 31, 107, 0.05), 0 10px 10px -5px rgba(0, 31, 107, 0.03);
-  padding: 40px 32px;
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-  font-family: var(--sans);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-.login-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 25px 30px -5px rgba(0, 31, 107, 0.08), 0 15px 15px -5px rgba(0, 31, 107, 0.04);
-}
-.login-logo {
-  height: 48px;
-  margin-bottom: 24px;
-  object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
-}
-.login-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--agc-blue);
-  margin-bottom: 10px;
-  letter-spacing: -0.5px;
-}
-.login-subtitle {
-  font-size: 13.5px;
-  color: var(--text2);
-  line-height: 1.6;
-  margin-bottom: 32px;
-  font-weight: 400;
-}
-.btn-google {
-  background: #ffffff;
-  color: #374151;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 12px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  width: 100%;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: var(--sans);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-.btn-google:hover {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-.btn-google:active {
-  transform: scale(0.98);
-}
-.btn-google svg {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
-}
 .user-profile-menu {
   background: rgba(255, 255, 255, 0.12);
   border-radius: 6px;
@@ -2003,23 +1926,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   <div class="loading-text" id="loadingText">กำลังโหลดข้อมูล...</div>
 </div>
 
-<!-- LOGIN OVERLAY -->
-<div class="login-overlay" id="loginOverlay" style="display:none">
-  <div class="login-card">
-    <img src="logo2.png" alt="AGC Logo" class="login-logo">
-    <div class="login-title">Coating Store System</div>
-    <div class="login-subtitle">กรุณาเข้าสู่ระบบด้วยบัญชี Google ของท่านเพื่อเริ่มใช้งาน</div>
-    <button class="btn-google" onclick="signInWithGoogle()">
-      <svg class="google-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
-        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22-.03-.63z"/>
-        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-      </svg>
-      ลงชื่อเข้าใช้ด้วย Google
-    </button>
-  </div>
-</div>
+
 
 <!-- MODAL: User Profile Settings -->
 <div class="modal-overlay" id="profileModal" style="display:none" onclick="closeOnOverlay(event,'profileModal')">
@@ -3970,14 +3877,14 @@ async function boot() {
           setTimeout(() => openProfileModal(true), 200);
         }
       } else {
-        document.getElementById('loginOverlay').style.display = 'flex';
+        // Redirect to login.html if there is no session
+        window.location.replace("login.html");
       }
 
       // Listen for auth changes
       supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
           currentUser = session.user;
-          document.getElementById('loginOverlay').style.display = 'none';
           document.getElementById('userProfileMenu').style.display = 'flex';
           
           let displayName = currentUser.user_metadata?.display_name;
@@ -4002,7 +3909,8 @@ async function boot() {
         } else {
           currentUser = null;
           document.getElementById('userProfileMenu').style.display = 'none';
-          document.getElementById('loginOverlay').style.display = 'flex';
+          // Redirect to login.html
+          window.location.replace("login.html");
         }
         if (window.lucide) lucide.createIcons();
       });
@@ -4793,22 +4701,6 @@ function onScanFailure(error) {
 }
 
 // ===== AUTH & PROFILE MANAGEMENT =====
-async function signInWithGoogle() {
-  try {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + window.location.pathname
-      }
-    });
-    if (error) throw error;
-  } catch (err) {
-    console.error('Google Sign In error:', err);
-    toast('ไม่สามารถลงชื่อเข้าใช้งานด้วย Google ได้: ' + err.message, 'error');
-  }
-}
-window.signInWithGoogle = signInWithGoogle;
-
 async function signOut() {
   try {
     const { error } = await supabase.auth.signOut();
@@ -4816,7 +4708,7 @@ async function signOut() {
     
     currentUser = null;
     document.getElementById('userProfileMenu').style.display = 'none';
-    document.getElementById('loginOverlay').style.display = 'flex';
+    window.location.replace("login.html");
     
     // Remove forced flag on profile modal before closing
     document.getElementById('profileModal').removeAttribute('data-force');
