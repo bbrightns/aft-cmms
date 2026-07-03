@@ -36,7 +36,7 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 .header-nav { display: flex; align-items: center; gap: 8px; }
 .logo-img { height: 34px; width: auto; display: block; }
 .nav-home { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 10px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; font-family: var(--mono); letter-spacing: 0.5px; transition: background 0.15s; }
-.nav-home:hover { background: rgba(255,255,255,0.26); }
+a.nav-home:hover { background: rgba(255,255,255,0.26); }
 .nav-home i { width: 14px; height: 14px; }
 .nav-sep { color: rgba(255,255,255,0.3); font-size: 15px; font-weight: 300; }
 .nav-mod { color: rgba(255,255,255,0.82); font-size: 14px; font-weight: 600; text-decoration: none; font-family: var(--sans); transition: color 0.15s; }
