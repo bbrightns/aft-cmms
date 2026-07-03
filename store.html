@@ -228,20 +228,25 @@ tr:hover td { background: var(--surface2); }
 .inv-card-stock-wrap { flex-shrink: 0; text-align: right; }
 .inv-card-stock { font-family: var(--mono); font-size: 18px; font-weight: 700; padding: 4px 12px; border-radius: 10px; display: inline-block; line-height: 1.2; }
 .inv-card-stock-label { font-size: 9px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; font-weight: 600; }
-.inv-card-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+.inv-card-meta { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; align-items: flex-start; }
+.card-description-text { font-size: 13px; color: var(--text); font-weight: 600; margin-top: 4px; }
 .inv-card-loc { width: 100%; font-size: 12px; color: var(--text2); margin-top: 4px; display: flex; align-items: center; gap: 4px; }
-.card-taxonomy { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.card-taxonomy { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
 .card-taxonomy-text { font-size: 12px; color: var(--text2); font-weight: 500; }
-.card-location-line { width: 100%; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); margin-top: 8px; }
+.card-location-line { width: 100%; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); margin-top: 4px; }
 .card-location-line [data-lucide] { color: var(--text3); width: 13px; height: 13px; flex-shrink: 0; }
 .pos-chip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff; background: var(--agc-blue); padding: 3px 9px; border-radius: 6px; letter-spacing: 0.3px; }
 .inv-card-loc-icon { color: var(--text3); }
 .inv-card-actions { display: flex; gap: 6px; }
-.inv-card-btn { flex: 1; padding: 9px 6px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); font-family: var(--sans); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; color: var(--text2); }
+.inv-card-btn { flex: 1; padding: 10px 8px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); font-family: var(--sans); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.15s; text-align: center; color: var(--text2); }
 .inv-card-btn:hover, .inv-card-btn:active { border-color: var(--agc-blue); color: var(--agc-blue); background: #f0f2fa; }
 .inv-card-btn.del:hover, .inv-card-btn.del:active { border-color: var(--danger); color: var(--danger); background: #fde8ef; }
 .inv-card-btn.primary { background: var(--agc-blue); color: #fff; border-color: var(--agc-blue); }
 .inv-card-btn.primary:hover, .inv-card-btn.primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
+.inv-card-btn.withdraw { background: var(--agc-red); color: #fff; border-color: var(--agc-red); }
+.inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #b91c1c; border-color: #b91c1c; color: #fff; }
+.inv-card-btn.deposit { background: var(--accent2); color: #fff; border-color: var(--accent2); }
+.inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #047857; border-color: #047857; color: #fff; }
 
 /* BADGES */
 .badge-cat { background: #e0e4f0; color: var(--agc-blue); }
@@ -1828,7 +1833,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 <header class="header">
   <div class="header-nav">
     <img src="logo.png" alt="AGC" class="logo-img">
-    <a href="index.html" class="nav-home">AFT-CMMS</a>
+    <span class="nav-home" style="cursor: default;">AFT-CMMS</span>
     <span class="nav-sep">/</span>
     <a href="store.html" class="nav-mod">Storage Management</a>
   </div>
@@ -1886,7 +1891,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <!--รับของ-->
       <button class="home-action-card card-in" onclick="goAction('in')">
         <div class="hac-icon hac-icon-in"><i data-lucide="log-in" style="width:32px;height:32px"></i></div>
-        <h2 style="color:#059669">รับของเข้า</h2>
+        <h2 style="color:#059669">รับของ</h2>
         <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
     </div>
@@ -2069,8 +2074,8 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     </div>
     <div class="modal-body">
       <div style="display:flex;gap:12px;justify-content:center">
-        <button class="btn btn-success" onclick="setAdjustMode('in')" id="btnIn"><i data-lucide="log-in"></i> เติมของ</button>
         <button class="btn" style="background:var(--agc-red);color:#fff" onclick="setAdjustMode('out')" id="btnOut"><i data-lucide="log-out"></i> เบิกของ</button>
+        <button class="btn btn-success" onclick="setAdjustMode('in')" id="btnIn"><i data-lucide="log-in"></i> รับของ</button>
       </div>
       <div style="text-align:center">
         <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Stock ปัจจุบัน: <span id="currentStock" style="font-family:var(--mono);font-weight:700;color:var(--agc-blue)"></span></div>
@@ -2501,7 +2506,7 @@ window.goAction = (mode) => {
     document.getElementById('qaConfirmBtn').className = 'btn-confirm btn-confirm-out';
     document.getElementById('qaConfirmBtn').innerHTML = '<i data-lucide="check-circle"></i> ตรวจสอบและยืนยัน';
   } else {
-    document.getElementById('actionTitle').innerHTML = '<i data-lucide="log-in"></i> <span style="color:var(--accent2)">รับของเข้า</span>';
+    document.getElementById('actionTitle').innerHTML = '<i data-lucide="log-in"></i> <span style="color:var(--accent2)">รับของ</span>';
     document.getElementById('actionSubtitle').textContent = 'ค้นหาอะไหล่ที่ต้องการรับเข้า';
     document.getElementById('qaConfirmBtn').className = 'btn-confirm btn-confirm-in';
     document.getElementById('qaConfirmBtn').innerHTML = '<i data-lucide="check-circle"></i> ตรวจสอบและยืนยัน';
@@ -2987,9 +2992,9 @@ function setAdjustPositionValue(val) {
   window.updateAdjPositionPreview(true);
 }
 
-window.openAdjust = (id) => {
+window.openAdjust = (id, initialMode = 'in') => {
   adjustItem=items.find(x=>x._id===id); if(!adjustItem) return;
-  adjustQty=1; adjustMode='in';
+  adjustQty=1; adjustMode=initialMode;
   document.getElementById('adjustTitle').textContent=(adjustItem['Brand']||'')+' '+(adjustItem['Model']||'');
   document.getElementById('adjustSubtitle').textContent=(adjustItem['Part ID']||'')+' · '+(adjustItem['Sub Category']||'');
   document.getElementById('currentStock').textContent=adjustItem['Actual']||'—';
@@ -2999,7 +3004,7 @@ window.openAdjust = (id) => {
   if(locEl) locEl.value = adjustItem['Location'] || '';
   setAdjustPositionValue(adjustItem['Position'] || '');
   document.getElementById('adjWarnMsg').style.display='none';
-  setAdjustMode('in');
+  setAdjustMode(initialMode);
   document.getElementById('adjustModal').style.display='flex';
   preventEnterInTextFields(document.getElementById('adjustModal'));
   refreshIcons();
@@ -3682,7 +3687,7 @@ function renderCards() {
     const deptCls = dept === 'MECH' ? 'dept-chip mech' : 'dept-chip';
     const location = r['Location'] || '';
     const position = r['Position'] || '';
-    const locLine = [location, position].filter(Boolean).join('  ');
+    const locHtml = (location ? highlightText(location, q) : '') + (position ? ` <span style="color:var(--agc-blue);font-weight:700;font-family:var(--mono);margin-left:6px">${highlightText(position, q)}</span>` : '');
     const reorder = getReorderSuggestion(r);
     const hasBrand = r['Brand'] && r['Brand'].trim();
     const displayName = hasBrand ? ((r['Brand']||'') + ' ' + (r['Model']||'')) : (r['Description'] || '—');
@@ -3699,13 +3704,14 @@ function renderCards() {
         </div>
       </div>
       <div class="inv-card-meta">
+        <div class="card-description-text">${highlightText(r['Description'] || '—', q)}</div>
         <div class="card-taxonomy"><span class="card-taxonomy-text">${highlightText(taxonomyText(r), q)}</span></div>
-        ${locLine ? `<div class="card-location-line"><i data-lucide="map-pin"></i><span>${highlightText(locLine, q)}</span></div>` : ''}
+        ${(location || position) ? `<div class="card-location-line"><i data-lucide="map-pin"></i><span>${locHtml}</span></div>` : ''}
         ${reorder ? `<div class="reorder-chip"><i data-lucide="shopping-cart" style="width:12px;height:12px"></i>Suggest order: ${reorder} pcs</div>` : ''}
       </div>
       <div class="inv-card-actions">
-        <button class="inv-card-btn primary" onclick="event.stopPropagation();openAdjust('${r._id}')"><i data-lucide="package" style="width:14px;height:14px"></i> Adjust</button>
-        <button class="inv-card-btn del" onclick="event.stopPropagation();openDelete('${r._id}')"><i data-lucide="trash-2" style="width:14px;height:14px"></i></button>
+        <button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>
+        <button class="inv-card-btn deposit" onclick="event.stopPropagation();openAdjust('${r._id}', 'in')"><i data-lucide="log-in" style="width:14px;height:14px"></i> รับของ</button>
       </div>
     </div>`;
   }).join('');
@@ -3781,7 +3787,7 @@ window.qaShowConfirm = () => {
   const mn = parseFloat(qaSelectedItem['Min']) || 0;
   const next = qaMode === 'out' ? Math.max(0, cur - qaQty) : cur + qaQty;
   const note = cleanSingleLine(document.getElementById('qaNote').value);
-  const action = qaMode === 'out' ? '📤 เบิกของ' : '📥 รับของเข้า';
+  const action = qaMode === 'out' ? '📤 เบิกของ' : '📥 รับของ';
   document.getElementById('confirmModalTitle').textContent = action;
   document.getElementById('confirmSummary').innerHTML = `
     <div class="confirm-row"><span>อะไหล่</span><span><strong>${escapeHtml((qaSelectedItem['Brand'] || '') + ' ' + (qaSelectedItem['Model'] || ''))}</strong></span></div>
@@ -3857,11 +3863,11 @@ window.confirmAdjust = async () => {
       if(newPosition) updateData['Position'] = newPosition;
       tx.update(ref, updateData);
     });
-    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'เติม':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
+    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
     await addDoc(collection(db,'logs'),{ type:adjustQty===0?'edit':(adjustMode==='in'?'in':'out'), partId:adjustItem['Part ID'], msg:actionText, note:finalNote, ts:serverTimestamp(), device:DEVICE_ID, user:getCurrentUserName() });
     invalidateLogsCache();
     closeModal('adjustModal');
-    toast(adjustQty===0 ? 'อัปเดตตำแหน่งเรียบร้อย' : `${adjustMode==='in'?'เติมของ':'เบิกของ'} ${adjustQty} pcs เรียบร้อย`,'success');
+    toast(adjustQty===0 ? 'อัปเดตตำแหน่งเรียบร้อย' : `${adjustMode==='in'?'รับของ':'เบิกของ'} ${adjustQty} pcs เรียบร้อย`,'success');
   } catch(e){
     if(e.message==='ZERO_STOCK') toast('Stock is zero. Cannot withdraw.','error');
     else if(e.message==='OVER_STOCK') toast('Stock ถูกแก้ไขพร้อมกัน — จำนวนไม่พอ','error');
