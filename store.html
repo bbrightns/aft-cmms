@@ -4085,6 +4085,7 @@ async function boot() {
     // Authentication and Session Initialization
     if (supabase && supabase.auth) {
       const { data: { session } } = await supabase.auth.getSession();
+      const isGuest = localStorage.getItem('isGuest') === 'true';
       
       if (session) {
         currentUser = session.user;
@@ -4109,6 +4110,26 @@ async function boot() {
         document.getElementById('userDisplayNameText').textContent = displayName || getCurrentUserName();
         
         // Force display name prompt only if it's completely empty
+        if (!displayName) {
+          setTimeout(() => openProfileModal(true), 200);
+        }
+      } else if (isGuest) {
+        // Logged in as Guest locally
+        currentUser = {
+          isGuest: true,
+          email: 'guest@local',
+          user_metadata: {
+            display_name: localStorage.getItem('storeUserName') || ''
+          }
+        };
+        
+        document.getElementById('userProfileMenu').style.display = 'flex';
+        const header = document.querySelector('.header');
+        if (header) header.style.display = 'flex';
+        
+        const displayName = currentUser.user_metadata.display_name;
+        document.getElementById('userDisplayNameText').textContent = displayName || 'Guest User';
+        
         if (!displayName) {
           setTimeout(() => openProfileModal(true), 200);
         }
@@ -4146,6 +4167,10 @@ async function boot() {
             closeModal('profileModal');
           }
         } else {
+          if (localStorage.getItem('isGuest') === 'true') {
+            // Keep guest login active, don't redirect
+            return;
+          }
           currentUser = null;
           document.getElementById('userProfileMenu').style.display = 'none';
           // Redirect to login.html
@@ -4955,6 +4980,23 @@ function onScanFailure(error) {
 // ===== AUTH & PROFILE MANAGEMENT =====
 async function signOut() {
   try {
+    if (localStorage.getItem('isGuest') === 'true') {
+      localStorage.removeItem('isGuest');
+      localStorage.removeItem('storeUserName');
+      currentUser = null;
+      document.getElementById('userProfileMenu').style.display = 'none';
+      window.location.replace("login.html");
+      
+      // Remove forced flag on profile modal before closing
+      document.getElementById('profileModal').removeAttribute('data-force');
+      const closeBtn = document.getElementById('profileCloseBtn');
+      if (closeBtn) closeBtn.style.display = 'flex';
+      
+      closeModal('profileModal');
+      toast('ลงชื่อออกสำเร็จแล้ว', 'success');
+      return;
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
     
@@ -5001,6 +5043,22 @@ async function saveProfileName() {
   const name = cleanSingleLine(nameInput.value || '');
   if (!name) {
     toast('กรุณาระบุชื่อของคุณ', 'warn');
+    return;
+  }
+  
+  if (currentUser && currentUser.isGuest) {
+    currentUser.user_metadata = currentUser.user_metadata || {};
+    currentUser.user_metadata.display_name = name;
+    localStorage.setItem('storeUserName', name);
+    document.getElementById('userDisplayNameText').textContent = name;
+    
+    document.getElementById('profileModal').removeAttribute('data-force');
+    const closeBtn = document.getElementById('profileCloseBtn');
+    if (closeBtn) closeBtn.style.display = 'flex';
+    
+    closeModal('profileModal');
+    toast('บันทึกชื่อเรียบร้อยแล้ว (Guest)', 'success');
+    if (window.lucide) lucide.createIcons();
     return;
   }
   
