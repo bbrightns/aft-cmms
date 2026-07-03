@@ -3694,9 +3694,12 @@ function renderCards() {
     return `<div class="inv-card" onclick="openEdit('${r._id}')" style="cursor:pointer">
       <div class="inv-card-top">
         <div style="flex:1;min-width:0">
-          ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            ${dept ? `<div class="${deptCls}" style="margin-bottom:0">${escapeHtml(dept)}</div>` : ''}
+            <span style="font-family:var(--mono);font-size:12px;color:var(--text2);font-weight:600">${highlightText(r['Part ID']||'—', q)}</span>
+          </div>
           <div class="inv-card-name">${highlightText(displayName, q)}</div>
-          <div class="inv-card-pid" onclick="event.stopPropagation();openDetail('${r._id}')" style="cursor:pointer">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span></div>
+          <div class="inv-card-pid">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span></div>
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>
