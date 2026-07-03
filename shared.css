@@ -46,13 +46,23 @@ body { font-family: var(--sans); background: var(--bg); color: var(--text); min-
 }
 .header-nav { display: flex; align-items: center; gap: 8px; }
 .logo-img { height: 34px; width: auto; display: block; }
-.nav-home { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 10px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; font-family: var(--mono); letter-spacing: 0.5px; transition: background 0.15s; }
+.nav-home { display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.15); border-radius: 6px; padding: 5px 10px; color: #fff; font-size: 13px; font-weight: 700; text-decoration: none; font-family: var(--mono); letter-spacing: 0.5px; transition: background 0.15s; height: 32px; box-sizing: border-box; }
 a.nav-home:hover { background: rgba(255,255,255,0.26); }
 .nav-home i { width: 14px; height: 14px; }
 .nav-sep { color: rgba(255,255,255,0.3); font-size: 15px; font-weight: 300; }
 .nav-mod { color: rgba(255,255,255,0.82); font-size: 14px; font-weight: 600; text-decoration: none; font-family: var(--sans); transition: color 0.15s; }
 .nav-mod:hover { color: #fff; }
 .header-right { display: flex; gap: 8px; align-items: center; }
+.header-divider {
+  width: 1px;
+  height: 20px;
+  background-color: rgba(255, 255, 255, 0.25);
+  margin: 0 4px;
+}
+#userProfileMenu[style*="display: none"] ~ #headerDivider,
+#userProfileMenu[style*="display:none"] ~ #headerDivider {
+  display: none !important;
+}
 .hbtn { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; transition: background 0.15s; height: 32px; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; }
 .hbtn:hover { background: rgba(255,255,255,0.28); }
 
@@ -80,7 +90,7 @@ a.nav-home:hover { background: rgba(255,255,255,0.26); }
 .badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
 
 /* Sync Status */
-.sync-status { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(255,255,255,0.12); border-radius: 6px; font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.85); }
+.sync-status { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; background: rgba(255,255,255,0.12); border-radius: 6px; font-family: var(--mono); font-size: 11px; color: rgba(255,255,255,0.85); height: 32px; box-sizing: border-box; }
 .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; }
 .sync-dot.syncing { background: var(--warn); animation: pulse 1s infinite; }
 .sync-dot.error { background: var(--danger); }
@@ -109,10 +119,8 @@ a.nav-home:hover { background: rgba(255,255,255,0.26); }
 /* Responsive Header */
 @media (max-width: 768px) {
   .header { padding: 0 10px; }
-  .header-nav { flex: 1 1 auto; min-width: 0; gap: 6px; overflow: hidden; }
+  .header-nav { flex: 0 0 auto; min-width: 0; gap: 6px; overflow: hidden; }
   .logo-img { height: 28px; flex-shrink: 0; }
-  .nav-home { padding: 4px 8px; font-size: 11px; flex-shrink: 0; }
-  .nav-sep { flex-shrink: 0; }
-  .nav-mod { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .header-right { flex: 0 0 auto; gap: 4px; }
+  .nav-home, .nav-sep, .nav-mod { display: none !important; }
+  .header-right { flex: 1 1 auto; justify-content: flex-end; gap: 6px; }
 }
