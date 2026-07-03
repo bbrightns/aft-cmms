@@ -2077,6 +2077,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <div id="tabInventory">
       <div class="table-wrap">
         <table><thead><tr>
+          <th onclick="sortBy('Part ID')">Part ID <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Department')">Dept <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Sub Category')">Sub Cat <span class="sort-icon">↕</span></th>
           <th onclick="sortBy('Brand')">Brand <span class="sort-icon">↕</span></th>
@@ -3965,6 +3966,7 @@ function renderTable() {
     const desc = r['Description']||'';
     const reorder = getReorderSuggestion(r);
     return `<tr onclick="openEdit('${r._id}')" style="cursor:pointer">
+      <td style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}</td>
       <td><span class="badge badge-dept">${escapeHtml((r['Department']||'—').toUpperCase())}</span></td>
       <td><span class="badge badge-sub">${highlightText(r['Sub Category']||'—', q)}</span></td>
       <td>${highlightText(r['Brand']||'—', q)}</td>
