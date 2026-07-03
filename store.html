@@ -254,6 +254,9 @@ tr:hover td { background: var(--surface2); }
 .badge-plant-rfg { background: #fde8ef; color: var(--agc-red); }
 .badge-plant-mir { background: #e0e4f0; color: var(--agc-blue); }
 .badge-none { background: var(--bg2); color: var(--text3); }
+.badge-dept-elec { background: #dcf5e8; color: #005a2b; }
+.badge-dept-mech { background: #fef3c7; color: #92400e; }
+.badge-dept-rfg { background: #fde8ef; color: var(--agc-red); }
 .stock-cell { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-weight: 700; }
 .stock-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .dot-ok { background: var(--accent2); }
@@ -3965,10 +3968,12 @@ function renderTable() {
     const mm = (r['Min']||r['Max']) ? `${r['Min']||'—'}/${r['Max']||'—'}` : '—';
     const desc = r['Description']||'';
     const reorder = getReorderSuggestion(r);
+    const dept = (r['Department']||'').toUpperCase();
+    const deptCls = dept === 'ELEC' ? 'badge-dept-elec' : dept === 'MECH' ? 'badge-dept-mech' : dept === 'RFG' ? 'badge-dept-rfg' : 'badge-none';
     return `<tr onclick="openEdit('${r._id}')" style="cursor:pointer">
       <td style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}</td>
-      <td><span class="badge badge-dept">${escapeHtml((r['Department']||'—').toUpperCase())}</span></td>
-      <td><span class="badge badge-sub">${highlightText(r['Sub Category']||'—', q)}</span></td>
+      <td>${dept ? `<span class="badge ${deptCls}">${escapeHtml(dept)}</span>` : '—'}</td>
+      <td>${highlightText(r['Sub Category']||'—', q)}</td>
       <td>${highlightText(r['Brand']||'—', q)}</td>
       <td>${highlightText(r['Model']||'—', q)}</td>
       <td title="${escapeHtml(desc)}">${highlightText(desc||'—', q)}</td>
