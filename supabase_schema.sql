@@ -68,12 +68,25 @@ LANGUAGE plpgsql
 AS $$
 DECLARE
   next_num integer;
+  max_num integer;
 BEGIN
+  -- Get the maximum number from current inventory matching 'SPFL-C-XXXX' format
+  SELECT COALESCE(MAX(CAST(substring("Part ID" from '(?i)^SPFL-C-(\d+)$') AS integer)), 0)
+  INTO max_num
+  FROM inventory;
+
+  -- Ensure partIdCounter is at least max_num
   INSERT INTO store_meta (key, current)
-  VALUES ('partIdCounter', 1)
+  VALUES ('partIdCounter', max_num)
   ON CONFLICT (key) DO UPDATE
-  SET current = store_meta.current + 1
+  SET current = GREATEST(store_meta.current, max_num);
+
+  -- Increment and return
+  UPDATE store_meta
+  SET current = current + 1
+  WHERE key = 'partIdCounter'
   RETURNING current INTO next_num;
+
   RETURN next_num;
 END;
 $$;
