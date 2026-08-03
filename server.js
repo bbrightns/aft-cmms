@@ -46,10 +46,25 @@ const server = http.createServer((req, res) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`\n==================================================`);
-  console.log(`🚀 Development Server is running on: http://localhost:${PORT}`);
-  console.log(`📱 Main Store:  http://localhost:${PORT}/store.html`);
-  console.log(`🔑 Login Page: http://localhost:${PORT}/login.html`);
-  console.log(`==================================================\n`);
-});
+function startServer(port) {
+  server.removeAllListeners('error');
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${port} is in use, trying port ${port + 1}...`);
+      startServer(port + 1);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+
+  server.listen(port, () => {
+    console.log(`\n==================================================`);
+    console.log(`🚀 Development Server is running on: http://localhost:${port}`);
+    console.log(`📱 Main Store:  http://localhost:${port}/store.html`);
+    console.log(`🔑 Login Page: http://localhost:${port}/login.html`);
+    console.log(`==================================================\n`);
+  });
+}
+
+startServer(PORT);
+
