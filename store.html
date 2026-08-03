@@ -416,40 +416,71 @@ textarea { resize: vertical; min-height: 60px; }
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   text-align: left;
 }
-.diff-line {
+.diff-card-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.diff-field-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.diff-val-group {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
   font-size: 12px;
-  line-height: 1.5;
+}
+.diff-val-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.diff-val-old {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+.diff-val-old .diff-tag-lbl {
+  color: #9ca3af;
+  font-weight: 600;
+}
+.diff-val-old .diff-val-text {
+  text-decoration: line-through;
+}
+.diff-val-new {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 600;
+}
+.diff-val-new .diff-tag-lbl {
+  color: #3b82f6;
+  font-weight: 700;
+}
+.diff-arrow-icon {
+  width: 14px;
+  height: 14px;
+  color: #94a3b8;
+  flex-shrink: 0;
 }
 .diff-line-raw {
   font-size: 12px;
   color: var(--text2);
-}
-.diff-label {
-  font-weight: 600;
-  color: var(--text2);
-}
-.diff-old {
-  color: #9ca3af;
-  text-decoration: line-through;
-}
-.diff-arrow {
-  width: 12px;
-  height: 12px;
-  color: var(--text3);
-}
-.diff-new {
-  color: var(--agc-blue);
-  font-weight: 600;
-  background-color: #e0e7ff;
-  padding: 1px 4px;
-  border-radius: 4px;
 }
 
 .log-card-footer {
@@ -3413,6 +3444,37 @@ function getUndoData(log) {
   return null;
 }
 
+const FIELD_LABELS_TH = {
+  'Actual': 'จำนวน Stock (Actual)',
+  'Min': 'ค่า Minimum (Min)',
+  'Max': 'ค่า Maximum (Max)',
+  'Main Category': 'หมวดหมู่หลัก (Main Category)',
+  'Sub Category': 'หมวดหมู่ย่อย (Sub Category)',
+  'Department': 'แผนก (Department)',
+  'Plant': 'อาคาร/โรงงาน (Plant)',
+  'Area': 'พื้นที่ (Area)',
+  'Location': 'สถานที่เก็บ (Location)',
+  'Position': 'ตำแหน่งเก็บ (Position)',
+  'Location/Position': 'สถานที่/ตำแหน่ง (Location & Position)',
+  'Brand': 'ยี่ห้อ (Brand)',
+  'Model': 'รุ่น/โมเดล (Model)',
+  'Description': 'รายละเอียด (Description)',
+  'CLASS': 'ชั้นความสำคัญ (Class)',
+  'COST': 'ราคา/ต้นทุน (Cost)',
+  'VENDOR': 'ผู้จำหน่าย (Vendor)',
+  'DELIVER TIME': 'ระยะเวลาส่งมอบ (Deliver Time)',
+  'DELIVER UNIT': 'หน่วยเวลา (Deliver Unit)',
+  'Install Year': 'ปีที่ติดตั้ง (Install Year)',
+  'Expected Life': 'อายุการใช้งาน (Expected Life)',
+  'Replace Plan': 'แผนการเปลี่ยน (Replace Plan)',
+  'imageUrl': 'รูปภาพอะไหล่ (Image)'
+};
+
+function getFieldLabelTH(field) {
+  const clean = (field || '').trim();
+  return FIELD_LABELS_TH[clean] || clean;
+}
+
 function renderLog(logs) {
   const el = document.getElementById('logList');
   if(!el) return;
@@ -3429,21 +3491,34 @@ function renderLog(logs) {
     let cleanNoteText = l.note ? l.note.split('__UNDO_DATA__:')[0].trim() : '';
     let noteHtml = '';
     if (cleanNoteText) {
-      const lines = cleanNoteText.split('\n').filter(Boolean);
-      const formattedLines = lines.map(line => {
+      const rawLines = cleanNoteText.split('\n').filter(Boolean);
+      const splitItems = [];
+      rawLines.forEach(rl => {
+        if (rl.includes(' | ')) {
+          rl.split(' | ').forEach(sub => { if (sub.trim()) splitItems.push(sub.trim()); });
+        } else {
+          splitItems.push(rl.trim());
+        }
+      });
+
+      const formattedLines = splitItems.map(line => {
         if (line.includes('->') || line.includes('→')) {
           const sep = line.includes('->') ? '->' : '→';
           const parts = line.split(':');
-          const label = parts[0] || '';
+          const rawField = (parts[0] || '').trim();
           const rest = parts.slice(1).join(':') || '';
           const valParts = rest.split(sep);
           const oldVal = (valParts[0] || '').trim();
           const newVal = (valParts[1] || '').trim();
-          return `<div class="diff-line">
-            <span class="diff-label">${escapeHtml(label)}:</span>
-            <span class="diff-old">${escapeHtml(oldVal)}</span>
-            <i data-lucide="arrow-right" class="diff-arrow"></i>
-            <span class="diff-new">${escapeHtml(newVal)}</span>
+          const fieldLabel = getFieldLabelTH(rawField);
+
+          return `<div class="diff-card-row">
+            <div class="diff-field-name"><i data-lucide="sliders" style="width:12px;height:12px;color:var(--agc-blue)"></i> ${escapeHtml(fieldLabel)}</div>
+            <div class="diff-val-group">
+              <span class="diff-val-box diff-val-old"><span class="diff-tag-lbl">เดิม:</span> <span class="diff-val-text">${escapeHtml(oldVal || '—')}</span></span>
+              <i data-lucide="arrow-right" class="diff-arrow-icon"></i>
+              <span class="diff-val-box diff-val-new"><span class="diff-tag-lbl">เปลี่ยนเป็น:</span> <span>${escapeHtml(newVal || '—')}</span></span>
+            </div>
           </div>`;
         }
         return `<div class="diff-line-raw">${escapeHtml(line)}</div>`;
@@ -3746,7 +3821,7 @@ function getItemChangeSummary(oldItem, newData) {
     const newVal = cleanSingleLine(newData[f] ?? '');
     if (oldVal !== newVal) changed.push(`${f}: ${oldVal || '—'} → ${newVal || '—'}`);
   });
-  return changed.length ? changed.slice(0, 4).join(' | ') + (changed.length > 4 ? ` | +${changed.length - 4} more` : '') : 'No visible field changes';
+  return changed.length ? changed.join('\n') : 'ไม่มีการเปลี่ยนแปลงข้อมูล';
 }
 
 // ===== MODALS =====
