@@ -344,6 +344,20 @@ textarea { resize: vertical; min-height: 60px; }
   gap: 10px;
   flex-shrink: 0;
 }
+@media (max-width: 768px) {
+  .log-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .log-card-right {
+    justify-content: flex-end;
+    padding-top: 6px;
+    border-top: 1px dashed var(--border);
+    margin-top: 2px;
+  }
+}
 
 .log-part-id {
   font-family: var(--mono);
@@ -1839,6 +1853,9 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   justify-content: center;
   padding: 16px;
   animation: qr-fade-in 0.2s ease-out;
+}
+.qr-modal:not([style*="display: flex"]):not([style*="display:flex"]) {
+  display: none !important;
 }
 @keyframes qr-fade-in {
   from { opacity: 0; }
@@ -5196,16 +5213,7 @@ function isInventoryVisible() {
 }
 
 function setInventoryCompactMode(compact) {
-  // r22: auto-hide only on mobile. Desktop/tablet stay stable.
-  if (window.matchMedia && !window.matchMedia('(max-width: 767px)').matches) {
-    document.body.classList.remove('inv-scroll-compact');
-    return;
-  }
-  if (!isInventoryVisible()) {
-    document.body.classList.remove('inv-scroll-compact');
-    return;
-  }
-  document.body.classList.toggle('inv-scroll-compact', !!compact);
+  document.body.classList.remove('inv-scroll-compact');
 }
 
 function getInventoryScrollElement() {
