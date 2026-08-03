@@ -2768,6 +2768,15 @@ async function fetchItems(showConflictBanner = false) {
 
     items = newItems;
 
+    if (qaSelectedItem) {
+      const updatedQa = items.find(x => x._id === qaSelectedItem._id);
+      if (updatedQa) qaSelectedItem = updatedQa;
+    }
+    if (adjustItem) {
+      const updatedAdj = items.find(x => x._id === adjustItem._id);
+      if (updatedAdj) adjustItem = updatedAdj;
+    }
+
     // Refresh sub-cat filter options whenever data changes
     const subSel = document.getElementById('subCatFilter');
     if (subSel) {
@@ -2986,6 +2995,7 @@ window.qaExecute = async () => {
       user: getCurrentUserName()
     }]);
 
+    await fetchItems(false);
     invalidateLogsCache();
     toast(`${qaMode === 'out' ? 'เบิก' : 'รับเข้า'} ${qaQty} pcs เรียบร้อย`, 'success');
     qaClearSearch();
@@ -3794,6 +3804,7 @@ window.saveItem = async () => {
         user: getCurrentUserName()
       }]);
 
+      await fetchItems(false);
       invalidateLogsCache();
       toast('บันทึกสำเร็จ','success');
     } else {
@@ -3812,6 +3823,7 @@ window.saveItem = async () => {
         user: getCurrentUserName()
       }]);
 
+      await fetchItems(false);
       invalidateLogsCache();
       if (finalPartId !== partId) {
         toast(`เพิ่มรายการสำเร็จ (หมายเลข Part ID: ${finalPartId})`,'success');
@@ -3854,6 +3866,7 @@ window.confirmDelete = async () => {
         user: getCurrentUserName()
       }]);
     }
+    await fetchItems(false);
     invalidateLogsCache();
     closeModal('deleteModal');
     toast('ลบรายการเรียบร้อย','warn');
@@ -4650,6 +4663,7 @@ window.confirmAdjust = async () => {
       user: getCurrentUserName()
     }]);
 
+    await fetchItems(false);
     invalidateLogsCache();
     closeModal('adjustModal');
     toast(adjustQty===0 ? 'อัปเดตตำแหน่งเรียบร้อย' : `${adjustMode==='in'?'รับของ':'เบิกของ'} ${adjustQty} pcs เรียบร้อย`,'success');
