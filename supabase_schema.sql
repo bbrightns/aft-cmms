@@ -44,8 +44,12 @@ CREATE TABLE IF NOT EXISTS logs (
   note text,
   ts timestamp with time zone DEFAULT timezone('utc'::text, now()),
   device text,
-  "user" text
+  "user" text,
+  undo_data jsonb
 );
+
+-- Migration for existing database table:
+-- ALTER TABLE logs ADD COLUMN IF NOT EXISTS undo_data jsonb;
 
 -- Enable Realtime for logs table
 alter publication supabase_realtime add table logs;

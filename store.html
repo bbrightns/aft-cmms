@@ -472,6 +472,31 @@ textarea { resize: vertical; min-height: 60px; }
   height: 13px;
 }
 
+.btn-log-undo {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-log-undo:hover {
+  background: #fff1f2;
+  color: #e11d48;
+  border-color: #fecdd3;
+  box-shadow: 0 1px 2px rgba(225, 29, 72, 0.1);
+}
+.btn-log-undo i {
+  width: 13px;
+  height: 13px;
+}
+
 /* EMPTY */
 .empty { text-align: center; padding: 60px 20px; color: var(--text3); }
 .empty-icon { font-size: 40px; margin-bottom: 12px; opacity: 0.5; }
@@ -2349,6 +2374,32 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   </div>
 </div>
 
+<!-- MODAL: Undo Confirmation -->
+<div class="modal-overlay" id="undoModal" style="display:none" onclick="closeOnOverlay(event,'undoModal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title" style="display:flex;align-items:center;gap:8px">
+        <i data-lucide="rotate-ccw" style="color:var(--agc-blue);width:20px;height:20px"></i>
+        <span>ย้อนกลับรายการ (Undo)</span>
+      </div>
+      <button class="close-btn" onclick="closeModal('undoModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="undoLogDetails" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px;font-size:13px;line-height:1.5;"></div>
+      <div id="undoActionSummary" style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px;font-size:13px;color:#1e40af;line-height:1.5;display:flex;gap:8px;">
+        <i data-lucide="info" style="width:18px;height:18px;flex-shrink:0;margin-top:2px;"></i>
+        <div id="undoActionText">...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('undoModal')">ยกเลิก</button>
+      <button class="btn btn-primary" id="confirmUndoBtn" onclick="executeUndoLog()">
+        <i data-lucide="rotate-ccw"></i> ยืนยันย้อนกลับ
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Adjust Stock -->
 <div class="modal-overlay" id="adjustModal" style="display:none">
   <div class="modal">
@@ -2989,14 +3040,16 @@ window.qaExecute = async () => {
       throw rpcErr;
     }
 
-    await supabase.from('logs').insert([{
+    const undoPayload = { action: qaMode, qty: parseFloat(qaQty), partId: qaSelectedItem['Part ID'], itemId: qaSelectedItem._id };
+    await insertLog({
       type: qaMode,
       partId: qaSelectedItem['Part ID'],
       msg: `${qaMode === 'out' ? '📤 เบิก' : '📥 รับ'} ${qaQty} pcs`,
-      note,
+      note: (note ? note + '\n' : '') + '__UNDO_DATA__:' + JSON.stringify(undoPayload),
+      undo_data: undoPayload,
       device: DEVICE_ID,
       user: getCurrentUserName()
-    }]);
+    });
 
     await fetchItems(false);
     invalidateLogsCache();
@@ -3324,6 +3377,42 @@ function getLogTypeConfig(type) {
   }
 }
 
+async function insertLog(logObj) {
+  try {
+    const { error } = await supabase.from('logs').insert([logObj]);
+    if (error) {
+      if (logObj.undo_data) {
+        const fallback = { ...logObj };
+        delete fallback.undo_data;
+        const { error: err2 } = await supabase.from('logs').insert([fallback]);
+        if (err2) throw err2;
+      } else {
+        throw error;
+      }
+    }
+  } catch (err) {
+    console.error('Insert log error:', err);
+    throw err;
+  }
+}
+
+function getUndoData(log) {
+  if (log.undo_data) {
+    if (typeof log.undo_data === 'string') {
+      try { return JSON.parse(log.undo_data); } catch(e){}
+    } else {
+      return log.undo_data;
+    }
+  }
+  if (log.note && log.note.includes('__UNDO_DATA__:')) {
+    try {
+      const jsonStr = log.note.split('__UNDO_DATA__:')[1].trim();
+      return JSON.parse(jsonStr);
+    } catch(e){}
+  }
+  return null;
+}
+
 function renderLog(logs) {
   const el = document.getElementById('logList');
   if(!el) return;
@@ -3337,15 +3426,17 @@ function renderLog(logs) {
     const user = l.user || l._updatedBy || l.updatedBy || 'System';
     const typeConfig = getLogTypeConfig(l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'));
     
+    let cleanNoteText = l.note ? l.note.split('__UNDO_DATA__:')[0].trim() : '';
     let noteHtml = '';
-    if (l.note) {
-      const lines = l.note.split('\n').filter(Boolean);
+    if (cleanNoteText) {
+      const lines = cleanNoteText.split('\n').filter(Boolean);
       const formattedLines = lines.map(line => {
-        if (line.includes('->')) {
+        if (line.includes('->') || line.includes('→')) {
+          const sep = line.includes('->') ? '->' : '→';
           const parts = line.split(':');
           const label = parts[0] || '';
           const rest = parts.slice(1).join(':') || '';
-          const valParts = rest.split('->');
+          const valParts = rest.split(sep);
           const oldVal = (valParts[0] || '').trim();
           const newVal = (valParts[1] || '').trim();
           return `<div class="diff-line">
@@ -3375,13 +3466,275 @@ function renderLog(logs) {
         ${noteHtml}
       </div>
       <div class="log-card-footer">
-        <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
-        <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
+          <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
+        </div>
+        <button class="btn-log-undo" onclick="confirmUndoLog('${l.id}')" title="ย้อนกลับรายการนี้">
+          <i data-lucide="rotate-ccw"></i> ย้อนกลับ
+        </button>
       </div>
     </div>`;
   }).join('');
   refreshIcons();
 }
+
+let pendingUndoLogId = null;
+
+window.confirmUndoLog = (logId) => {
+  const log = (_logsCacheData || []).find(x => String(x.id) === String(logId));
+  if (!log) {
+    toast('ไม่พบข้อมูล Log นี้', 'error');
+    return;
+  }
+  pendingUndoLogId = logId;
+  
+  const undoData = getUndoData(log);
+  const type = log.type || (log.partId === 'SYSTEM' ? 'system' : 'edit');
+  const partId = log.partId || 'SYSTEM';
+  const cleanNote = log.note ? log.note.split('__UNDO_DATA__:')[0].trim() : '';
+
+  const detailsEl = document.getElementById('undoLogDetails');
+  const actionTextEl = document.getElementById('undoActionText');
+
+  if (detailsEl) {
+    detailsEl.innerHTML = `
+      <div style="font-weight:700;color:var(--text);margin-bottom:4px;">Part ID: ${escapeHtml(partId)}</div>
+      <div style="color:var(--text2);">รายการเดิม: <strong>${escapeHtml(log.msg || '')}</strong></div>
+      ${cleanNote ? `<div style="font-size:12px;color:var(--text3);margin-top:4px;">${escapeHtml(cleanNote)}</div>` : ''}
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">บันทึกโดย: ${escapeHtml(log.user || 'System')} (${formatLogTime(log.ts)})</div>
+    `;
+  }
+
+  let actionDesc = '';
+  if (type === 'out') {
+    let qty = undoData?.qty;
+    if (!qty) {
+      const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
+      qty = match ? parseFloat(match[0]) : 1;
+    }
+    actionDesc = `การย้อนกลับจะเพิ่ม Stock คืนจำนวน <strong style="color:var(--accent2)">+${qty} pcs</strong> ให้กับ Part ID: <strong>${escapeHtml(partId)}</strong>`;
+  } else if (type === 'in') {
+    let qty = undoData?.qty;
+    if (!qty) {
+      const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
+      qty = match ? parseFloat(match[0]) : 1;
+    }
+    const item = items.find(x => x['Part ID'] === partId);
+    const curActual = item ? (parseFloat(item['Actual']) || 0) : 0;
+    actionDesc = `การย้อนกลับจะปรับลด Stock จำนวน <strong style="color:var(--danger)">-${qty} pcs</strong> จาก Part ID: <strong>${escapeHtml(partId)}</strong> (Stock ปัจจุบัน: ${curActual} pcs)`;
+  } else if (type === 'edit') {
+    actionDesc = `การย้อนกลับจะ <strong>คืนค่าข้อมูล</strong> ของ Part ID: <strong>${escapeHtml(partId)}</strong> กลับไปเป็นค่าก่อนหน้าการแก้ไขนี้`;
+  } else if (type === 'add') {
+    actionDesc = `การย้อนกลับจะ <strong style="color:var(--danger)">ลบรายการ</strong> Part ID: <strong>${escapeHtml(partId)}</strong> ออกจากระบบ`;
+  } else if (type === 'delete') {
+    actionDesc = `การย้อนกลับจะ <strong style="color:var(--accent2)">กู้คืนรายการ</strong> Part ID: <strong>${escapeHtml(partId)}</strong> กลับเข้าสู่ระบบ`;
+  } else {
+    actionDesc = `ทำการย้อนกลับรายการนี้ในระบบ`;
+  }
+
+  if (actionTextEl) actionTextEl.innerHTML = actionDesc;
+  openModal('undoModal');
+  refreshIcons();
+};
+
+window.executeUndoLog = async () => {
+  if (!pendingUndoLogId) return;
+  const log = (_logsCacheData || []).find(x => String(x.id) === String(pendingUndoLogId));
+  if (!log) {
+    toast('ไม่พบข้อมูล Log', 'error');
+    return;
+  }
+
+  closeModal('undoModal');
+  const btn = document.getElementById('confirmUndoBtn');
+  if (btn) btn.classList.add('btn-loading');
+  setSyncing('syncing');
+
+  try {
+    const undoData = getUndoData(log);
+    const type = log.type || (log.partId === 'SYSTEM' ? 'system' : 'edit');
+    const partId = log.partId;
+
+    if (type === 'out') {
+      let qty = undoData?.qty;
+      if (!qty) {
+        const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
+        qty = match ? parseFloat(match[0]) : 1;
+      }
+      const item = items.find(x => x['Part ID'] === partId);
+      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
+
+      const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
+        item_id: item._id,
+        qty: parseFloat(qty),
+        mode: 'in',
+        new_loc: null,
+        new_pos: null,
+        device_id: DEVICE_ID,
+        user_name: getCurrentUserName()
+      });
+      if (rpcErr) throw rpcErr;
+
+      await insertLog({
+        type: 'in',
+        partId: partId,
+        msg: `↩️ Undo: คืน Stock เบิกของ ${qty} pcs`,
+        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'in', qty, partId, itemId: item._id }),
+        undo_data: { action: 'in', qty, partId, itemId: item._id },
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      });
+
+    } else if (type === 'in') {
+      let qty = undoData?.qty;
+      if (!qty) {
+        const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
+        qty = match ? parseFloat(match[0]) : 1;
+      }
+      const item = items.find(x => x['Part ID'] === partId);
+      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
+
+      const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
+        item_id: item._id,
+        qty: parseFloat(qty),
+        mode: 'out',
+        new_loc: null,
+        new_pos: null,
+        device_id: DEVICE_ID,
+        user_name: getCurrentUserName()
+      });
+      if (rpcErr) {
+        if (rpcErr.message.includes('OVER_STOCK') || rpcErr.message.includes('ZERO_STOCK')) {
+          const curActual = parseFloat(item['Actual']) || 0;
+          const newActual = Math.max(0, curActual - qty);
+          const { error: upErr } = await supabase.from('inventory').update({ "Actual": String(newActual), _updatedAt: new Date().toISOString() }).eq('id', item._id);
+          if (upErr) throw upErr;
+        } else {
+          throw rpcErr;
+        }
+      }
+
+      await insertLog({
+        type: 'out',
+        partId: partId,
+        msg: `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
+        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'out', qty, partId, itemId: item._id }),
+        undo_data: { action: 'out', qty, partId, itemId: item._id },
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      });
+
+    } else if (type === 'edit') {
+      const item = items.find(x => x['Part ID'] === partId);
+      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
+
+      let restoreData = {};
+      if (undoData && undoData.before) {
+        restoreData = { ...undoData.before };
+        delete restoreData._id;
+        delete restoreData.id;
+      } else {
+        const cleanNote = log.note ? log.note.split('__UNDO_DATA__:')[0] : '';
+        const lines = cleanNote.split('\n').filter(Boolean);
+        lines.forEach(line => {
+          if (line.includes('->') || line.includes('→')) {
+            const sep = line.includes('->') ? '->' : '→';
+            const parts = line.split(':');
+            const field = (parts[0] || '').trim();
+            const valRest = parts.slice(1).join(':');
+            const oldVal = (valRest.split(sep)[0] || '').trim();
+            if (field) {
+              restoreData[field] = oldVal === '—' ? '' : oldVal;
+            }
+          }
+        });
+      }
+
+      if (Object.keys(restoreData).length === 0) {
+        throw new Error('ไม่พบข้อมูลเดิมสำหรับย้อนกลับ');
+      }
+
+      restoreData._updatedAt = new Date().toISOString();
+      restoreData._device = DEVICE_ID;
+      restoreData._updatedBy = getCurrentUserName();
+
+      const { error: upErr } = await supabase.from('inventory').update(restoreData).eq('id', item._id);
+      if (upErr) throw upErr;
+
+      await insertLog({
+        type: 'edit',
+        partId: partId,
+        msg: `↩️ Undo: คืนค่าข้อมูลก่อนแก้ไข`,
+        note: `ย้อนกลับจาก Log #${log.id}` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'edit', partId, itemId: item._id, before: item, after: restoreData }),
+        undo_data: { action: 'edit', partId, itemId: item._id, before: item, after: restoreData },
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      });
+
+    } else if (type === 'add') {
+      const item = items.find(x => x['Part ID'] === partId);
+      if (item) {
+        const { error: delErr } = await supabase.from('inventory').delete().eq('id', item._id);
+        if (delErr) throw delErr;
+      }
+
+      await insertLog({
+        type: 'delete',
+        partId: partId,
+        msg: `↩️ Undo: ลบรายการที่เพิ่มเข้ามา`,
+        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'delete', partId, itemId: item ? item._id : null, deletedItem: item }),
+        undo_data: { action: 'delete', partId, itemId: item ? item._id : null, deletedItem: item },
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      });
+
+    } else if (type === 'delete') {
+      let restoreItem = undoData?.deletedItem;
+      if (!restoreItem) {
+        restoreItem = {
+          id: crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15),
+          "Part ID": partId,
+          "Brand": "Restored Item",
+          "Description": "กู้คืนจาก Log #" + log.id,
+          "Actual": "0",
+          _updatedAt: new Date().toISOString(),
+          _device: DEVICE_ID,
+          _updatedBy: getCurrentUserName()
+        };
+      } else {
+        delete restoreItem._id;
+      }
+
+      const { error: insErr } = await supabase.from('inventory').insert([restoreItem]);
+      if (insErr) throw insErr;
+
+      await insertLog({
+        type: 'add',
+        partId: partId,
+        msg: `↩️ Undo: กู้คืนรายการที่ถูกลบ`,
+        note: `ย้อนกลับจาก Log #${log.id}` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'add', partId, itemId: restoreItem.id, itemData: restoreItem }),
+        undo_data: { action: 'add', partId, itemId: restoreItem.id, itemData: restoreItem },
+        device: DEVICE_ID,
+        user: getCurrentUserName()
+      });
+
+    } else {
+      toast('รายการประเภทนี้ไม่สามารถย้อนกลับได้', 'warn');
+      return;
+    }
+
+    await fetchItems(false);
+    invalidateLogsCache();
+    await loadLogs(true);
+    toast('ย้อนกลับรายการเรียบร้อยแล้ว', 'success');
+  } catch (err) {
+    toast('เกิดข้อผิดพลาดในการ Undo: ' + err.message, 'error');
+    setSyncing('error');
+  } finally {
+    if (btn) btn.classList.remove('btn-loading');
+  }
+};
 
 
 function getItemChangeSummary(oldItem, newData) {
@@ -3798,14 +4151,16 @@ window.saveItem = async () => {
         .eq('id', editItemId);
       if (updateErr) throw updateErr;
 
-      await supabase.from('logs').insert([{
+      const editUndoPayload = { action: 'edit', partId: finalPartId, itemId: editItemId, before: oldItem, after: data };
+      await insertLog({
         type: 'edit',
         partId: finalPartId,
         msg: 'แก้ไขข้อมูล',
-        note: changeNote,
+        note: (changeNote ? changeNote + '\n' : '') + '__UNDO_DATA__:' + JSON.stringify(editUndoPayload),
+        undo_data: editUndoPayload,
         device: DEVICE_ID,
         user: getCurrentUserName()
-      }]);
+      });
 
       await fetchItems(false);
       invalidateLogsCache();
@@ -3817,14 +4172,17 @@ window.saveItem = async () => {
         .insert([{ id: newId, ...data }]);
       if (insertErr) throw insertErr;
 
-      await supabase.from('logs').insert([{
+      const addNoteText = `${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`;
+      const addUndoPayload = { action: 'add', partId: finalPartId, itemId: newId, itemData: { id: newId, ...data } };
+      await insertLog({
         type: 'add',
         partId: finalPartId,
         msg: `เพิ่มรายการใหม่ — ${data['Brand']||''} ${data['Model']||data['Description']||''}`.trim(),
-        note: `${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`,
+        note: addNoteText + '\n__UNDO_DATA__:' + JSON.stringify(addUndoPayload),
+        undo_data: addUndoPayload,
         device: DEVICE_ID,
         user: getCurrentUserName()
-      }]);
+      });
 
       await fetchItems(false);
       invalidateLogsCache();
@@ -3860,14 +4218,16 @@ window.confirmDelete = async () => {
     if (delErr) throw delErr;
 
     if (r) {
-      await supabase.from('logs').insert([{
+      const delUndoPayload = { action: 'delete', partId: r['Part ID']||'', itemId: deleteItemId, deletedItem: r };
+      await insertLog({
         type: 'delete',
         partId: r['Part ID']||'',
         msg: 'ลบรายการ',
-        note: '',
+        note: '__UNDO_DATA__:' + JSON.stringify(delUndoPayload),
+        undo_data: delUndoPayload,
         device: DEVICE_ID,
         user: getCurrentUserName()
-      }]);
+      });
     }
     await fetchItems(false);
     invalidateLogsCache();
@@ -4011,14 +4371,16 @@ window.confirmCSVUpload = async () => {
       }
     }
     
-    await supabase.from('logs').insert([{
+    const csvUndoPayload = { action: 'csv_upload', mode, count: csvParsedData.length };
+    await insertLog({
       type: 'add',
       partId: 'SYSTEM',
       msg: `📂 ${mode==='replace'?'Replace CSV':'Merge CSV'} ${csvParsedData.length} รายการ`,
-      note: '',
+      note: '__UNDO_DATA__:' + JSON.stringify(csvUndoPayload),
+      undo_data: csvUndoPayload,
       device: DEVICE_ID,
       user: getCurrentUserName()
-    }]);
+    });
 
     invalidateLogsCache();
     localStorage.setItem('csvUploaded','1');
@@ -4041,17 +4403,20 @@ window.confirmClearAllData = async () => {
   document.getElementById('loadingOverlay').style.display = 'flex';
   setSyncing('syncing');
   try {
+    const prevItems = [...items];
     const { error: delErr } = await supabase.from('inventory').delete().neq('id', 'dummy_nonexistent');
     if (delErr) throw delErr;
 
-    await supabase.from('logs').insert([{
+    const clearUndoPayload = { action: 'clear_data', count: prevItems.length };
+    await insertLog({
       type: 'delete',
       partId: 'SYSTEM',
       msg: `🗑 ล้างข้อมูลทั้งหมด`,
-      note: '',
+      note: '__UNDO_DATA__:' + JSON.stringify(clearUndoPayload),
+      undo_data: clearUndoPayload,
       device: DEVICE_ID,
       user: getCurrentUserName()
-    }]);
+    });
 
     invalidateLogsCache();
     localStorage.removeItem('csvUploaded');
@@ -4676,15 +5041,26 @@ window.confirmAdjust = async () => {
     }
 
     const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
+    const adjUndoPayload = {
+      action: adjustQty===0 ? 'position' : adjustMode,
+      qty: parseFloat(adjustQty),
+      partId: adjustItem['Part ID'],
+      itemId: adjustItem._id,
+      oldLocation: adjustItem['Location'],
+      oldPosition: adjustItem['Position'],
+      newLocation: newLocation,
+      newPosition: newPosition
+    };
     
-    await supabase.from('logs').insert([{
+    await insertLog({
       type: adjustQty===0 ? 'edit' : (adjustMode==='in' ? 'in' : 'out'),
       partId: adjustItem['Part ID'],
       msg: actionText,
-      note: finalNote,
+      note: (finalNote ? finalNote + '\n' : '') + '__UNDO_DATA__:' + JSON.stringify(adjUndoPayload),
+      undo_data: adjUndoPayload,
       device: DEVICE_ID,
       user: getCurrentUserName()
-    }]);
+    });
 
     await fetchItems(false);
     invalidateLogsCache();
@@ -4782,14 +5158,15 @@ function exportRowsToCSV(rowsData, mode='all') {
   a.click();
   
   // Log export action to database
-  supabase.from('logs').insert([{
+  insertLog({
     type: 'system',
     partId: 'SYSTEM',
     msg: `📤 Export CSV (${suffix}) จำนวน ${rowsData.length} รายการ`,
     note: `โหมดการ Export: ${mode === 'all' ? 'ทั้งหมด' : mode === 'filtered' ? 'กรองตามเงื่อนไข' : 'รายการที่ต้องเติม (Low Stock)'}`,
+    undo_data: { action: 'export', mode, count: rowsData.length },
     device: DEVICE_ID,
     user: getCurrentUserName()
-  }]).then(() => {
+  }).then(() => {
     invalidateLogsCache();
   }).catch(console.error);
 
