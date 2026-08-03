@@ -307,211 +307,149 @@ textarea { resize: vertical; min-height: 60px; }
 
 /* LOG */
 #logList {
+#logList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px;
 }
 .log-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  padding: 16px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+  padding: 8px 12px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
   position: relative;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: background 0.15s, border-color 0.15s;
 }
 .log-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-.log-card.log-in, .log-card.log-add {
-  border-left: 4px solid var(--accent2);
-}
-.log-card.log-out {
-  border-left: 4px solid var(--danger);
-}
-.log-card.log-edit {
-  border-left: 4px solid var(--agc-blue);
-}
-.log-card.log-delete {
-  border-left: 4px solid var(--warn);
-}
-.log-card.log-system {
-  border-left: 4px solid var(--text3);
+  background: var(--surface2);
+  border-color: #cbd5e1;
 }
 
-.log-card-header {
+.log-card-left {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  flex: 1;
+  min-width: 0;
 }
+.log-card-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
 .log-part-id {
   font-family: var(--mono);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: 0.2px;
+  background: var(--bg2);
+  padding: 2px 7px;
+  border-radius: 4px;
 }
 .log-part-id.system-id {
   color: var(--text3);
   font-family: var(--sans);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
 }
+
 .log-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-.log-type-in {
-  background-color: #ecfdf5;
-  color: #10b981;
-}
-.log-type-out {
-  background-color: #fdf2f8;
-  color: #ec4899;
-}
-.log-type-edit {
-  background-color: #eff6ff;
-  color: #3b82f6;
-}
-.log-type-delete {
-  background-color: #fffbeb;
-  color: #f59e0b;
-}
-.log-type-system {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
-.log-badge i {
-  width: 12px;
-  height: 12px;
-}
-
-.log-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.log-message {
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text);
-  line-height: 1.4;
-}
-
-/* Diff Styling */
-.log-diff-container {
-  background-color: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 10px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  text-align: left;
-}
-.diff-card-row {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 8px 10px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-}
-.diff-field-name {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.diff-val-group {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-size: 12px;
-}
-.diff-val-box {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 3px 8px;
   border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.log-type-in { background-color: #ecfdf5; color: #059669; }
+.log-type-out { background-color: #fdf2f8; color: #db2777; }
+.log-type-edit { background-color: #eff6ff; color: #2563eb; }
+.log-type-delete { background-color: #fffbeb; color: #d97706; }
+.log-type-system { background-color: #f3f4f6; color: #4b5563; }
+.log-badge i { width: 12px; height: 12px; }
+
+.log-msg-inline {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Inline Diff Styling for Option 1 */
+.diff-inline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 3px 9px;
+  border-radius: 6px;
   font-size: 12px;
-  font-weight: 500;
+}
+.diff-inline-field {
+  font-weight: 600;
+  color: var(--text);
 }
 .diff-val-old {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
-.diff-val-old .diff-tag-lbl {
-  color: #9ca3af;
-  font-weight: 600;
-}
-.diff-val-old .diff-val-text {
+  color: #6b7280;
   text-decoration: line-through;
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 .diff-val-new {
-  background-color: #eff6ff;
   color: #1d4ed8;
-  font-weight: 600;
-}
-.diff-val-new .diff-tag-lbl {
-  color: #3b82f6;
   font-weight: 700;
+  background: #eff6ff;
+  padding: 1px 5px;
+  border-radius: 4px;
 }
 .diff-arrow-icon {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   color: #94a3b8;
   flex-shrink: 0;
 }
-.diff-line-raw {
+.diff-inline-raw {
   font-size: 12px;
   color: var(--text2);
+  background: var(--bg);
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
 }
 
-.log-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid var(--bg2);
-  padding-top: 10px;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--text3);
-}
 .log-user, .log-time-new {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  font-size: 11.5px;
+  color: var(--text3);
 }
 .log-user i, .log-time-new i {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 .btn-log-undo {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 10px;
+  gap: 4px;
+  padding: 3px 8px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   color: var(--text2);
   cursor: pointer;
@@ -524,8 +462,8 @@ textarea { resize: vertical; min-height: 60px; }
   box-shadow: 0 1px 2px rgba(225, 29, 72, 0.1);
 }
 .btn-log-undo i {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
 }
 
 /* EMPTY */
@@ -3489,7 +3427,8 @@ function renderLog(logs) {
     const typeConfig = getLogTypeConfig(l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'));
     
     let cleanNoteText = l.note ? l.note.split('__UNDO_DATA__:')[0].trim() : '';
-    let noteHtml = '';
+    let diffContentHtml = '';
+
     if (cleanNoteText) {
       const rawLines = cleanNoteText.split('\n').filter(Boolean);
       const splitItems = [];
@@ -3501,7 +3440,7 @@ function renderLog(logs) {
         }
       });
 
-      const formattedLines = splitItems.map(line => {
+      const formattedPills = splitItems.map(line => {
         if (line.includes('->') || line.includes('→')) {
           const sep = line.includes('->') ? '->' : '→';
           const parts = line.split(':');
@@ -3512,39 +3451,35 @@ function renderLog(logs) {
           const newVal = (valParts[1] || '').trim();
           const fieldLabel = getFieldLabelTH(rawField);
 
-          return `<div class="diff-card-row">
-            <div class="diff-field-name"><i data-lucide="sliders" style="width:12px;height:12px;color:var(--agc-blue)"></i> ${escapeHtml(fieldLabel)}</div>
-            <div class="diff-val-group">
-              <span class="diff-val-box diff-val-old"><span class="diff-tag-lbl">เดิม:</span> <span class="diff-val-text">${escapeHtml(oldVal || '—')}</span></span>
-              <i data-lucide="arrow-right" class="diff-arrow-icon"></i>
-              <span class="diff-val-box diff-val-new"><span class="diff-tag-lbl">เปลี่ยนเป็น:</span> <span>${escapeHtml(newVal || '—')}</span></span>
-            </div>
-          </div>`;
+          return `<span class="diff-inline-pill">
+            <span class="diff-inline-field">${escapeHtml(fieldLabel)}:</span>
+            <span class="diff-val-old">${escapeHtml(oldVal || '—')}</span>
+            <i data-lucide="arrow-right" class="diff-arrow-icon"></i>
+            <span class="diff-val-new">${escapeHtml(newVal || '—')}</span>
+          </span>`;
         }
-        return `<div class="diff-line-raw">${escapeHtml(line)}</div>`;
+        return `<span class="diff-inline-raw">${escapeHtml(line)}</span>`;
       }).join('');
-      noteHtml = `<div class="log-diff-container">${formattedLines}</div>`;
+
+      diffContentHtml = formattedPills;
     }
     
     const isSystem = l.partId === 'SYSTEM';
     const partDisplay = isSystem ? 'SYSTEM' : l.partId;
-    
+    const showMsg = l.msg && l.msg !== 'แก้ไขข้อมูล' && l.msg !== 'ลบรายการ';
+
     return `<div class="log-card log-${l.type || (isSystem ? 'system' : 'edit')}">
-      <div class="log-card-header">
+      <div class="log-card-left">
         <span class="log-part-id ${isSystem ? 'system-id' : ''}">${escapeHtml(partDisplay || '')}</span>
         <span class="log-badge ${typeConfig.class}">
           <i data-lucide="${typeConfig.icon}"></i> ${typeConfig.label}
         </span>
+        ${showMsg ? `<span class="log-msg-inline">${escapeHtml(l.msg)}</span>` : ''}
+        ${diffContentHtml}
       </div>
-      <div class="log-card-body">
-        <div class="log-message">${escapeHtml(l.msg || '')}</div>
-        ${noteHtml}
-      </div>
-      <div class="log-card-footer">
-        <div style="display:flex;align-items:center;gap:12px">
-          <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
-          <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
-        </div>
+      <div class="log-card-right">
+        <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
+        <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
         <button class="btn-log-undo" onclick="confirmUndoLog('${l.id}')" title="ย้อนกลับรายการนี้">
           <i data-lucide="rotate-ccw"></i> ย้อนกลับ
         </button>
