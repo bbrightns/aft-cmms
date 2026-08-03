@@ -2095,7 +2095,10 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       </div>
       <div class="form-group">
         <label for="profileDisplayName" style="font-weight:600;font-size:13px;color:var(--text)">ชื่อผู้ใช้งาน (ที่จะบันทึกในประวัติ):</label>
-        <input type="text" id="profileDisplayName" placeholder="ระบุชื่อของคุณ (เช่น ไบร์ทสุดหล่อ)" class="form-control" style="width:100%;margin-top:4px">
+        <input type="text" id="profileDisplayName" placeholder="ระบุชื่อของคุณ (เช่น Golf)" class="form-control" style="width:100%;margin-top:4px">
+        <div id="profileGuestHint" style="display:none;font-size:11px;color:var(--agc-blue);margin-top:4px;font-weight:500;">
+          <i data-lucide="info" style="width:12px;height:12px;display:inline-block;vertical-align:middle;"></i> ระบบจะต่อท้ายด้วย <strong>(Guest)</strong> ให้อัตโนมัติสำหรับผู้ใช้งานทั่วไป
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -4140,8 +4143,13 @@ async function boot() {
         const header = document.querySelector('.header');
         if (header) header.style.display = 'flex';
         
-        const displayName = currentUser.user_metadata.display_name;
-        document.getElementById('userDisplayNameText').textContent = displayName || 'Guest User';
+        let displayName = currentUser.user_metadata.display_name;
+        if (displayName && !/\(guest\)$/i.test(displayName.trim())) {
+          displayName = `${displayName.trim()} (Guest)`;
+          currentUser.user_metadata.display_name = displayName;
+          localStorage.setItem('storeUserName', displayName);
+        }
+        document.getElementById('userDisplayNameText').textContent = displayName || 'Guest User (Guest)';
         
         if (!displayName) {
           setTimeout(() => openProfileModal(true), 200);
@@ -4235,18 +4243,33 @@ window.canPerform = (action) => {
   return (map[role] || map.Admin).includes(action);
 };
 function getCurrentUserName() {
-  const name = currentUser?.user_metadata?.display_name || 
-               currentUser?.user_metadata?.full_name || 
-               currentUser?.user_metadata?.name || 
-               localStorage.getItem('storeUserName');
-  return name || currentUser?.email?.split('@')[0] || 'Unknown User';
+  let name = currentUser?.user_metadata?.display_name || 
+             currentUser?.user_metadata?.full_name || 
+             currentUser?.user_metadata?.name || 
+             localStorage.getItem('storeUserName');
+  name = name || (currentUser?.email ? currentUser.email.split('@')[0] : '');
+  if (currentUser?.isGuest || localStorage.getItem('isGuest') === 'true') {
+    if (!name) return 'Guest User (Guest)';
+    if (!/\(guest\)$/i.test(name.trim())) {
+      return `${name.trim()} (Guest)`;
+    }
+  }
+  return name || 'Unknown User';
 }
 window.setStoreUserName = (name) => {
-  const n = cleanSingleLine(name || '');
+  let n = cleanSingleLine(name || '');
   if(n) {
+    if ((currentUser?.isGuest || localStorage.getItem('isGuest') === 'true') && !/\(guest\)$/i.test(n.trim())) {
+      n = `${n.trim()} (Guest)`;
+    }
     localStorage.setItem('storeUserName', n);
     if (currentUser) {
-      supabase.auth.updateUser({ data: { display_name: n } }).catch(console.error);
+      if (currentUser.isGuest) {
+        currentUser.user_metadata = currentUser.user_metadata || {};
+        currentUser.user_metadata.display_name = n;
+      } else {
+        supabase.auth.updateUser({ data: { display_name: n } }).catch(console.error);
+      }
     }
   }
 };
@@ -5037,6 +5060,11 @@ function openProfileModal(force = false) {
   document.getElementById('profileEmail').textContent = currentUser.email || '';
   const name = currentUser.user_metadata?.display_name || '';
   document.getElementById('profileDisplayName').value = name;
+
+  const hint = document.getElementById('profileGuestHint');
+  if (hint) {
+    hint.style.display = (currentUser.isGuest || localStorage.getItem('isGuest') === 'true') ? 'block' : 'none';
+  }
   
   const closeBtn = document.getElementById('profileCloseBtn');
   const overlay = document.getElementById('profileModal');
@@ -5054,13 +5082,16 @@ window.openProfileModal = openProfileModal;
 
 async function saveProfileName() {
   const nameInput = document.getElementById('profileDisplayName');
-  const name = cleanSingleLine(nameInput.value || '');
+  let name = cleanSingleLine(nameInput.value || '');
   if (!name) {
     toast('กรุณาระบุชื่อของคุณ', 'warn');
     return;
   }
   
   if (currentUser && currentUser.isGuest) {
+    if (!/\(guest\)$/i.test(name.trim())) {
+      name = `${name.trim()} (Guest)`;
+    }
     currentUser.user_metadata = currentUser.user_metadata || {};
     currentUser.user_metadata.display_name = name;
     localStorage.setItem('storeUserName', name);
