@@ -207,13 +207,13 @@ select { cursor: pointer; }
 
 /* TABLE (desktop) */
 .table-wrap { flex: 1; overflow: auto; min-height: 0; padding: 0; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; font-family: var(--sans); }
-th { font-family: var(--sans); font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 0.5px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); background: var(--surface2); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 5; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
+th { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); background: var(--surface2); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 5; }
 th:hover { color: var(--agc-blue); }
 th.sorted { color: var(--agc-blue); }
 .sort-icon { opacity: 0.4; margin-left: 4px; }
 th.sorted .sort-icon { opacity: 1; }
-td { font-family: var(--sans); padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 tr:hover td { background: var(--surface2); }
 .row-actions { display: flex; gap: 4px; }
 
@@ -307,6 +307,10 @@ textarea { resize: vertical; min-height: 60px; }
 
 /* LOG */
 #logList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 #logList {
   display: flex;
   flex-direction: column;
@@ -317,57 +321,35 @@ textarea { resize: vertical; min-height: 60px; }
   border: 1px solid var(--border);
   border-radius: 8px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  padding: 8px 12px;
+  padding: 8px 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  min-height: 44px;
   position: relative;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 .log-card:hover {
   background: var(--surface2);
-  border-color: #cbd5e1;
+  border-color: var(--border2);
 }
 
-.log-card-left {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 10px;
-  flex: 1;
-  min-width: 0;
-}
-.log-card-right {
+.log-col-left {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 175px;
   flex-shrink: 0;
 }
-@media (max-width: 768px) {
-  .log-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 6px;
-    padding: 10px 12px;
-  }
-  .log-card-right {
-    justify-content: flex-end;
-    padding-top: 6px;
-    border-top: 1px dashed var(--border);
-    margin-top: 2px;
-  }
-}
-
 .log-part-id {
   font-family: var(--mono);
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: 0.2px;
-  background: var(--bg2);
-  padding: 2px 7px;
-  border-radius: 4px;
+  width: 95px;
+  flex-shrink: 0;
 }
 .log-part-id.system-id {
   color: var(--text3);
@@ -375,7 +357,6 @@ textarea { resize: vertical; min-height: 60px; }
   font-weight: 600;
   font-size: 12px;
 }
-
 .log-badge {
   display: inline-flex;
   align-items: center;
@@ -384,71 +365,104 @@ textarea { resize: vertical; min-height: 60px; }
   border-radius: 5px;
   font-size: 11px;
   font-weight: 700;
-  text-transform: uppercase;
+  white-space: nowrap;
 }
-.log-type-in { background-color: #ecfdf5; color: #059669; }
-.log-type-out { background-color: #fdf2f8; color: #db2777; }
-.log-type-edit { background-color: #eff6ff; color: #2563eb; }
-.log-type-delete { background-color: #fffbeb; color: #d97706; }
-.log-type-system { background-color: #f3f4f6; color: #4b5563; }
-.log-badge i { width: 12px; height: 12px; }
+.log-type-in {
+  background-color: #ecfdf5;
+  color: #059669;
+}
+.log-type-out {
+  background-color: #fdf2f8;
+  color: #db2777;
+}
+.log-type-edit {
+  background-color: #eff6ff;
+  color: #2563eb;
+}
+.log-type-delete {
+  background-color: #fffbeb;
+  color: #d97706;
+}
+.log-type-system {
+  background-color: #f3f4f6;
+  color: #4b5563;
+}
+.log-badge i {
+  width: 12px;
+  height: 12px;
+}
 
-.log-msg-inline {
-  font-size: 12.5px;
-  font-weight: 600;
+.log-col-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  min-width: 0;
+}
+.log-msg-text {
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text);
 }
 
-/* Inline Diff Styling for Option 1 */
-.diff-inline-pill {
+/* Compact Diff Pill Styling */
+.diff-pill {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  padding: 2px 8px;
   background: var(--bg);
   border: 1px solid var(--border);
-  padding: 3px 9px;
   border-radius: 6px;
   font-size: 12px;
+  white-space: nowrap;
 }
-.diff-inline-field {
+.diff-lbl {
   font-weight: 600;
-  color: var(--text);
+  color: var(--text2);
 }
-.diff-val-old {
+.diff-old {
   color: #6b7280;
   text-decoration: line-through;
-  background: #f3f4f6;
-  padding: 1px 5px;
-  border-radius: 4px;
 }
-.diff-val-new {
-  color: #1d4ed8;
-  font-weight: 700;
-  background: #eff6ff;
-  padding: 1px 5px;
-  border-radius: 4px;
-}
-.diff-arrow-icon {
-  width: 12px;
-  height: 12px;
+.diff-arr {
+  width: 11px;
+  height: 11px;
   color: #94a3b8;
   flex-shrink: 0;
 }
-.diff-inline-raw {
+.diff-new {
+  color: #1d4ed8;
+  font-weight: 700;
+  background: #eff6ff;
+  padding: 0 4px;
+  border-radius: 3px;
+}
+.diff-line-raw {
   font-size: 12px;
   color: var(--text2);
-  background: var(--bg);
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--border);
 }
 
+.log-col-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.log-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11.5px;
+  color: var(--text3);
+  white-space: nowrap;
+}
 .log-user, .log-time-new {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 11.5px;
-  color: var(--text3);
 }
 .log-user i, .log-time-new i {
   width: 12px;
@@ -459,7 +473,7 @@ textarea { resize: vertical; min-height: 60px; }
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
+  padding: 3px 9px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -468,6 +482,7 @@ textarea { resize: vertical; min-height: 60px; }
   color: var(--text2);
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 .btn-log-undo:hover {
   background: #fff1f2;
@@ -478,6 +493,29 @@ textarea { resize: vertical; min-height: 60px; }
 .btn-log-undo i {
   width: 12px;
   height: 12px;
+}
+
+@media (max-width: 768px) {
+  .log-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .log-col-left {
+    min-width: unset;
+    justify-content: space-between;
+  }
+  .log-col-right {
+    margin-left: 0;
+    justify-content: space-between;
+    border-top: 1px dashed var(--border);
+    padding-top: 6px;
+  }
+}
+.btn-log-undo i {
+  width: 13px;
+  height: 13px;
 }
 
 /* EMPTY */
@@ -1853,9 +1891,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   justify-content: center;
   padding: 16px;
   animation: qr-fade-in 0.2s ease-out;
-}
-.qr-modal:not([style*="display: flex"]):not([style*="display:flex"]) {
-  display: none !important;
 }
 @keyframes qr-fade-in {
   from { opacity: 0; }
@@ -3400,29 +3435,29 @@ function getUndoData(log) {
 }
 
 const FIELD_LABELS_TH = {
-  'Actual': 'จำนวน Stock (Actual)',
-  'Min': 'ค่า Minimum (Min)',
-  'Max': 'ค่า Maximum (Max)',
-  'Main Category': 'หมวดหมู่หลัก (Main Category)',
-  'Sub Category': 'หมวดหมู่ย่อย (Sub Category)',
-  'Department': 'แผนก (Department)',
-  'Plant': 'อาคาร/โรงงาน (Plant)',
-  'Area': 'พื้นที่ (Area)',
-  'Location': 'สถานที่เก็บ (Location)',
-  'Position': 'ตำแหน่งเก็บ (Position)',
-  'Location/Position': 'สถานที่/ตำแหน่ง (Location & Position)',
-  'Brand': 'ยี่ห้อ (Brand)',
-  'Model': 'รุ่น/โมเดล (Model)',
-  'Description': 'รายละเอียด (Description)',
-  'CLASS': 'ชั้นความสำคัญ (Class)',
-  'COST': 'ราคา/ต้นทุน (Cost)',
-  'VENDOR': 'ผู้จำหน่าย (Vendor)',
-  'DELIVER TIME': 'ระยะเวลาส่งมอบ (Deliver Time)',
-  'DELIVER UNIT': 'หน่วยเวลา (Deliver Unit)',
-  'Install Year': 'ปีที่ติดตั้ง (Install Year)',
-  'Expected Life': 'อายุการใช้งาน (Expected Life)',
-  'Replace Plan': 'แผนการเปลี่ยน (Replace Plan)',
-  'imageUrl': 'รูปภาพอะไหล่ (Image)'
+  'Actual': 'Stock',
+  'Min': 'Min',
+  'Max': 'Max',
+  'Main Category': 'หมวดหลัก',
+  'Sub Category': 'หมวดย่อย',
+  'Department': 'แผนก',
+  'Plant': 'โรงงาน',
+  'Area': 'พื้นที่',
+  'Location': 'สถานที่',
+  'Position': 'ตำแหน่ง',
+  'Location/Position': 'สถานที่/ตำแหน่ง',
+  'Brand': 'ยี่ห้อ',
+  'Model': 'รุ่น',
+  'Description': 'รายละเอียด',
+  'CLASS': 'Class',
+  'COST': 'ราคา',
+  'VENDOR': 'ผู้จำหน่าย',
+  'DELIVER TIME': 'เวลาส่งมอบ',
+  'DELIVER UNIT': 'หน่วยเวลา',
+  'Install Year': 'ปีติดตั้ง',
+  'Expected Life': 'อายุการใช้งาน',
+  'Replace Plan': 'แผนเปลี่ยน',
+  'imageUrl': 'รูปภาพ'
 };
 
 function getFieldLabelTH(field) {
@@ -3444,8 +3479,8 @@ function renderLog(logs) {
     const typeConfig = getLogTypeConfig(l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'));
     
     let cleanNoteText = l.note ? l.note.split('__UNDO_DATA__:')[0].trim() : '';
-    let diffContentHtml = '';
-
+    let mainContentHtml = '';
+    
     if (cleanNoteText) {
       const rawLines = cleanNoteText.split('\n').filter(Boolean);
       const splitItems = [];
@@ -3457,7 +3492,7 @@ function renderLog(logs) {
         }
       });
 
-      const formattedPills = splitItems.map(line => {
+      const formattedItems = splitItems.map(line => {
         if (line.includes('->') || line.includes('→')) {
           const sep = line.includes('->') ? '->' : '→';
           const parts = line.split(':');
@@ -3468,35 +3503,39 @@ function renderLog(logs) {
           const newVal = (valParts[1] || '').trim();
           const fieldLabel = getFieldLabelTH(rawField);
 
-          return `<span class="diff-inline-pill">
-            <span class="diff-inline-field">${escapeHtml(fieldLabel)}:</span>
-            <span class="diff-val-old">${escapeHtml(oldVal || '—')}</span>
-            <i data-lucide="arrow-right" class="diff-arrow-icon"></i>
-            <span class="diff-val-new">${escapeHtml(newVal || '—')}</span>
+          return `<span class="diff-pill">
+            <span class="diff-lbl">${escapeHtml(fieldLabel)}:</span>
+            <span class="diff-old">${escapeHtml(oldVal || '—')}</span>
+            <i data-lucide="arrow-right" class="diff-arr"></i>
+            <span class="diff-new">${escapeHtml(newVal || '—')}</span>
           </span>`;
         }
-        return `<span class="diff-inline-raw">${escapeHtml(line)}</span>`;
+        return `<span class="diff-line-raw">${escapeHtml(line)}</span>`;
       }).join('');
-
-      diffContentHtml = formattedPills;
+      
+      mainContentHtml = formattedItems || `<span class="log-msg-text">${escapeHtml(l.msg || '')}</span>`;
+    } else {
+      mainContentHtml = `<span class="log-msg-text">${escapeHtml(l.msg || '')}</span>`;
     }
     
     const isSystem = l.partId === 'SYSTEM';
     const partDisplay = isSystem ? 'SYSTEM' : l.partId;
-    const showMsg = l.msg && l.msg !== 'แก้ไขข้อมูล' && l.msg !== 'ลบรายการ';
-
+    
     return `<div class="log-card log-${l.type || (isSystem ? 'system' : 'edit')}">
-      <div class="log-card-left">
+      <div class="log-col-left">
         <span class="log-part-id ${isSystem ? 'system-id' : ''}">${escapeHtml(partDisplay || '')}</span>
         <span class="log-badge ${typeConfig.class}">
           <i data-lucide="${typeConfig.icon}"></i> ${typeConfig.label}
         </span>
-        ${showMsg ? `<span class="log-msg-inline">${escapeHtml(l.msg)}</span>` : ''}
-        ${diffContentHtml}
       </div>
-      <div class="log-card-right">
-        <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
-        <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
+      <div class="log-col-main">
+        ${mainContentHtml}
+      </div>
+      <div class="log-col-right">
+        <div class="log-meta">
+          <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
+          <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
+        </div>
         <button class="btn-log-undo" onclick="confirmUndoLog('${l.id}')" title="ย้อนกลับรายการนี้">
           <i data-lucide="rotate-ccw"></i> ย้อนกลับ
         </button>
@@ -5213,7 +5252,16 @@ function isInventoryVisible() {
 }
 
 function setInventoryCompactMode(compact) {
-  document.body.classList.remove('inv-scroll-compact');
+  // r22: auto-hide only on mobile. Desktop/tablet stay stable.
+  if (window.matchMedia && !window.matchMedia('(max-width: 767px)').matches) {
+    document.body.classList.remove('inv-scroll-compact');
+    return;
+  }
+  if (!isInventoryVisible()) {
+    document.body.classList.remove('inv-scroll-compact');
+    return;
+  }
+  document.body.classList.toggle('inv-scroll-compact', !!compact);
 }
 
 function getInventoryScrollElement() {
