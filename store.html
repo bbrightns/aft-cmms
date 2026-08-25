@@ -2249,6 +2249,11 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
         อัปโหลด CSV ใหม่
       </button>
       <div class="home-footer-dot"></div>
+      <button class="home-footer-btn danger" onclick="openClearLogsModal()">
+        <i data-lucide="history" style="width:14px;height:14px"></i>
+        ล้าง Log ทั้งหมด
+      </button>
+      <div class="home-footer-dot"></div>
       <button class="home-footer-btn danger" onclick="openClearDataModal()">
         <i data-lucide="trash-2" style="width:14px;height:14px"></i>
         ล้างข้อมูลทั้งหมด
@@ -2369,6 +2374,14 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div id="resultCount" style="padding:6px 16px 10px;color:var(--text3);font-size:12px;font-family:var(--mono);font-weight:600;"></div>
     </div>
     <div id="tabLog" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 4px;">
+        <span style="font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;">
+          <i data-lucide="history" style="width:16px;height:16px;color:var(--agc-blue);"></i> ประวัติการทำรายการ (Transaction Log)
+        </span>
+        <button class="btn btn-ghost" style="color:var(--danger);font-size:12px;padding:5px 10px;height:auto;gap:5px;border:1px solid rgba(228,0,70,0.2);" onclick="openClearLogsModal()">
+          <i data-lucide="trash-2" style="width:13px;height:13px;"></i> ล้าง Log ทั้งหมด
+        </button>
+      </div>
       <div style="padding:14px;display:flex;flex-direction:column;gap:8px;" id="logList">
         <div class="empty"><div class="empty-icon"><i data-lucide="clipboard-list" style="width:36px;height:36px"></i></div><p>ยังไม่มี transaction</p></div>
       </div>
@@ -2644,6 +2657,21 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('clearDataModal')"><i data-lucide="x"></i> ยกเลิก</button>
       <button class="btn btn-danger" id="confirmClearAllBtn" onclick="confirmClearAllData()"><i data-lucide="trash"></i> ล้างทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Clear All Logs -->
+<div class="modal-overlay" id="clearLogsModal" style="display:none" onclick="closeOnOverlay(event,'clearLogsModal')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="trash-2"></i> ล้างประวัติ Log ทั้งหมด</div><button class="close-btn" onclick="closeModal('clearLogsModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <p style="color:var(--text2)">การดำเนินการนี้จะ <strong style="color:var(--danger)">ลบประวัติการทำรายการ (Transaction Log) ทั้งหมด</strong> ออกจากระบบ</p>
+      <p style="font-size:12px;color:var(--danger);margin-top:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i> ข้อมูลที่ลบแล้วจะไม่สามารถย้อนกลับ (Undo) ได้</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('clearLogsModal')"><i data-lucide="x"></i> ยกเลิก</button>
+      <button class="btn btn-danger" id="confirmClearLogsBtn" onclick="confirmClearAllLogs()"><i data-lucide="trash"></i> ล้าง Log ทั้งหมด</button>
     </div>
   </div>
 </div>
@@ -4490,6 +4518,36 @@ window.confirmClearAllData = async () => {
     toast('ล้างข้อมูลเรียบร้อย','warn');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
   finally { document.getElementById('loadingOverlay').style.display = 'none'; btn.classList.remove('btn-loading'); }
+};
+
+// ===== CLEAR ALL LOGS =====
+window.openClearLogsModal = () => {
+  document.getElementById('clearLogsModal').style.display = 'flex';
+  refreshIcons();
+};
+
+window.confirmClearAllLogs = async () => {
+  const btn = document.getElementById('confirmClearLogsBtn');
+  if (btn) btn.classList.add('btn-loading');
+  closeModal('clearLogsModal');
+  document.getElementById('loadingText').textContent = 'กำลังล้างประวัติ Log...';
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  setSyncing('syncing');
+  try {
+    const { error: delErr } = await supabase.from('logs').delete().neq('id', -1);
+    if (delErr) throw delErr;
+
+    invalidateLogsCache();
+    _logsCacheData = [];
+    renderLog([]);
+    toast('ล้างประวัติ Log เรียบร้อยแล้ว', 'warn');
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    setSyncing('error');
+  } finally {
+    document.getElementById('loadingOverlay').style.display = 'none';
+    if (btn) btn.classList.remove('btn-loading');
+  }
 };
 
 // ===== EXPORT =====
