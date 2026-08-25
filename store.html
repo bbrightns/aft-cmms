@@ -2321,7 +2321,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       </div>
       <div class="controls-filters" id="controlsFilters">
         <select id="catFilter" onchange="applyFilters()" style="flex:1;min-width:130px"><option value="">All Categories</option></select>
-        <select id="departmentFilter" onchange="applyFilters()" style="min-width:95px"><option value="">All Dept</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option><option value="RFG">RFG</option></select>
+        <select id="departmentFilter" onchange="applyFilters()" style="min-width:95px"><option value="">All Dept</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select>
         <select id="subCatFilter" onchange="applyFilters()" style="flex:1;min-width:130px"><option value="">All Sub-cat</option></select>
         <select id="plantFilter" onchange="applyFilters()" style="min-width:90px">
           <option value="">All Plants</option><option value="RFG">RFG</option><option value="MIR">MIR</option>
@@ -2339,7 +2339,6 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <span class="quick-filter-sep" aria-hidden="true"></span>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="ELEC" onclick="setQuickFilter('ELEC')">ELEC</button>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="MECH" onclick="setQuickFilter('MECH')">MECH</button>
-      <button class="quick-filter-chip" data-filter-group="dept" data-chip="RFG" onclick="setQuickFilter('RFG')">RFG</button>
     </div>
     <div class="search-result-meta" id="searchResultMeta">Showing 0 / 0 items</div>
     <div class="tabs">
@@ -2505,7 +2504,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
       <div class="form-row">
         <div class="form-group"><label>Part ID</label><input type="text" id="f_partid" placeholder="SPFL-C-XXXX" class="readonly-field" readonly><div class="field-error" id="err_partid"></div></div>
-        <div class="form-group"><label>แผนก (EE/ME/RFG) <span style="color:#dc2626;font-weight:700">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option><option value="RFG">RFG</option></select><div class="field-error" id="err_department"></div></div>
+        <div class="form-group"><label>แผนก (ELEC/MECH) <span style="color:#dc2626;font-weight:700">*</span></label><select id="f_department"><option value="">—</option><option value="ELEC">ELEC</option><option value="MECH">MECH</option></select><div class="field-error" id="err_department"></div></div>
 
       </div>
 
