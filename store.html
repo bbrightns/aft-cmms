@@ -2465,6 +2465,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
               <option value="STORE">STORE</option>
               <option value="RFG">RFG</option>
               <option value="RFG-STORE">RFG-STORE</option>
+              <option value="MIR-STORE">MIR-STORE</option>
             </select>
           </div>
           <div class="form-group">
@@ -2536,7 +2537,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
 
       <div class="form-section-title">ที่เก็บ</div>
       <div class="form-row">
-        <div class="form-group"><label>ที่เก็บ (STORE/RFG/RFG-STORE)</label><select id="f_location"><option value="">—</option><option value="STORE">STORE</option><option value="RFG">RFG</option><option value="RFG-STORE">RFG-STORE</option></select><div class="field-error" id="err_location"></div></div>
+        <div class="form-group"><label>ที่เก็บ</label><select id="f_location"><option value="STORE" selected>STORE</option><option value="RFG">RFG</option><option value="RFG-STORE">RFG-STORE</option><option value="MIR-STORE">MIR-STORE</option></select><div class="field-error" id="err_location"></div></div>
         <div class="form-group"><label>ตำแหน่ง</label>
           <div class="position-3-grid">
             <input type="text" id="f_pos1" maxlength="2" placeholder="Z2" oninput="this.value=this.value.toUpperCase();syncPosition()">
@@ -3230,7 +3231,10 @@ function setLocationValue(val) {
   const sel = document.getElementById('f_location');
   if (!sel) return;
   [...sel.querySelectorAll('option[data-legacy="1"]')].forEach(o => o.remove());
-  if (!val) { sel.value = ''; return; }
+  if (!val) {
+    sel.value = 'STORE';
+    return;
+  }
   const exists = [...sel.options].some(o => o.value === val);
   if (!exists) {
     const opt = document.createElement('option');
