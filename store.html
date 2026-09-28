@@ -75,13 +75,14 @@ html { scroll-behavior: smooth; }
 .home-sec-arrow { color: var(--border2); flex-shrink: 0; }
 
 /* Footer */
-.home-footer-links { display: flex; align-items: center; justify-content: center; gap: 12px 18px; margin-bottom: 36px; flex-wrap: wrap; }
+.home-footer-links { display: flex; align-items: center; justify-content: center; gap: 12px 18px; margin-bottom: 20px; flex-wrap: wrap; }
 .home-footer-btn { background: none; border: none; color: var(--text3); font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-family: var(--sans); font-weight: 500; transition: color 0.2s; padding: 4px 6px; border-radius: 6px; white-space: nowrap; flex-shrink: 0; line-height: 1.4; }
 .home-footer-btn i, .home-footer-btn svg { flex-shrink: 0; }
 .home-footer-btn:hover { color: var(--agc-blue); }
 .home-footer-btn.danger:hover { color: var(--danger); }
 .home-footer-dot { width: 4px; height: 4px; background: var(--border2); border-radius: 50%; flex-shrink: 0; }
-.home-version { text-align: center; font-size: 11px; color: var(--text3); letter-spacing: 0.1em; font-weight: 500; margin-top: 4px; }
+.home-version { text-align: center; font-size: 12px; color: var(--text3); letter-spacing: 0.04em; font-weight: 500; margin-top: 12px; font-family: var(--mono); }
+
 /* Upload zone (shown when no data) */
 .upload-zone { border: 2px dashed #e2e8f0; border-radius: 16px; padding: 24px; text-align: center; cursor: pointer; transition: all 0.2s; margin-bottom: 20px; background: #fff; }
 .upload-zone:hover { border-color: var(--agc-blue); background: #f8fafc; }
@@ -2260,6 +2261,9 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
         ล้างข้อมูลทั้งหมด
       </button>
     </div>
+
+    <!-- App Version -->
+    <div class="home-version">v1.6.6</div>
 
 
     <!-- Compat stubs -->
