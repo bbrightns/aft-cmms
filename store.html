@@ -299,10 +299,10 @@ table.hc-position [data-col="position"] { display: none; }
 table.hc-minmax [data-col="minmax"] { display: none; }
 td[data-col="model"] { max-width: 260px; }
 td[data-col="desc"] { max-width: 300px; }
-table th:first-child, table td:first-child { position: sticky; left: 0; background: var(--bg); box-shadow: 1px 0 0 var(--border); }
-table th:first-child { z-index: 7; background: var(--surface2); }
-table td:first-child { z-index: 2; }
-tr:hover td:first-child { background: var(--surface2); }
+#tabInventory table th:first-child, #tabInventory table td:first-child { position: sticky; left: 0; background: var(--bg); box-shadow: 1px 0 0 var(--border); }
+#tabInventory table th:first-child { z-index: 7; background: var(--surface2); }
+#tabInventory table td:first-child { z-index: 2; }
+#tabInventory tr:hover td:first-child { background: var(--surface2); }
 .col-picker-btn { margin: 0 12px 0 auto; align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid var(--border); background: var(--bg2); color: var(--text2); border-radius: 8px; font-family: var(--sans); font-size: 12px; font-weight: 700; cursor: pointer; }
 .col-picker-btn:hover, .col-picker-btn[aria-expanded="true"] { border-color: var(--agc-blue); color: var(--agc-blue); }
 .col-picker-btn [data-lucide] { width: 14px; height: 14px; }
@@ -2280,6 +2280,19 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 .settings-row.danger small { color: var(--text2); }
 .typed-confirm { display: block; margin-top: 14px; font-size: 13px; color: var(--text2); }
 .typed-confirm-input { width: 100%; margin-top: 6px; min-height: 48px; padding: 8px 12px; font-family: var(--mono); font-size: 16px; font-weight: 700; letter-spacing: 1px; border: 2px solid var(--border-strong); border-radius: 10px; background: var(--surface); }
+
+/* ===== DISABLED BUTTONS + SCAN CHOICE ===== */
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-danger:disabled:hover { background: transparent; color: var(--danger-text); }
+.scan-choice-item { padding: 12px 14px; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--bg2); margin-bottom: 16px; }
+.scan-choice-name { font-size: 16px; font-weight: 800; color: var(--text); line-height: 1.3; word-break: break-word; }
+.scan-choice-meta { margin-top: 4px; font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--text2); }
+.scan-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.scan-choice-btn { min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border: 0; border-radius: 14px; color: #fff; font-family: var(--sans); font-size: 17px; font-weight: 800; cursor: pointer; }
+.scan-choice-btn.out { background: var(--agc-red); }
+.scan-choice-btn.in { background: var(--accent2); }
+.scan-choice-btn [data-lucide], .scan-choice-btn svg { width: 24px; height: 24px; }
+.scan-choice-btn:focus-visible { outline: 3px solid var(--agc-blue); outline-offset: 2px; }
 </style>
 
 </head>
@@ -2840,6 +2853,20 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 
 <!-- MODAL: Clear All Data -->
 <!-- MODAL: Settings / admin (rare + destructive actions live here, not on the Home screen) -->
+<!-- MODAL: after scanning a label on Home, choose the direction explicitly -->
+<div class="modal-overlay" id="scanChoiceModal" style="display:none" onclick="closeOnOverlay(event,'scanChoiceModal')">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header"><div class="modal-title"><i data-lucide="qr-code"></i> สแกนแล้ว — ทำรายการอะไร?</div><button class="close-btn" onclick="closeModal('scanChoiceModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <div class="scan-choice-item"><div class="scan-choice-name" id="scanChoiceName"></div><div class="scan-choice-meta" id="scanChoiceMeta"></div></div>
+      <div class="scan-choice-grid">
+        <button type="button" class="scan-choice-btn out" onclick="scanChoose('out')"><i data-lucide="log-out"></i> เบิกของ</button>
+        <button type="button" class="scan-choice-btn in" onclick="scanChoose('in')"><i data-lucide="log-in"></i> รับของ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="settingsModal" style="display:none" onclick="closeOnOverlay(event,'settingsModal')">
   <div class="modal" style="max-width:420px">
     <div class="modal-header"><div class="modal-title"><i data-lucide="settings"></i> ตั้งค่า / ผู้ดูแลระบบ</div><button class="close-btn" onclick="closeModal('settingsModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
@@ -3014,7 +3041,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
   </div>
 </div>
 
-<div class="toast-container" id="toastContainer" role="region" aria-label="การแจ้งเตือน" aria-live="polite" aria-relevant="additions"></div>
+<div class="toast-container" id="toastContainer" role="region" aria-label="การแจ้งเตือน"></div>
 
 <!-- QR Scanner Modal -->
 <div id="qrScanModal" class="qr-modal" onclick="closeOnOverlay(event, 'qrScanModal')">
@@ -3490,6 +3517,12 @@ window.toggleColPicker = (e) => {
 document.addEventListener('click', e => { if (!e.target.closest('#colPicker')) closeColPicker(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeColPicker(); });
 window.addEventListener('resize', closeColPicker);
+document.addEventListener('scroll', (e) => {
+  const box = document.getElementById('colPicker');
+  const t = e.target;
+  if (!box || box.hidden || (t && t.nodeType === 1 && t.closest('#colPicker'))) return;
+  closeColPicker();
+}, true);
 document.addEventListener('DOMContentLoaded', applyColumnVisibility);
 applyColumnVisibility();
 
@@ -4891,6 +4924,19 @@ window.syncTypedConfirm = (inputId, btnId, word) => {
   const ok = (document.getElementById(inputId).value || '').trim().toUpperCase() === word;
   document.getElementById(btnId).disabled = !ok;
 };
+let scanChoiceItemId = null;
+window.openScanChoice = (item) => {
+  scanChoiceItemId = item._id;
+  document.getElementById('scanChoiceName').textContent = ((item['Brand'] || '') + ' ' + (item['Model'] || '')).trim() || item['Part ID'];
+  document.getElementById('scanChoiceMeta').textContent = [item['Part ID'], 'Stock ' + (item['Actual'] !== '' && item['Actual'] != null ? item['Actual'] : '—'), [item['Location'], item['Position']].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
+  document.getElementById('scanChoiceModal').style.display = 'flex';
+  refreshIcons();
+};
+window.scanChoose = (mode) => {
+  const id = scanChoiceItemId;
+  closeModal('scanChoiceModal');
+  if (id) window.openAdjust(id, mode);
+};
 window.openSettings = () => {
   document.getElementById('settingsModal').style.display = 'flex';
   refreshIcons();
@@ -5000,7 +5046,9 @@ window.toast = (msg, type='success') => {
 
 // ===== CONFIRM DIALOG (replaces native confirm(); resolves true/false) =====
 // Cancel is focused by default so a stray Enter never confirms. Escape / backdrop = cancel. Tab is trapped.
+let _dlgPending = null;
 window.confirmDialog = ({ title, message = '', okText = 'ตกลง', cancelText = 'ยกเลิก', tone = 'warn', focus = 'cancel' } = {}) => new Promise(resolve => {
+  if (_dlgPending) _dlgPending(false);   // never leave an earlier promise hanging
   const $ = id => document.getElementById(id);
   const ov = $('dlgOverlay'), card = $('dlgCard'), ok = $('dlgOk'), cancel = $('dlgCancel');
   const prev = document.activeElement;
@@ -5018,12 +5066,14 @@ window.confirmDialog = ({ title, message = '', okText = 'ตกลง', cancelTe
     }
   };
   const done = v => {
+    if (_dlgPending === done) _dlgPending = null;
     ov.hidden = true;
     ov.removeEventListener('keydown', onKey);
     ok.onclick = cancel.onclick = ov.onclick = null;
     if (prev && prev.focus) { try { prev.focus(); } catch (e) {} }
     resolve(v);
   };
+  _dlgPending = done;
   ok.onclick = () => done(true);
   cancel.onclick = () => done(false);
   ov.onclick = e => { if (e.target === ov) done(false); };
@@ -5553,7 +5603,7 @@ function renderTable() {
     const reorder = getReorderSuggestion(r);
     const dept = (r['Department']||'').toUpperCase();
     const deptCls = dept === 'ELEC' ? 'badge-dept-elec' : dept === 'MECH' ? 'badge-dept-mech' : dept === 'RFG' ? 'badge-dept-rfg' : 'badge-none';
-    const posRaw = (r['Position']||'').trim();
+    const posRaw = String(r['Position'] ?? '').trim();
     const hasStock = (parseFloat(r['Actual'])||0) > 0;
     const posCell = posRaw
       ? `<span class="pos-chip"><i data-lucide="map-pin" style="width:10px;height:10px"></i>${highlightText(posRaw, q)}</span>`
@@ -5643,6 +5693,28 @@ function recordRecent(partId, mode) {
     localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 40)));
   } catch (e) {}
 }
+let _recentOutCache = { at: 0, pids: null };
+let _recentOutLoading = false;
+async function loadStoreRecentOut() {
+  if (_recentOutCache.pids && Date.now() - _recentOutCache.at < 60000) return _recentOutCache.pids;
+  let pids = [];
+  try {
+    const { data, error } = await supabase.from('logs').select('partId').eq('type', 'out').not('msg', 'ilike', '%Undo%').order('ts', { ascending: false }).limit(80);
+    if (!error && Array.isArray(data)) pids = [...new Set(data.map(x => String(x.partId || '').trim()).filter(Boolean))];
+  } catch (e) {}
+  _recentOutCache = { at: Date.now(), pids };   // also caches a failure for 60s, so we never hammer the server
+  return pids;
+}
+function qaMaybeLoadStoreRecent() {
+  if (qaMode !== 'out' || _recentOutLoading) return;
+  if (_recentOutCache.pids && Date.now() - _recentOutCache.at < 60000) return;
+  _recentOutLoading = true;
+  loadStoreRecentOut().then(() => {
+    _recentOutLoading = false;
+    const idle = !(document.getElementById('qaSearch')?.value) && !qaSelectedItem;
+    if (qaMode === 'out' && idle && document.getElementById('pageAction').style.display !== 'none') qaRenderDefaults();
+  });
+}
 const QA_LIST_SIZE = 8;
 let qaMoreLow = QA_LIST_SIZE;
 
@@ -5682,10 +5754,16 @@ function qaDefaultSections(mode) {
     if (mine.length) sections.push({ title: 'เบิกล่าสุดบนเครื่องนี้', rows: mine });
     if (mine.length < QA_LIST_SIZE) {
       const seen = new Set(mine.map(r => r._id));
-      const rest = items.filter(r => inStock(r) && !seen.has(r._id) && r['_updatedAt'])
-        .sort((a, b) => String(b['_updatedAt']).localeCompare(String(a['_updatedAt'])))
-        .slice(0, QA_LIST_SIZE - mine.length);
-      if (rest.length) sections.push({ title: 'อัปเดตล่าสุดในคลัง', rows: rest });
+      const want = QA_LIST_SIZE - mine.length;
+      // Preferred: what people really withdrew lately (from the logs). Until that loads / if it is empty:
+      // the most recently updated parts that are in stock.
+      const fromLogs = (_recentOutCache.pids || []).map(p => byPid.get(p)).filter(r => r && inStock(r) && !seen.has(r._id)).slice(0, want);
+      if (fromLogs.length) sections.push({ title: 'เบิกล่าสุดในคลัง', rows: fromLogs });
+      else {
+        const rest = items.filter(r => inStock(r) && !seen.has(r._id) && r['_updatedAt'])
+          .sort((a, b) => String(b['_updatedAt']).localeCompare(String(a['_updatedAt']))).slice(0, want);
+        if (rest.length) sections.push({ title: 'อัปเดตล่าสุดในคลัง', rows: rest });
+      }
     }
   } else {
     const rank = c => ({ A: 0, B: 1, C: 2 }[String(c || '').trim().toUpperCase()] ?? 3);
@@ -5710,6 +5788,7 @@ function qaRenderDefaults() {
     box.innerHTML = `<div class="qa-hint">${qaMode === 'in' ? 'ไม่มีรายการที่ต่ำกว่า Min ตอนนี้ — พิมพ์ค้นหาหรือสแกน QR เพื่อรับของ' : 'พิมพ์ค้นหาหรือสแกน QR เพื่อเบิกของ'}</div>`;
     return;
   }
+  qaMaybeLoadStoreRecent();
   box.innerHTML = sections.map(sec => `<section class="qa-section" aria-label="${escapeHtml(sec.title)}">
     <div class="qa-section-head"><span>${escapeHtml(sec.title)}</span>${sec.count ? `<span class="qa-section-count">${sec.count} รายการ</span>` : ''}</div>
     ${sec.rows.map(r => {
@@ -6017,6 +6096,7 @@ window.exportCSV = () => openExportModal();
 //   - collapse only after the list is scrolled past INV_HIDE_AFTER_TOP AND moved INV_HIDE_TRAVEL px down in one go
 //   - reveal only after INV_SHOW_TRAVEL px of continuous upward scroll, or when back near the top
 //   - ignore scroll deltas for INV_SETTLE_MS after a toggle (the resize itself moves scrollTop)
+//   (works while the search box is focused too: scrolling a filtered list is the common case)
 // Search + filter chips stay visible in both states (see "KEEP FILTERS VISIBLE" in the CSS).
 let _lastInvScrollTop = 0;
 let _invScrollReady = false;
@@ -6057,9 +6137,6 @@ function handleInventoryScroll(scroller) {
   _lastInvScrollTop = top;
   if (!dy) return;
   if (performance.now() < _invLockUntil) { _invTravel = 0; return; }
-  const ae = document.activeElement;
-  // On-screen keyboard open: the viewport is resizing, do not react.
-  if (ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName) && ae.closest('#pageInventory')) return;
   if (Math.sign(dy) !== Math.sign(_invTravel)) _invTravel = 0;
   _invTravel += dy;
   const compact = document.body.classList.contains('inv-scroll-compact');
@@ -6160,8 +6237,25 @@ function playBeep() {
   }
 }
 
+function handleHomeScan(code) {
+  if (!items.length) { window.toast('ข้อมูลยังโหลดไม่เสร็จ ลองสแกนอีกครั้ง', 'warn'); return; }
+  const match = items.find(x => (x['Part ID'] || '').trim().toLowerCase() === code.toLowerCase());
+  if (!match) {
+    window.toast('ไม่พบ Part ID: ' + code, 'error');
+    window.goInventory();
+    setTimeout(() => { const i = document.getElementById('searchInput'); if (i) { i.value = code; window.onSearchInput(); } }, 120);
+    return;
+  }
+  if (!canPerform('adjust')) { window.toast('บัญชีนี้ไม่มีสิทธิ์เบิก/รับของ', 'error'); return; }
+  window.openScanChoice(match);   // never guess the direction: the user picks เบิก or รับ
+}
 function onScanSuccess(decodedText, decodedResult) {
   playBeep();
+  if (currentScannerTarget === 'home') {
+    window.closeQRScanner();
+    handleHomeScan(decodedText.trim());
+    return;
+  }
   window.toast("สแกนสำเร็จ: " + decodedText, "success");
   window.closeQRScanner();
 
@@ -6186,15 +6280,6 @@ function onScanSuccess(decodedText, decodedResult) {
     const input = document.getElementById('searchInput');
     input.value = code;
     window.onSearchInput();
-  } else if (currentScannerTarget === 'home') {
-    const match = items.find(x => (x['Part ID'] || '').trim().toLowerCase() === code.toLowerCase());
-    if (match) {
-      window.openAdjust(match._id, 'out');   // the adjust popup has the เบิก/รับ switch
-    } else {
-      window.toast('ไม่พบ Part ID: ' + code, 'error');
-      window.goInventory();
-      setTimeout(() => { const i = document.getElementById('searchInput'); if (i) { i.value = code; window.onSearchInput(); } }, 120);
-    }
   }
 }
 
