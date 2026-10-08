@@ -2194,6 +2194,13 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 .form-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (max-width: 480px) { .form-row.loc-pos-row { grid-template-columns: 1fr; } }
 #f_deliver { min-width: 0; }
+/* Keep a code like Z2-02-20 or RFG-STORE in one piece: wrap between the pieces, never inside them. */
+.nowrap { white-space: nowrap; }
+/* Three footer buttons (Detail: ขอราคา / ปรับสต็อก / แก้ไขข้อมูล) were wider than a 350px phone and pushed the first one against the edge. */
+@media (max-width: 480px) {
+  .modal-footer { gap: 6px; }
+  .modal-footer .btn { min-width: 0; padding-left: 8px; padding-right: 8px; font-size: 14px; gap: 4px; }
+}
 @media (max-width: 480px) { .form-group:has(> div > #f_deliver) { grid-column: 1 / -1; } }   /* number + unit side by side need the full row */
 </style>
 
@@ -6079,7 +6086,7 @@ window.openDetail = (id) => {
       <div class="detail-item"><div class="detail-label">Brand</div><div class="detail-val">${escapeHtml(r['Brand']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Model</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Model']||'—')}</div></div>
       <div class="detail-item" style="grid-column:1/-1"><div class="detail-label">Description</div><div class="detail-val" style="color:var(--text2)">${escapeHtml(r['Description']||'—')}</div></div>
-      <div class="detail-item"><div class="detail-label">Location / Position</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Location']||'—')} / ${escapeHtml(r['Position']||'—')}</div></div>
+      <div class="detail-item"><div class="detail-label">Location / Position</div><div class="detail-val" style="font-family:var(--mono)"><span class="nowrap">${escapeHtml(r['Location']||'—')}</span> / <span class="nowrap">${escapeHtml(r['Position']||'—')}</span></div></div>
       <div class="detail-item"><div class="detail-label">Stock</div><div class="detail-val"><span class="stock-dot ${dot}" style="display:inline-block;margin-right:6px;width:8px;height:8px;border-radius:50%"></span>${escapeHtml(r['Actual']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Min / Max</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Min']||'—')} / ${escapeHtml(r['Max']||'—')}</div></div>
       ${reorder ? `<div class="detail-item"><div class="detail-label">Reorder Suggestion</div><div class="detail-val"><span class="reorder-chip">Suggest order: ${reorder} pcs</span></div></div>` : ''}
