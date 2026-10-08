@@ -2161,6 +2161,10 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 @media (max-width: 767px) { .header-right { flex: 0 1 auto; } }
 @media (max-width: 480px) { #userDisplayNameText { display: none; } }
 @media (max-width: 360px) { #syncText { display: none; } }
+
+/* ===== FORM MODAL NUDGE (backdrop tap ignored) ===== */
+.modal.nudge { animation: modalNudge 0.28s ease; }
+@keyframes modalNudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.012); } }
 </style>
 
 </head>
@@ -2582,7 +2586,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 <!-- MODAL: Add/Edit -->
 <div class="modal-overlay" id="editModal" style="display:none" onclick="closeOnOverlay(event,'editModal')">
   <div class="modal">
-    <div class="modal-header"><div class="modal-title" id="editModalTitle">Add Item</div><button class="close-btn" onclick="closeModal('editModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
+    <div class="modal-header"><div class="modal-title" id="editModalTitle">Add Item</div><button class="close-btn" onclick="requestCloseModal('editModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
 
       <div class="form-section-title">ข้อมูลพื้นฐาน</div>
@@ -2672,7 +2676,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('editModal')"><i data-lucide="x"></i> ยกเลิก</button>
+      <button class="btn btn-ghost" onclick="requestCloseModal('editModal')"><i data-lucide="x"></i> ยกเลิก</button>
       <button class="btn btn-primary" id="saveItemBtn" onclick="saveItem()"><i data-lucide="save"></i> บันทึก</button>
     </div>
   </div>
@@ -4165,7 +4169,6 @@ window.closeModal = (id) => {
   const el = document.getElementById(id);
   if (el) el.style.display = 'none';
 };
-window.closeOnOverlay = (e,id) => { if(e.target.id===id) closeModal(id); };
 
 
 
@@ -4381,6 +4384,7 @@ window.openAddModal = () => {
   ['err_partid','err_department','err_plant','err_subcat','err_location','err_position','err_modeldesc','err_actual','err_min','err_max'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   document.getElementById('editModal').style.display='flex';
   preventEnterInTextFields(document.getElementById('editModal'));
+  markEditPristine();
 };
 
 window.openEdit = (id) => {
@@ -4428,6 +4432,7 @@ window.openEdit = (id) => {
   ['err_partid','err_department','err_plant','err_subcat','err_location','err_position','err_modeldesc','err_actual','err_min','err_max'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   document.getElementById('editModal').style.display='flex';
   preventEnterInTextFields(document.getElementById('editModal'));
+  markEditPristine();
 };
 
 window.saveItem = async () => {
@@ -6141,15 +6146,62 @@ window.closeQRScanner = () => {
   }
 };
 
-// Override closeOnOverlay to handle QR scanner closing safely
-window.closeOnOverlay = (e, id) => {
-  if (e.target.id === id) {
-    if (id === 'qrScanModal') {
-      window.closeQRScanner();
-    } else {
-      window.closeModal(id);
-    }
+// ===== FORM MODALS: never lose typed data by accident =====
+// A tap on the dark backdrop used to close the 24-field edit form and throw away everything typed. Modals that hold
+// user input (edit/add item, CSV import, profile) now ignore backdrop taps and give a small "nudge" instead; they close
+// with the X / ยกเลิก button. The edit form additionally asks before discarding, but only when something was changed.
+const FORM_MODALS = new Set(['editModal', 'csvModal', 'profileModal']);
+let _editSnapshot = null;
+
+function serializeEditForm() {
+  const box = document.querySelector('#editModal .modal-body');
+  const vals = {};
+  if (box) box.querySelectorAll('input, select, textarea').forEach(el => {
+    // read-only / generated fields (Part ID, main category, position preview...) are not user edits
+    if (!el.id || el.type === 'file' || el.readOnly || el.disabled) return;
+    vals[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
+  });
+  vals.__photo = (photoChanged ? '1' : '0') + (selectedPhotoFile ? selectedPhotoFile.name + ':' + selectedPhotoFile.size : '');
+  return JSON.stringify(vals);
+}
+window.markEditPristine = () => { _editSnapshot = serializeEditForm(); };
+function isEditDirty() {
+  const m = document.getElementById('editModal');
+  return !!m && m.style.display === 'flex' && _editSnapshot !== null && serializeEditForm() !== _editSnapshot;
+}
+function nudgeModal(id) {
+  const card = document.querySelector('#' + id + ' .modal');
+  if (!card) return;
+  card.classList.remove('nudge'); void card.offsetWidth; card.classList.add('nudge');
+}
+window.requestCloseModal = async (id) => {
+  if (id === 'editModal' && isEditDirty()) {
+    const discard = await confirmDialog({
+      title: 'ทิ้งข้อมูลที่กรอกไว้?',
+      message: 'ข้อมูลที่เพิ่ม/แก้ไขในฟอร์มนี้ยังไม่ได้บันทึก และจะหายไป',
+      okText: 'ทิ้งข้อมูล', cancelText: 'กลับไปแก้ไข', tone: 'danger'
+    });
+    if (!discard) return;
   }
+  if (id === 'editModal') _editSnapshot = null;
+  closeModal(id);
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const dlg = document.getElementById('dlgOverlay'), txo = document.getElementById('txOverlay');
+  if ((dlg && !dlg.hidden) || (txo && !txo.hidden)) return;   // those handle their own Escape
+  const m = document.getElementById('editModal');
+  if (m && m.style.display === 'flex') { e.preventDefault(); requestCloseModal('editModal'); }
+});
+window.addEventListener('beforeunload', (e) => {   // accidental refresh / pull-to-refresh / swipe-back with unsaved edits
+  if (isEditDirty()) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Single closeOnOverlay (also closes the QR scanner safely)
+window.closeOnOverlay = (e, id) => {
+  if (e.target.id !== id) return;
+  if (FORM_MODALS.has(id)) { nudgeModal(id); return; }
+  if (id === 'qrScanModal') window.closeQRScanner(); else window.closeModal(id);
 };
 
 function playBeep() {
