@@ -2240,6 +2240,17 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
   html body #pageInventory .tabs, html body #pageInventory #searchResultMeta { display: none !important; }
   html body #pageInventory.log-view .controls-bar, html body #pageInventory.log-view #quickFilterChips { display: none !important; }
 }
+
+/* ===== เบิก/รับ page: suggestions before typing ===== */
+.qa-results.qa-defaults { max-height: none; overflow: visible; }
+.qa-section { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.qa-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 2px 2px 0; font-size: 13px; font-weight: 800; color: var(--text); }
+.qa-section-count { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text3); }
+.qa-need { display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 6px; background: #fef3cd; color: var(--warn); font-size: 12px; font-weight: 700; }
+.qa-more { width: 100%; min-height: 48px; border: 1.5px solid var(--border-strong); background: var(--bg2); color: var(--agc-blue); border-radius: 10px; font-family: var(--sans); font-size: 14px; font-weight: 700; cursor: pointer; }
+.qa-more:hover { border-color: var(--agc-blue); }
+.qa-hint { padding: 18px 8px; text-align: center; color: var(--text2); font-size: 14px; }
+.qa-item:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
 </style>
 
 </head>
@@ -2428,10 +2439,10 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
     <div class="qa-search-wrap" style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
       <div style="position: relative; flex: 1;">
         <svg class="qa-search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input type="text" id="qaSearch" placeholder="พิมพ์ Part ID, Brand, Model, Location..." oninput="qaSearchInput()" style="width: 100%;">
+        <input type="text" id="qaSearch" placeholder="ค้นหา Part ID, Brand, Model" oninput="qaSearchInput()" style="width: 100%;">
         <button class="qa-clear" id="qaClear" onclick="qaClearSearch()" aria-label="ล้างการค้นหา"><i data-lucide="x"></i></button>
       </div>
-      <button class="btn-scan" onclick="openQRScanner('qa')" title="Scan QR Code" style="flex-shrink: 0; background: var(--agc-blue); color: white; border: none; border-radius: 10px; height: 46px; width: 46px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s;"><i data-lucide="qr-code"></i></button>
+      <button class="btn-scan btn-scan-labelled" onclick="openQRScanner('qa')" title="สแกน QR Code" aria-label="สแกน QR Code" style="flex-shrink: 0; background: var(--agc-blue); color: white; border: none; border-radius: 10px; height: 48px; min-width: 48px; padding: 0 14px; gap: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; font-family: var(--sans); font-size: 14px; font-weight: 700;"><i data-lucide="qr-code"></i><span>สแกน</span></button>
     </div>
     <div class="qa-result-count" id="qaResultCount"></div>
     <div class="qa-results" id="qaResults"></div>
@@ -3149,7 +3160,7 @@ window.goAction = (mode) => {
   qaMode = mode; qaSelectedItem = null; qaQty = 1;
   document.getElementById('qaSearch').value = '';
   document.getElementById('qaClear').classList.remove('visible');
-  document.getElementById('qaResults').innerHTML = '';
+  qaMoreLow = QA_LIST_SIZE;
   const qaCountEl = document.getElementById('qaResultCount');
   if (qaCountEl) { qaCountEl.textContent = ''; qaCountEl.classList.remove('show'); }
   document.getElementById('qtyPanel').classList.remove('visible');
@@ -3157,17 +3168,21 @@ window.goAction = (mode) => {
   document.getElementById('qaWarn').classList.remove('show');
   if (mode === 'out') {
     document.getElementById('actionTitle').innerHTML = '<i data-lucide="log-out"></i> <span style="color:var(--agc-red)">เบิกของ</span>';
-    document.getElementById('actionSubtitle').textContent = 'ค้นหาอะไหล่ที่ต้องการเบิก';
+    document.getElementById('actionSubtitle').textContent = 'เลือกจากรายการ หรือค้นหา / สแกน QR';
     document.getElementById('qaConfirmBtn').className = 'btn-confirm btn-confirm-out';
     document.getElementById('qaConfirmBtn').innerHTML = '<i data-lucide="check-circle"></i> ตรวจสอบและยืนยัน';
   } else {
     document.getElementById('actionTitle').innerHTML = '<i data-lucide="log-in"></i> <span style="color:var(--accent2)">รับของ</span>';
-    document.getElementById('actionSubtitle').textContent = 'ค้นหาอะไหล่ที่ต้องการรับเข้า';
+    document.getElementById('actionSubtitle').textContent = 'เลือกจากรายการ หรือค้นหา / สแกน QR';
     document.getElementById('qaConfirmBtn').className = 'btn-confirm btn-confirm-in';
     document.getElementById('qaConfirmBtn').innerHTML = '<i data-lucide="check-circle"></i> ตรวจสอบและยืนยัน';
   }
   showPage('pageAction');
-  setTimeout(() => document.getElementById('qaSearch').focus(), 100);
+  qaRenderDefaults();
+  // On phones the on-screen keyboard would cover half the list we just showed: only auto-focus with a mouse/keyboard.
+  if (!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches)) {
+    setTimeout(() => document.getElementById('qaSearch').focus(), 100);
+  }
 };
 
 window.goAddItem = () => {
@@ -3210,7 +3225,7 @@ window.goTransactionLog = () => {
 window.qaClearSearch = () => {
   document.getElementById('qaSearch').value = '';
   document.getElementById('qaClear').classList.remove('visible');
-  document.getElementById('qaResults').innerHTML = '';
+  qaRenderDefaults();
   const countEl = document.getElementById('qaResultCount');
   if (countEl) { countEl.textContent = ''; countEl.classList.remove('show'); }
   document.getElementById('qtyPanel').classList.remove('visible');
@@ -3262,6 +3277,7 @@ window.qaExecute = async () => {
   const note = cleanSingleLine(document.getElementById('qaNote').value);
   const btn = document.getElementById('confirmFinalBtn');
   const partName = ((qaSelectedItem['Brand'] || '') + ' ' + (qaSelectedItem['Model'] || '')).trim() || qaSelectedItem['Part ID'];
+  const usedPartId = qaSelectedItem['Part ID'], usedMode = qaMode;
   const txId = tx.begin(qaMode, qaMode === 'out' ? 'กำลังบันทึกการเบิก' : 'กำลังบันทึกการรับเข้า', 'กำลังอัปเดต Stock...');
   let rpcDone = false;
   btn.classList.add('btn-loading');
@@ -3305,6 +3321,7 @@ window.qaExecute = async () => {
       from: cur,
       to: Number.isFinite(serverStock) ? serverStock : next
     });
+    recordRecent(usedPartId, usedMode);
     qaClearSearch();
     document.getElementById('qaNote').value = '';
   } catch(e) {
@@ -5538,6 +5555,100 @@ function renderCards() {
   refreshIcons();
 }
 
+// ===== RECENT PARTS (kept on this phone, so the เบิก/รับ page is never an empty screen) =====
+const RECENT_KEY = 'aft_recent_parts_v1';
+function readRecent() {
+  try { const a = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(a) ? a : []; } catch (e) { return []; }
+}
+function recordRecent(partId, mode) {
+  partId = String(partId || '').trim();
+  if (!partId || (mode !== 'in' && mode !== 'out')) return;
+  try {
+    const list = readRecent().filter(x => !(x.p === partId && x.m === mode));
+    list.unshift({ p: partId, m: mode, t: Date.now() });
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 40)));
+  } catch (e) {}
+}
+const QA_LIST_SIZE = 8;
+let qaMoreLow = QA_LIST_SIZE;
+
+function qaRowHtml(r, q = '', badgeHtml = '') {
+  const sc = stockStatus(r['Actual'], r['Min']);
+  const scCls = sc === 'ok' ? 'stock-ok' : sc === 'low' ? 'stock-low' : 'stock-none';
+  const scTxt = r['Actual'] !== '' && r['Actual'] != null ? r['Actual'] : '—';
+  const dept = (r['Department'] || '').toUpperCase();
+  const deptCls = dept === 'MECH' ? 'dept-chip mech' : dept === 'RFG' ? 'dept-chip rfg' : 'dept-chip';
+  const locLine = [r['Location'] || '', r['Position'] || ''].filter(Boolean).join('  ');
+  return `<div class="qa-item" data-id="${r._id}" role="button" tabindex="0" onclick="qaSelectItem('${r._id}', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
+    <div class="qa-item-top">
+      <div class="qa-item-left">
+        ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
+        <div class="qa-item-name">${highlightText((r['Brand']||'') + ' ' + (r['Model']||''), q)}</div>
+        <div class="qa-item-pid">${highlightText(r['Part ID'] || '', q)}</div>
+        ${badgeHtml}
+      </div>
+      <div class="qa-item-stock-wrap"><div class="qa-item-stock ${scCls}">${escapeHtml(scTxt)}</div><div class="qa-item-stock-label">Stock</div></div>
+    </div>
+    <div class="card-taxonomy"><span class="card-taxonomy-text">${highlightText(taxonomyText(r), q)}</span></div>
+    ${locLine ? `<div class="card-location-line"><i data-lucide="map-pin"></i><span>${highlightText(locLine, q)}</span></div>` : ''}
+  </div>`;
+}
+
+// Suggestions shown before the user types anything.
+//   เบิก: what this phone withdrew recently (falls back to the most recently updated parts that are in stock)
+//   รับ : parts below Min, critical (CLASS A) first, then the biggest shortfall; plus what this phone received recently
+function qaDefaultSections(mode) {
+  const num = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : 0; };
+  const byPid = new Map(items.map(r => [String(r['Part ID'] || '').trim(), r]));
+  const recent = readRecent().filter(x => x.m === mode).map(x => byPid.get(x.p)).filter(Boolean);
+  const sections = [];
+  if (mode === 'out') {
+    const inStock = r => num(r['Actual']) > 0;
+    const mine = recent.filter(inStock).slice(0, QA_LIST_SIZE);
+    if (mine.length) sections.push({ title: 'เบิกล่าสุดบนเครื่องนี้', rows: mine });
+    if (mine.length < QA_LIST_SIZE) {
+      const seen = new Set(mine.map(r => r._id));
+      const rest = items.filter(r => inStock(r) && !seen.has(r._id) && r['_updatedAt'])
+        .sort((a, b) => String(b['_updatedAt']).localeCompare(String(a['_updatedAt'])))
+        .slice(0, QA_LIST_SIZE - mine.length);
+      if (rest.length) sections.push({ title: 'อัปเดตล่าสุดในคลัง', rows: rest });
+    }
+  } else {
+    const rank = c => ({ A: 0, B: 1, C: 2 }[String(c || '').trim().toUpperCase()] ?? 3);
+    const need = items.filter(r => num(r['Min']) > 0 && num(r['Actual']) < num(r['Min']))
+      .sort((a, b) => rank(a['CLASS']) - rank(b['CLASS'])
+        || (num(b['Min']) - num(b['Actual'])) - (num(a['Min']) - num(a['Actual']))
+        || String(a['Part ID']).localeCompare(String(b['Part ID'])));
+    if (need.length) sections.push({ title: 'ต้องเติม · ต่ำกว่า Min', count: need.length, rows: need.slice(0, qaMoreLow), more: need.length > qaMoreLow, need: true });
+    const mine = recent.slice(0, QA_LIST_SIZE);
+    if (mine.length) sections.push({ title: 'รับล่าสุดบนเครื่องนี้', rows: mine });
+  }
+  return sections;
+}
+
+function qaRenderDefaults() {
+  const box = document.getElementById('qaResults');
+  if (!box) return;
+  box.classList.add('qa-defaults');
+  if (!items.length) { box.innerHTML = ''; return; }
+  const sections = qaDefaultSections(qaMode);
+  if (!sections.length) {
+    box.innerHTML = `<div class="qa-hint">${qaMode === 'in' ? 'ไม่มีรายการที่ต่ำกว่า Min ตอนนี้ — พิมพ์ค้นหาหรือสแกน QR เพื่อรับของ' : 'พิมพ์ค้นหาหรือสแกน QR เพื่อเบิกของ'}</div>`;
+    return;
+  }
+  box.innerHTML = sections.map(sec => `<section class="qa-section" aria-label="${escapeHtml(sec.title)}">
+    <div class="qa-section-head"><span>${escapeHtml(sec.title)}</span>${sec.count ? `<span class="qa-section-count">${sec.count} รายการ</span>` : ''}</div>
+    ${sec.rows.map(r => {
+      const short = Math.max(0, (parseFloat(r['Min']) || 0) - (parseFloat(r['Actual']) || 0));
+      const badge = sec.need ? `<div class="qa-need">ขาด ${short} · Min ${escapeHtml(r['Min'])}${r['CLASS'] ? ' · Class ' + escapeHtml(r['CLASS']) : ''}</div>` : '';
+      return qaRowHtml(r, '', badge);
+    }).join('')}
+    ${sec.more ? `<button type="button" class="qa-more" onclick="qaShowMoreLow()">ดูเพิ่ม</button>` : ''}
+  </section>`).join('');
+  refreshIcons();
+}
+window.qaShowMoreLow = () => { qaMoreLow += 20; qaRenderDefaults(); };
+
 window.qaSearchInput = () => {
   const q = document.getElementById('qaSearch').value;
   const countEl = document.getElementById('qaResultCount');
@@ -5546,35 +5657,17 @@ window.qaSearchInput = () => {
   qaSelectedItem = null;
   document.getElementById('qtyPanel').classList.remove('visible');
   if (!ql) {
-    document.getElementById('qaResults').innerHTML = '';
     if (countEl) { countEl.textContent = ''; countEl.classList.remove('show'); }
+    qaRenderDefaults();
     return;
   }
   const results = items.filter(r =>
     [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS']].join(' ').toLowerCase().includes(ql)
   );
   if (countEl) { countEl.textContent = `พบ ${results.length} รายการ`; countEl.classList.add('show'); }
-  if (!results.length) { document.getElementById('qaResults').innerHTML = emptyStateHtml('qa'); refreshIcons(); return; }
-  document.getElementById('qaResults').innerHTML = results.map(r => {
-    const sc = stockStatus(r['Actual'], r['Min']);
-    const scCls = sc === 'ok' ? 'stock-ok' : sc === 'low' ? 'stock-low' : 'stock-none';
-    const scTxt = r['Actual'] !== '' && r['Actual'] != null ? r['Actual'] : '—';
-    const dept = (r['Department'] || '').toUpperCase();
-    const deptCls = dept === 'MECH' ? 'dept-chip mech' : dept === 'RFG' ? 'dept-chip rfg' : 'dept-chip';
-    const locLine = [r['Location'] || '', r['Position'] || ''].filter(Boolean).join('  ');
-    return `<div class="qa-item" data-id="${r._id}" onclick="qaSelectItem('${r._id}', this)">
-      <div class="qa-item-top">
-        <div class="qa-item-left">
-          ${dept ? `<div class="${deptCls}">${escapeHtml(dept)}</div>` : ''}
-          <div class="qa-item-name">${highlightText((r['Brand']||'') + ' ' + (r['Model']||''), q)}</div>
-          <div class="qa-item-pid">${highlightText(r['Part ID'] || '', q)}</div>
-        </div>
-        <div class="qa-item-stock-wrap"><div class="qa-item-stock ${scCls}">${escapeHtml(scTxt)}</div><div class="qa-item-stock-label">Stock</div></div>
-      </div>
-      <div class="card-taxonomy"><span class="card-taxonomy-text">${highlightText(taxonomyText(r), q)}</span></div>
-      ${locLine ? `<div class="card-location-line"><i data-lucide="map-pin"></i><span>${highlightText(locLine, q)}</span></div>` : ''}
-    </div>`;
-  }).join('');
+  if (!results.length) { document.getElementById('qaResults').classList.remove('qa-defaults'); document.getElementById('qaResults').innerHTML = emptyStateHtml('qa'); refreshIcons(); return; }
+  document.getElementById('qaResults').classList.remove('qa-defaults');
+  document.getElementById('qaResults').innerHTML = results.map(r => qaRowHtml(r, q)).join('');
   refreshIcons();
 };
 
@@ -5719,6 +5812,7 @@ window.confirmAdjust = async () => {
     invalidateLogsCache();
     closeModal('adjustModal');
     const serverStock = parseFloat(finalActual);
+    if (adjustQty > 0) recordRecent(adjustItem['Part ID'], adjustMode);
     tx.success(txId, adjustQty===0
       ? { title: 'อัปเดตตำแหน่งสำเร็จ', sub: `${partName} → ${newLocation || '—'} ${newPosition || ''}`.trim() }
       : {
