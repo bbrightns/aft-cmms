@@ -24,7 +24,7 @@
   /* Typography Colors */
   --text: #111827;
   --text2: #4b5563;
-  --text3: #6b6b83;
+  --text3: #5f5f78; /* was #6b6b83: 4.39:1 on input/badge fills, now 5.24 */
   --text-muted: #64748b;
   --accent-light: #bfdbfe;
 

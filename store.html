@@ -34,7 +34,7 @@ html { scroll-behavior: smooth; }
   60%      { transform: rotate(-8deg); }
   75%      { transform: rotate(10deg); }
 }
-.home-greeting-sub { font-size: 18px; color: #64748b; font-weight: 500; line-height: 1.6; }
+.home-greeting-sub { font-size: 18px; color: #556070; font-weight: 500; line-height: 1.6; }
 .home-greeting-sub strong { color: var(--agc-blue); font-weight: 700; border-bottom: 2px solid #bfdbfe; padding-bottom: 1px; }
 
 /* Stats */
@@ -275,6 +275,8 @@ tr:hover td { background: var(--surface2); }
 .btn-success:hover { background: #00632f; }
 .btn-ghost { background: var(--bg2); color: var(--text2); border: 1.5px solid var(--border); }
 .btn-ghost:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+.btn-danger-solid { background: var(--agc-red); color: #fff; }
+.btn-danger-solid:hover { background: #c0003c; }
 .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
 .btn-danger:hover { background: var(--danger); color: #fff; }
 .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
@@ -2203,6 +2205,20 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
   .btn, .btn-confirm, .modal-footer .btn { min-height: 44px; }
   .qa-search-wrap input[type=text] { min-height: 48px; }
 }
+
+/* ===== CONFIRM DIALOG (replaces native confirm()) ===== */
+.dlg-overlay { position: fixed; inset: 0; z-index: 650; background: rgba(17,24,39,0.62); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+.dlg-overlay[hidden] { display: none; }
+.dlg-card { --dlg: var(--warn); position: relative; width: 100%; max-width: 400px; max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 16px; padding: 28px 22px 20px; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.22s cubic-bezier(.2,1.3,.4,1); }
+.dlg-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--dlg); }
+.dlg-card[data-tone="danger"] { --dlg: var(--agc-red); }
+.dlg-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--dlg); color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.dlg-icon [data-lucide], .dlg-icon svg { width: 24px; height: 24px; }
+.dlg-title { font-size: 18px; font-weight: 800; line-height: 1.3; color: var(--text); }
+.dlg-msg { margin-top: 8px; font-size: 14px; line-height: 1.5; color: var(--text2); white-space: pre-line; word-break: break-word; }
+.dlg-actions { display: flex; gap: 10px; margin-top: 20px; }
+.dlg-actions .btn { flex: 1; justify-content: center; min-height: 48px; font-size: 14px; }
+@media (max-width: 420px) { .dlg-actions { flex-direction: column-reverse; } }
 </style>
 
 </head>
@@ -2877,7 +2893,7 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 
 <!-- Transaction status overlay (เบิกของ / รับของ) -->
 <div class="tx-overlay" id="txOverlay" hidden>
-  <div class="tx-card" id="txCard" role="alertdialog" aria-modal="true" aria-live="assertive" aria-labelledby="txTitle" aria-describedby="txSub" tabindex="-1" data-state="pending" data-mode="out">
+  <div class="tx-card" id="txCard" role="alertdialog" aria-modal="true" aria-live="polite" aria-labelledby="txTitle" aria-describedby="txSub" tabindex="-1" data-state="pending" data-mode="out">
     <div class="tx-burst" id="txBurst" aria-hidden="true"></div>
     <div class="tx-icon" aria-hidden="true">
       <svg viewBox="0 0 64 64">
@@ -2897,7 +2913,20 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
   </div>
 </div>
 
-<div class="toast-container" id="toastContainer"></div>
+<!-- Confirm dialog (replaces native confirm()) -->
+<div class="dlg-overlay" id="dlgOverlay" hidden>
+  <div class="dlg-card" id="dlgCard" role="alertdialog" aria-modal="true" aria-labelledby="dlgTitle" aria-describedby="dlgMsg" tabindex="-1" data-tone="warn">
+    <div class="dlg-icon" aria-hidden="true"><i data-lucide="alert-triangle"></i></div>
+    <div class="dlg-title" id="dlgTitle"></div>
+    <div class="dlg-msg" id="dlgMsg"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-ghost" id="dlgCancel"></button>
+      <button type="button" class="btn btn-primary" id="dlgOk"></button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer" role="region" aria-label="การแจ้งเตือน" aria-live="polite" aria-relevant="additions"></div>
 
 <!-- QR Scanner Modal -->
 <div id="qrScanModal" class="qr-modal" onclick="closeOnOverlay(event, 'qrScanModal')">
@@ -4390,7 +4419,11 @@ window.saveItem = async () => {
     cleanSingleLine(r['Brand']).toLowerCase() === brand.toLowerCase() &&
     cleanSingleLine(r['Model']).toLowerCase() === model.toLowerCase()
   ) : null;
-  if(possibleDup && !confirm(`This Brand/Model may already exist:\n${possibleDup['Part ID']||''} — ${possibleDup['Brand']||''} ${possibleDup['Model']||''}\n\nต้องการบันทึกต่อหรือไม่?`)) {
+  if(possibleDup && !(await confirmDialog({
+    title: 'พบรายการที่อาจซ้ำกัน',
+    message: `${possibleDup['Part ID']||'—'} · ${possibleDup['Brand']||''} ${possibleDup['Model']||''}\n\nมี Brand/Model นี้อยู่ในระบบแล้ว ต้องการบันทึกต่อหรือไม่?`,
+    okText: 'บันทึกต่อ', cancelText: 'กลับไปแก้ไข'
+  }))) {
     return;
   }
 
@@ -4830,13 +4863,54 @@ uz.addEventListener('drop', e=>{ e.preventDefault(); uz.style.borderColor=''; co
 window.toast = (msg, type='success') => {
   const el = document.createElement('div');
   el.className = `toast ${type}`;
+  el.setAttribute('role', type==='error' ? 'alert' : 'status');
   const icon = document.createElement('span');
+  icon.setAttribute('aria-hidden', 'true');
   icon.textContent = type==='success' ? '✓' : type==='error' ? '✗' : '⚠';
+  const label = document.createElement('span');
+  label.className = 'sr-only';
+  label.textContent = type==='success' ? 'สำเร็จ: ' : type==='error' ? 'ผิดพลาด: ' : 'คำเตือน: ';
   el.appendChild(icon);
+  el.appendChild(label);
   el.appendChild(document.createTextNode(' ' + msg));
   document.getElementById('toastContainer').appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  setTimeout(() => el.remove(), type==='error' ? 7000 : 4000);
 };
+
+// ===== CONFIRM DIALOG (replaces native confirm(); resolves true/false) =====
+// Cancel is focused by default so a stray Enter never confirms. Escape / backdrop = cancel. Tab is trapped.
+window.confirmDialog = ({ title, message = '', okText = 'ตกลง', cancelText = 'ยกเลิก', tone = 'warn', focus = 'cancel' } = {}) => new Promise(resolve => {
+  const $ = id => document.getElementById(id);
+  const ov = $('dlgOverlay'), card = $('dlgCard'), ok = $('dlgOk'), cancel = $('dlgCancel');
+  const prev = document.activeElement;
+  $('dlgTitle').textContent = title || '';
+  $('dlgMsg').textContent = message;
+  ok.textContent = okText; cancel.textContent = cancelText;
+  ok.className = 'btn ' + (tone === 'danger' ? 'btn-danger-solid' : 'btn-primary');
+  card.dataset.tone = tone;
+  const onKey = e => {
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); }
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      const order = [cancel, ok], i = Math.max(0, order.indexOf(document.activeElement));
+      order[(i + (e.shiftKey ? order.length - 1 : 1)) % order.length].focus();
+    }
+  };
+  const done = v => {
+    ov.hidden = true;
+    ov.removeEventListener('keydown', onKey);
+    ok.onclick = cancel.onclick = ov.onclick = null;
+    if (prev && prev.focus) { try { prev.focus(); } catch (e) {} }
+    resolve(v);
+  };
+  ok.onclick = () => done(true);
+  cancel.onclick = () => done(false);
+  ov.onclick = e => { if (e.target === ov) done(false); };
+  ov.addEventListener('keydown', onKey);
+  ov.hidden = false;
+  if (window.lucide) lucide.createIcons();
+  (focus === 'ok' ? ok : cancel).focus();
+});
 
 // ===== TRANSACTION STATUS OVERLAY (เบิกของ / รับของ) =====
 // begin() returns a run id; every later call must pass it. If the user dismissed the overlay
