@@ -2251,6 +2251,35 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 .qa-more:hover { border-color: var(--agc-blue); }
 .qa-hint { padding: 18px 8px; text-align: center; color: var(--text2); font-size: 14px; }
 .qa-item:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
+
+/* ===== HOME: priority, readable type, safer footer ===== */
+.home-stat-label { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text2); display: flex; align-items: center; justify-content: center; gap: 2px; }
+.home-sec-sub { font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text2); }
+button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px; }
+.home-stat-go { width: 14px; height: 14px; color: var(--text3); }
+.home-stat.home-stat-quiet { background: var(--surface); }
+.home-stat.home-stat-quiet:hover { border-color: var(--agc-blue); box-shadow: var(--shadow-md); }
+.home-stat.home-stat-clickable:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
+.home-scan-btn { width: 100%; min-height: 64px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: var(--agc-blue); color: #fff; border: 0; border-radius: 12px; cursor: pointer; text-align: left; font-family: var(--sans); box-shadow: var(--shadow); transition: background 0.15s, transform 0.15s; }
+.home-scan-btn:hover { background: var(--agc-blue2); transform: translateY(-1px); }
+.home-scan-btn:focus-visible { outline: 3px solid var(--agc-red); outline-offset: 2px; }
+.home-scan-text { display: flex; flex-direction: column; gap: 2px; }
+.home-scan-text strong { font-size: 16px; font-weight: 800; }
+.home-scan-text span { font-size: 13px; font-weight: 500; opacity: 0.9; }
+.home-footer-btn { min-height: 44px; padding: 8px 12px; font-size: 14px; color: var(--text2); }
+.settings-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.settings-group-title { font-size: 13px; font-weight: 800; color: var(--text2); }
+.settings-danger { padding: 12px; border: 1.5px solid var(--agc-red); border-radius: 12px; background: #fff; margin-bottom: 0; }
+.settings-danger .settings-group-title { color: var(--danger-text); }
+.settings-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; background: var(--bg2); border: 1.5px solid var(--border-strong); border-radius: 10px; cursor: pointer; text-align: left; font-family: var(--sans); color: var(--text); }
+.settings-row:hover { border-color: var(--agc-blue); }
+.settings-row strong { display: block; font-size: 14px; font-weight: 700; }
+.settings-row small { display: block; margin-top: 2px; font-size: 12px; color: var(--text2); }
+.settings-row [data-lucide], .settings-row svg { width: 20px; height: 20px; flex-shrink: 0; }
+.settings-row.danger { color: var(--danger-text); border-color: var(--danger-text); }
+.settings-row.danger small { color: var(--text2); }
+.typed-confirm { display: block; margin-top: 14px; font-size: 13px; color: var(--text2); }
+.typed-confirm-input { width: 100%; margin-top: 6px; min-height: 48px; padding: 8px 12px; font-family: var(--mono); font-size: 16px; font-weight: 700; letter-spacing: 1px; border: 2px solid var(--border-strong); border-radius: 10px; background: var(--surface); }
 </style>
 
 </head>
@@ -2330,20 +2359,10 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 
     <!-- Stats -->
     <div class="home-stats-row" id="homeStats">
-      <div class="home-stat"><div class="home-stat-val" style="color:#2563eb">—</div><div class="home-stat-label">Total Items</div></div>
-      <div class="home-stat"><div class="home-stat-val" style="color:#ef4444">—</div><div class="home-stat-label">Low Stock</div></div>
-      <div class="home-stat"><div class="home-stat-val" style="color:#ffe016">—</div><div class="home-stat-label">No Stock</div></div>
+      <div class="home-stat"><div class="home-stat-val" style="color:#2563eb">—</div><div class="home-stat-label">Total items</div></div>
+      <div class="home-stat"><div class="home-stat-val" style="color:var(--text3)">—</div><div class="home-stat-label">Low stock</div></div>
+      <div class="home-stat"><div class="home-stat-val" style="color:var(--text3)">—</div><div class="home-stat-label">No stock</div></div>
     </div>
-
-    <!--ค้นหาพาร์ทอะไหล่-->
-    <button class="home-sec-btn" style="margin-bottom:16px" onclick="goInventory()">
-      <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="search" style="width:20px;height:20px"></i></div>
-      <div class="home-sec-info">
-        <div class="home-sec-title">ค้นหาพาร์ทอะไหล่</div>
-        <div class="home-sec-sub">SEARCH ALL INVENTORY ITEMS</div>
-      </div>
-      <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
-    </button>
 
     <!--เบิกของ-->
     <div class="home-main-grid">
@@ -2360,6 +2379,22 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
         <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
     </div>
+
+    <!--สแกน QR: the fastest way on the floor — scan the label, then pick เบิก or รับ-->
+    <button class="home-scan-btn" onclick="openQRScanner('home')" aria-label="สแกน QR Code ที่ป้ายอะไหล่">
+      <i data-lucide="qr-code" style="width:28px;height:28px"></i>
+      <span class="home-scan-text"><strong>สแกน QR</strong><span>สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ</span></span>
+    </button>
+
+    <!--ค้นหาพาร์ทอะไหล่-->
+    <button class="home-sec-btn" style="margin-bottom:16px" onclick="goInventory()">
+      <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="search" style="width:20px;height:20px"></i></div>
+      <div class="home-sec-info">
+        <div class="home-sec-title">ค้นหาพาร์ทอะไหล่</div>
+        <div class="home-sec-sub">SEARCH ALL INVENTORY ITEMS</div>
+      </div>
+      <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
+    </button>
 
     <!--log-->
     <button class="home-sec-btn" style="margin-bottom:16px" onclick="goTransactionLog()">
@@ -2404,19 +2439,9 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
         คู่มือการใช้งาน
       </button>
       <div class="home-footer-dot"></div>
-      <button class="home-footer-btn" onclick="document.getElementById('csvFileInput').click()">
-        <i data-lucide="upload-cloud" style="width:14px;height:14px"></i>
-        อัปโหลด CSV ใหม่
-      </button>
-      <div class="home-footer-dot"></div>
-      <button class="home-footer-btn danger" onclick="openClearLogsModal()">
-        <i data-lucide="history" style="width:14px;height:14px"></i>
-        ล้าง Log ทั้งหมด
-      </button>
-      <div class="home-footer-dot"></div>
-      <button class="home-footer-btn danger" onclick="openClearDataModal()">
-        <i data-lucide="trash-2" style="width:14px;height:14px"></i>
-        ล้างข้อมูลทั้งหมด
+      <button class="home-footer-btn" onclick="openSettings()">
+        <i data-lucide="settings" style="width:16px;height:16px"></i>
+        ตั้งค่า / ผู้ดูแลระบบ
       </button>
     </div>
 
@@ -2814,16 +2839,45 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 </div>
 
 <!-- MODAL: Clear All Data -->
+<!-- MODAL: Settings / admin (rare + destructive actions live here, not on the Home screen) -->
+<div class="modal-overlay" id="settingsModal" style="display:none" onclick="closeOnOverlay(event,'settingsModal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header"><div class="modal-title"><i data-lucide="settings"></i> ตั้งค่า / ผู้ดูแลระบบ</div><button class="close-btn" onclick="closeModal('settingsModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <div class="settings-group">
+        <div class="settings-group-title">ข้อมูล</div>
+        <button class="settings-row" onclick="closeModal('settingsModal');settingsUploadCSV()">
+          <i data-lucide="upload-cloud"></i>
+          <span><strong>อัปโหลด CSV ใหม่</strong><small>นำเข้าหรืออัปเดตรายการอะไหล่จากไฟล์</small></span>
+        </button>
+      </div>
+      <div class="settings-group settings-danger">
+        <div class="settings-group-title">โซนอันตราย — กู้คืนไม่ได้</div>
+        <button class="settings-row danger" onclick="closeModal('settingsModal');openClearLogsModal()">
+          <i data-lucide="history"></i>
+          <span><strong>ล้าง Log ทั้งหมด</strong><small>ลบประวัติเบิก/รับ/แก้ไข (ย้อนกลับรายการไม่ได้อีก)</small></span>
+        </button>
+        <button class="settings-row danger" onclick="closeModal('settingsModal');openClearDataModal()">
+          <i data-lucide="trash-2"></i>
+          <span><strong>ล้างข้อมูลทั้งหมด</strong><small>ลบรายการอะไหล่ทั้งหมดออกจากฐานข้อมูล</small></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="clearDataModal" style="display:none" onclick="closeOnOverlay(event,'clearDataModal')">
   <div class="modal" style="max-width:400px">
     <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="trash-2"></i> ล้างข้อมูลทั้งหมด</div><button class="close-btn" onclick="closeModal('clearDataModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <p style="color:var(--text2)">การดำเนินการนี้จะ <strong style="color:var(--danger)">ลบรายการอะไหล่ทั้งหมด</strong> ออกจาก Database</p>
-      <p style="font-size:12px;color:var(--danger);margin-top:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i> ไม่สามารถย้อนกลับได้ — แนะนำให้ Export CSV เก็บไว้ก่อน</p>
+      <p style="font-size:12px;color:var(--danger-text);margin-top:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i> ไม่สามารถย้อนกลับได้ — แนะนำให้ Export CSV เก็บไว้ก่อน</p>
+      <label class="typed-confirm" for="clearDataConfirmInput">พิมพ์ <strong>DELETE</strong> เพื่อยืนยัน</label>
+      <input type="text" id="clearDataConfirmInput" class="typed-confirm-input" autocomplete="off" autocapitalize="characters" spellcheck="false" oninput="syncTypedConfirm('clearDataConfirmInput','confirmClearAllBtn','DELETE')">
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('clearDataModal')"><i data-lucide="x"></i> ยกเลิก</button>
-      <button class="btn btn-danger" id="confirmClearAllBtn" onclick="confirmClearAllData()"><i data-lucide="trash"></i> ล้างทั้งหมด</button>
+      <button class="btn btn-danger" id="confirmClearAllBtn" onclick="confirmClearAllData()" disabled><i data-lucide="trash"></i> ล้างทั้งหมด</button>
     </div>
   </div>
 </div>
@@ -2834,11 +2888,13 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
     <div class="modal-header"><div class="modal-title text-danger"><i data-lucide="trash-2"></i> ล้างประวัติ Log ทั้งหมด</div><button class="close-btn" onclick="closeModal('clearLogsModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <p style="color:var(--text2)">การดำเนินการนี้จะ <strong style="color:var(--danger)">ลบประวัติการทำรายการ (Transaction Log) ทั้งหมด</strong> ออกจากระบบ</p>
-      <p style="font-size:12px;color:var(--danger);margin-top:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i> ข้อมูลที่ลบแล้วจะไม่สามารถย้อนกลับ (Undo) ได้</p>
+      <p style="font-size:12px;color:var(--danger-text);margin-top:8px"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i> ข้อมูลที่ลบแล้วจะไม่สามารถย้อนกลับ (Undo) ได้</p>
+      <label class="typed-confirm" for="clearLogsConfirmInput">พิมพ์ <strong>CLEAR</strong> เพื่อยืนยัน</label>
+      <input type="text" id="clearLogsConfirmInput" class="typed-confirm-input" autocomplete="off" autocapitalize="characters" spellcheck="false" oninput="syncTypedConfirm('clearLogsConfirmInput','confirmClearLogsBtn','CLEAR')">
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeModal('clearLogsModal')"><i data-lucide="x"></i> ยกเลิก</button>
-      <button class="btn btn-danger" id="confirmClearLogsBtn" onclick="confirmClearAllLogs()"><i data-lucide="trash"></i> ล้าง Log ทั้งหมด</button>
+      <button class="btn btn-danger" id="confirmClearLogsBtn" onclick="confirmClearAllLogs()" disabled><i data-lucide="trash"></i> ล้าง Log ทั้งหมด</button>
     </div>
   </div>
 </div>
@@ -4831,7 +4887,22 @@ window.confirmCSVUpload = async () => {
 };
 
 // ===== CLEAR ALL DATA =====
+window.syncTypedConfirm = (inputId, btnId, word) => {
+  const ok = (document.getElementById(inputId).value || '').trim().toUpperCase() === word;
+  document.getElementById(btnId).disabled = !ok;
+};
+window.openSettings = () => {
+  document.getElementById('settingsModal').style.display = 'flex';
+  refreshIcons();
+};
+window.settingsUploadCSV = () => {
+  if (!canPerform('uploadCSV')) { toast('บัญชีนี้ไม่มีสิทธิ์นำเข้า CSV', 'error'); return; }
+  document.getElementById('csvFileInput').click();
+};
 window.openClearDataModal = () => {
+  if (!canPerform('clearData')) { toast('บัญชีนี้ไม่มีสิทธิ์ล้างข้อมูล', 'error'); return; }
+  const inp = document.getElementById('clearDataConfirmInput');
+  if (inp) { inp.value = ''; syncTypedConfirm('clearDataConfirmInput', 'confirmClearAllBtn', 'DELETE'); }
   document.getElementById('clearDataModal').style.display = 'flex';
 };
 
@@ -4869,6 +4940,9 @@ window.confirmClearAllData = async () => {
 
 // ===== CLEAR ALL LOGS =====
 window.openClearLogsModal = () => {
+  if (!canPerform('clearData')) { toast('บัญชีนี้ไม่มีสิทธิ์ล้าง Log', 'error'); return; }
+  const inp = document.getElementById('clearLogsConfirmInput');
+  if (inp) { inp.value = ''; syncTypedConfirm('clearLogsConfirmInput', 'confirmClearLogsBtn', 'CLEAR'); }
   document.getElementById('clearLogsModal').style.display = 'flex';
   refreshIcons();
 };
@@ -5408,9 +5482,9 @@ function updateHomeStats() {
   const low = items.filter(r => stockStatus(r['Actual'], r['Min']) === 'low').length;
   const noStock = items.filter(isNoStockItem).length;
   document.getElementById('homeStats').innerHTML = `
-    <div class="home-stat"><div class="home-stat-val" style="color:var(--agc-blue)">${total}</div><div class="home-stat-label">Total Items</div></div>
-    <div class="home-stat home-stat-clickable ${low>0?'alert':''}" onclick="goInventoryWithFilters(\'low\', null)" title="คลิกเพื่อกรองรายการ Low Stock"><div class="home-stat-val" style="color:var(--danger);display:flex;align-items:center;justify-content:center;gap:6px"><i data-lucide="alert-triangle" style="width:18px;height:18px"></i>${low}</div><div class="home-stat-label">Low Stock</div></div>
-    <div class="home-stat home-stat-clickable ${noStock>0?'alert':''}" onclick="goInventory();setTimeout(()=>setQuickFilter('nostock'),80)" title="คลิกเพื่อดูรายการ No Stock"><div class="home-stat-val" style="color:var(--warn)">${noStock}</div><div class="home-stat-label">No Stock</div></div>
+    <div class="home-stat"><div class="home-stat-val" style="color:var(--agc-blue)">${total}</div><div class="home-stat-label">Total items</div></div>
+    <button type="button" class="home-stat home-stat-clickable ${low>0?'alert':''}" onclick="goInventoryWithFilters('low', null)" aria-label="Low stock ${low} รายการ แตะเพื่อดูรายการ"><div class="home-stat-val" style="color:var(--danger-text);display:flex;align-items:center;justify-content:center;gap:6px"><i data-lucide="alert-triangle" style="width:18px;height:18px"></i>${low}</div><div class="home-stat-label">Low stock <i data-lucide="chevron-right" class="home-stat-go"></i></div></button>
+    <button type="button" class="home-stat home-stat-clickable home-stat-quiet" onclick="goInventory();setTimeout(()=>setQuickFilter('nostock'),80)" aria-label="No stock ${noStock} รายการ แตะเพื่อดูรายการ"><div class="home-stat-val" style="color:var(--text)">${noStock}</div><div class="home-stat-label">No stock <i data-lucide="chevron-right" class="home-stat-go"></i></div></button>
   `;
   if (window.lucide) lucide.createIcons();
   const uploadZoneEl = document.getElementById('uploadZone');
@@ -6112,6 +6186,15 @@ function onScanSuccess(decodedText, decodedResult) {
     const input = document.getElementById('searchInput');
     input.value = code;
     window.onSearchInput();
+  } else if (currentScannerTarget === 'home') {
+    const match = items.find(x => (x['Part ID'] || '').trim().toLowerCase() === code.toLowerCase());
+    if (match) {
+      window.openAdjust(match._id, 'out');   // the adjust popup has the เบิก/รับ switch
+    } else {
+      window.toast('ไม่พบ Part ID: ' + code, 'error');
+      window.goInventory();
+      setTimeout(() => { const i = document.getElementById('searchInput'); if (i) { i.value = code; window.onSearchInput(); } }, 120);
+    }
   }
 }
 
