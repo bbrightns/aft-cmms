@@ -15,9 +15,11 @@
   --agc-blue: #001F6B;
   --agc-blue2: #002a90;
   --agc-red: #E40046;
-  --accent2: #00934a;
+  --accent2: #007a3d; /* was #00934a: white-on-green was 3.98:1, now 5.45:1 (WCAG AA) */
   --warn: #b45309;
   --danger: #E40046;
+  --danger-text: #c2003b; /* red text on pink tints (#fde8ef): 5.35:1 */
+  --border-strong: #918c82; /* control edges (inputs, buttons): 3.04:1 on page bg, WCAG 1.4.11 */
 
   /* Typography Colors */
   --text: #111827;
