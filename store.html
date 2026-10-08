@@ -2219,6 +2219,18 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 .dlg-actions { display: flex; gap: 10px; margin-top: 20px; }
 .dlg-actions .btn { flex: 1; justify-content: center; min-height: 48px; font-size: 14px; }
 @media (max-width: 420px) { .dlg-actions { flex-direction: column-reverse; } }
+
+/* ===== KEEP FILTERS VISIBLE WHILE SCROLLING (mobile) =====
+   Collapsing header + tabs is fine; hiding the filter chips made it impossible to see or change the
+   active filter without scrolling all the way back up. Beat the older compact-mode rules (id selector). */
+@media (max-width: 767px) {
+  html body.inv-scroll-compact #pageInventory #quickFilterChips {
+    display: flex !important; height: auto !important; min-height: 0 !important; max-height: none !important;
+    opacity: 1 !important; transform: none !important; pointer-events: auto !important;
+    overflow-x: auto !important; overflow-y: hidden !important;
+    padding: 6px 12px 8px !important; border-bottom: 1px solid var(--border) !important;
+  }
+}
 </style>
 
 </head>
@@ -5814,16 +5826,27 @@ function exportRowsToCSV(rowsData, mode='all') {
 window.exportCSV = () => openExportModal();
 
 // ===== R16.2 INVENTORY AUTO-HIDE ON MOBILE CARD SCROLL =====
+// Collapses the app header + tabs while reading a long list. Driven by the real scroller's scrollTop (not by
+// finger distance), so it never collapses at the top of the list or flaps on small hand movements:
+//   - collapse only after the list is scrolled past INV_HIDE_AFTER_TOP AND moved INV_HIDE_TRAVEL px down in one go
+//   - reveal only after INV_SHOW_TRAVEL px of continuous upward scroll, or when back near the top
+//   - ignore scroll deltas for INV_SETTLE_MS after a toggle (the resize itself moves scrollTop)
+// Search + filter chips stay visible in both states (see "KEEP FILTERS VISIBLE" in the CSS).
 let _lastInvScrollTop = 0;
-let _invScrollTicking = false;
 let _invScrollReady = false;
-let _invTouchY = 0;
+let _invTravel = 0;
+let _invLockUntil = 0;
+const INV_HIDE_AFTER_TOP = 140;
+const INV_HIDE_TRAVEL = 48;
+const INV_SHOW_TRAVEL = 96;
+const INV_SHOW_NEAR_TOP = 24;
+const INV_SETTLE_MS = 450;
+const INV_SCROLLERS = '#tabInventory, #tabLog, #cardList, #pageInventory .table-wrap';
 
 function isInventoryVisible() {
   const page = document.getElementById('pageInventory');
   return page && page.style.display !== 'none';
 }
-
 function setInventoryCompactMode(compact) {
   // r22: auto-hide only on mobile. Desktop/tablet stay stable.
   if (window.matchMedia && !window.matchMedia('(max-width: 767px)').matches) {
@@ -5834,84 +5857,38 @@ function setInventoryCompactMode(compact) {
     document.body.classList.remove('inv-scroll-compact');
     return;
   }
+  const was = document.body.classList.contains('inv-scroll-compact');
+  if (was !== !!compact) {
+    _invLockUntil = performance.now() + INV_SETTLE_MS;
+    _invTravel = 0;
+  }
   document.body.classList.toggle('inv-scroll-compact', !!compact);
 }
-
-function getInventoryScrollElement() {
-  const cardList = document.getElementById('cardList');
-  const tableWrap = document.querySelector('#pageInventory .table-wrap');
-  const tabLog = document.getElementById('tabLog');
-  if (cardList && getComputedStyle(cardList).display !== 'none') return cardList;
-  if (tableWrap && getComputedStyle(tableWrap).display !== 'none') return tableWrap;
-  if (tabLog && getComputedStyle(tabLog).display !== 'none') return tabLog;
-  return document.scrollingElement || document.documentElement;
+function handleInventoryScroll(scroller) {
+  if (!isInventoryVisible() || !scroller) return;
+  const top = Math.max(0, scroller.scrollTop || 0);
+  const dy = top - _lastInvScrollTop;
+  _lastInvScrollTop = top;
+  if (!dy) return;
+  if (performance.now() < _invLockUntil) { _invTravel = 0; return; }
+  const ae = document.activeElement;
+  // On-screen keyboard open: the viewport is resizing, do not react.
+  if (ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName) && ae.closest('#pageInventory')) return;
+  if (Math.sign(dy) !== Math.sign(_invTravel)) _invTravel = 0;
+  _invTravel += dy;
+  const compact = document.body.classList.contains('inv-scroll-compact');
+  if (!compact && top > INV_HIDE_AFTER_TOP && _invTravel > INV_HIDE_TRAVEL) setInventoryCompactMode(true);
+  else if (compact && (top < INV_SHOW_NEAR_TOP || _invTravel < -INV_SHOW_TRAVEL)) setInventoryCompactMode(false);
 }
-
-function handleInventoryScroll(el) {
-  if (!isInventoryVisible()) return;
-  const target = el || getInventoryScrollElement();
-  const st = target.scrollTop || window.scrollY || 0;
-
-  if (!_invScrollTicking) {
-    window.requestAnimationFrame(() => {
-      if (st > 50) setInventoryCompactMode(true);
-      if (st < 15) setInventoryCompactMode(false);
-      _lastInvScrollTop = st;
-      _invScrollTicking = false;
-    });
-    _invScrollTicking = true;
-  }
-}
-
 function setupInventoryAutoHide() {
-  const bind = () => {
-    const targets = [
-      document.getElementById('cardList'),
-      document.getElementById('tabLog'),
-      document.querySelector('#pageInventory .table-wrap'),
-      document.scrollingElement,
-      document.documentElement
-    ].filter(Boolean);
-
-    targets.forEach(el => {
-      if (!el.dataset) return;
-      if (!el.dataset.autohideBound) {
-        el.addEventListener('scroll', () => handleInventoryScroll(el), { passive: true });
-        el.dataset.autohideBound = '1';
-      }
-    });
-  };
-
-  bind();
-  setTimeout(bind, 300);
-  setTimeout(bind, 1000);
-
   if (_invScrollReady) return;
   _invScrollReady = true;
-
-  window.addEventListener('scroll', () => {
-    if (isInventoryVisible()) handleInventoryScroll(getInventoryScrollElement());
-  }, { passive: true });
-
-  window.addEventListener('touchstart', (e) => {
-    if (!isInventoryVisible()) return;
-    _invTouchY = e.touches?.[0]?.clientY || 0;
-  }, { passive: true });
-
-  window.addEventListener('touchmove', (e) => {
-    if (!isInventoryVisible()) return;
-    const y = e.touches?.[0]?.clientY || 0;
-    const diff = _invTouchY - y; // positive = scroll down
-    if (diff > 10) setInventoryCompactMode(true);
-    if (diff < -10) setInventoryCompactMode(false);
-  }, { passive: true });
-
-  window.addEventListener('wheel', (e) => {
-    // Desktop ignores compact in setInventoryCompactMode().
-    if (!isInventoryVisible()) return;
-    if (e.deltaY > 8) setInventoryCompactMode(true);
-    if (e.deltaY < -8) setInventoryCompactMode(false);
-  }, { passive: true });
+  // "scroll" does not bubble, so listen in the capture phase to catch whichever element is scrolling.
+  // Only vertical list scrollers count (not e.g. the horizontally scrolling filter chips).
+  document.addEventListener('scroll', (e) => {
+    const t = e.target;
+    if (t && t.nodeType === 1 && t.matches(INV_SCROLLERS)) handleInventoryScroll(t);
+  }, { passive: true, capture: true });
 }
 // ===== R18 NON-FATAL BOOT SAFETY GUARD =====
 setTimeout(() => {
