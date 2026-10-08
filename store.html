@@ -532,6 +532,52 @@ textarea { resize: vertical; min-height: 60px; }
 .toast.success { border-left: 4px solid var(--accent2); }
 .toast.error { border-left: 4px solid var(--danger); }
 .toast.warn { border-left: 4px solid var(--warn); }
+
+/* ===== TRANSACTION STATUS OVERLAY (เบิกของ / รับของ) ===== */
+.tx-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(17,24,39,0.62); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+.tx-overlay[hidden] { display: none; }
+.tx-card { --tx: var(--agc-red); position: relative; overflow: hidden; width: 100%; max-width: 340px; background: var(--surface); border: 1.5px solid var(--border2); border-top: 6px solid var(--tx); border-radius: 16px; padding: 28px 20px 20px; text-align: center; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.28s cubic-bezier(.2,1.3,.4,1); }
+.tx-card[data-mode="in"] { --tx: var(--accent2); }
+.tx-card[data-mode="pos"] { --tx: var(--agc-blue); }
+.tx-card[data-state="error"], .tx-card[data-state="stuck"] { --tx: #111827; }
+.tx-card[data-state="error"] { animation: txShake 0.45s ease; }
+@keyframes txPop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes txShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); } 30%,50%,70% { transform: translateX(-7px); } 40%,60% { transform: translateX(7px); } }
+.tx-icon { width: 76px; height: 76px; margin: 0 auto 14px; }
+.tx-icon svg { width: 100%; height: 100%; overflow: visible; }
+.tx-track { fill: none; stroke: var(--border); stroke-width: 5; }
+.tx-arc { fill: none; stroke: var(--tx); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 52 124; transform-origin: 32px 32px; animation: spin 0.9s linear infinite; }
+.tx-disc { fill: var(--tx); transform-origin: 32px 32px; transform: scale(0); }
+.tx-mark { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; stroke-dashoffset: 60; }
+.tx-card[data-state="pending"] .tx-disc, .tx-card[data-state="pending"] .tx-mark,
+.tx-card[data-state="stuck"] .tx-disc, .tx-card[data-state="stuck"] .tx-mark { display: none; }
+.tx-card[data-state="success"] .tx-track, .tx-card[data-state="success"] .tx-arc,
+.tx-card[data-state="error"] .tx-track, .tx-card[data-state="error"] .tx-arc { display: none; }
+.tx-card:not([data-state="success"]) .tx-check, .tx-card[data-state="success"] .tx-cross,
+.tx-card:not([data-state="error"]) .tx-cross { display: none; }
+.tx-card[data-state="success"] .tx-disc, .tx-card[data-state="error"] .tx-disc { animation: txDisc 0.35s cubic-bezier(.2,1.4,.4,1) forwards; }
+.tx-card[data-state="success"] .tx-check, .tx-card[data-state="error"] .tx-cross { animation: txDraw 0.4s 0.2s ease-out forwards; }
+@keyframes txDisc { to { transform: scale(1); } }
+@keyframes txDraw { to { stroke-dashoffset: 0; } }
+.tx-title { font-size: 20px; font-weight: 800; line-height: 1.25; color: var(--text); }
+.tx-sub { margin-top: 4px; font-size: 13px; color: var(--text2); min-height: 18px; word-break: break-word; }
+.tx-stock { display: none; margin-top: 14px; align-items: center; justify-content: center; gap: 10px; font-family: var(--mono); font-weight: 700; }
+.tx-card[data-state="success"] .tx-stock.show { display: flex; }
+.tx-stock .from { font-size: 16px; color: var(--text3); text-decoration: line-through; }
+.tx-stock .arrow { color: var(--text3); }
+.tx-stock .to { font-size: 34px; line-height: 1; color: var(--tx); }
+.tx-hint { margin-top: 12px; font-size: 12px; font-weight: 600; color: var(--warn); min-height: 0; }
+.tx-hint:empty { display: none; }
+.tx-actions { display: none; gap: 8px; margin-top: 16px; }
+.tx-actions.show { display: flex; }
+.tx-actions .btn { flex: 1; justify-content: center; padding: 12px 14px; font-size: 14px; }
+.tx-bar { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--tx); transform-origin: left; transform: scaleX(0); }
+.tx-bar.run { animation: txBar var(--tx-dur, 2200ms) linear forwards; }
+@keyframes txBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.tx-burst { position: absolute; left: 50%; top: 66px; width: 0; height: 0; pointer-events: none; }
+.tx-burst i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--tx)); opacity: 0; animation: txBurst 0.8s ease-out forwards; }
+@keyframes txBurst { 0% { opacity: 1; transform: translate(0,0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); } }
+@media (prefers-reduced-motion: reduce) { .tx-arc { animation-duration: 2.4s !important; animation-iteration-count: infinite !important; } .tx-burst { display: none; } }
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .detail-item { display: flex; flex-direction: column; gap: 3px; }
 .detail-label { font-size: 10px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
@@ -2762,6 +2808,28 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
   </div>
 </div>
 
+<!-- Transaction status overlay (เบิกของ / รับของ) -->
+<div class="tx-overlay" id="txOverlay" hidden>
+  <div class="tx-card" id="txCard" role="alertdialog" aria-modal="true" aria-live="assertive" aria-labelledby="txTitle" aria-describedby="txSub" tabindex="-1" data-state="pending" data-mode="out">
+    <div class="tx-burst" id="txBurst" aria-hidden="true"></div>
+    <div class="tx-icon" aria-hidden="true">
+      <svg viewBox="0 0 64 64">
+        <circle class="tx-track" cx="32" cy="32" r="27"/>
+        <circle class="tx-arc" cx="32" cy="32" r="27"/>
+        <circle class="tx-disc" cx="32" cy="32" r="30"/>
+        <path class="tx-mark tx-check" d="M19 33l9 9 17-19"/>
+        <path class="tx-mark tx-cross" d="M22 22l20 20M42 22L22 42"/>
+      </svg>
+    </div>
+    <div class="tx-title" id="txTitle"></div>
+    <div class="tx-sub" id="txSub"></div>
+    <div class="tx-stock" id="txStock"><span class="from" id="txFrom"></span><span class="arrow">→</span><span class="to" id="txTo"></span></div>
+    <div class="tx-hint" id="txHint"></div>
+    <div class="tx-actions" id="txActions"></div>
+    <div class="tx-bar" id="txBar"></div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <!-- QR Scanner Modal -->
@@ -3076,6 +3144,9 @@ window.qaExecute = async () => {
   const next = qaMode === 'out' ? Math.max(0, cur - qaQty) : cur + qaQty;
   const note = cleanSingleLine(document.getElementById('qaNote').value);
   const btn = document.getElementById('confirmFinalBtn');
+  const partName = ((qaSelectedItem['Brand'] || '') + ' ' + (qaSelectedItem['Model'] || '')).trim() || qaSelectedItem['Part ID'];
+  const txId = tx.begin(qaMode, qaMode === 'out' ? 'กำลังบันทึกการเบิก' : 'กำลังบันทึกการรับเข้า', 'กำลังอัปเดต Stock...');
+  let rpcDone = false;
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
@@ -3094,6 +3165,8 @@ window.qaExecute = async () => {
       throw rpcErr;
     }
 
+    rpcDone = true;
+    tx.step(txId, 'กำลังบันทึกประวัติ...');
     const undoPayload = { action: qaMode, qty: parseFloat(qaQty), partId: qaSelectedItem['Part ID'], itemId: qaSelectedItem._id };
     await insertLog({
       type: qaMode,
@@ -3105,15 +3178,30 @@ window.qaExecute = async () => {
       user: getCurrentUserName()
     });
 
+    tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
     await fetchItems(false);
     invalidateLogsCache();
-    toast(`${qaMode === 'out' ? 'เบิก' : 'รับเข้า'} ${qaQty} pcs เรียบร้อย`, 'success');
+    const serverStock = parseFloat(finalActual);
+    tx.success(txId, {
+      title: qaMode === 'out' ? 'เบิกของสำเร็จ' : 'รับของเข้าสำเร็จ',
+      sub: `${partName} · ${qaMode === 'out' ? '-' : '+'}${qaQty} pcs`,
+      from: cur,
+      to: Number.isFinite(serverStock) ? serverStock : next
+    });
     qaClearSearch();
     document.getElementById('qaNote').value = '';
   } catch(e) {
-    if (e.message === 'OVER_STOCK') toast('Stock ถูกแก้ไข — จำนวนไม่พอ กรุณาลองใหม่', 'error');
-    else if (e.message === 'ZERO_STOCK') toast('Stock เป็นศูนย์ ไม่สามารถเบิกได้', 'error');
-    else toast('เกิดข้อผิดพลาด: ' + e.message, 'error');
+    let msg;
+    if (rpcDone) msg = 'Stock ถูกอัปเดตแล้ว แต่ขั้นตอนหลังบันทึกไม่สำเร็จ (' + e.message + ') — อย่ากดซ้ำ ให้เช็คประวัติ (Log)';
+    else if (e.message === 'OVER_STOCK') msg = 'Stock ถูกแก้ไขพร้อมกัน — จำนวนไม่พอ กรุณาตรวจสอบแล้วลองใหม่';
+    else if (e.message === 'ZERO_STOCK') msg = 'Stock เป็นศูนย์ ไม่สามารถเบิกได้';
+    else msg = e.message;
+    tx.fail(txId, {
+      title: rpcDone ? 'บันทึกไม่ครบขั้นตอน' : (qaMode === 'out' ? 'เบิกของไม่สำเร็จ' : 'รับของไม่สำเร็จ'),
+      msg,
+      retry: rpcDone || e.message === 'OVER_STOCK' || e.message === 'ZERO_STOCK' ? null : window.qaExecute
+    });
+    if (rpcDone) fetchItems(false).catch(() => {});
     setSyncing('error');
   } finally { btn.classList.remove('btn-loading'); }
 };
@@ -4580,6 +4668,146 @@ window.toast = (msg, type='success') => {
   setTimeout(() => el.remove(), 4000);
 };
 
+// ===== TRANSACTION STATUS OVERLAY (เบิกของ / รับของ) =====
+// begin() returns a run id; every later call must pass it. If the user dismissed the overlay
+// (or a newer run started) a late result falls back to a toast instead of a stale overlay.
+window.tx = (() => {
+  const $ = id => document.getElementById(id);
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SLOW_MS = 8000, STUCK_MS = 25000, AUTO_CLOSE_MS = 2200;
+  let run = 0, timers = [], raf = 0, prevFocus = null;
+
+  const clear = () => { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); };
+  const live = id => id === run && !$('txOverlay').hidden;
+  const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+  function setState(state) {
+    const card = $('txCard');
+    card.dataset.state = state;
+    card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  }
+  function setActions(buttons) {
+    const box = $('txActions');
+    box.innerHTML = '';
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'btn ' + (b.cls || 'btn-ghost');
+      btn.textContent = b.label;
+      btn.onclick = b.onClick;
+      box.appendChild(btn);
+    });
+    box.classList.toggle('show', buttons.length > 0);
+    if (buttons.length) box.firstElementChild.focus();
+  }
+  function hide() {
+    clear(); run++;
+    $('txOverlay').hidden = true;
+    $('txBar').classList.remove('run');
+    if (prevFocus && prevFocus.focus) { try { prevFocus.focus(); } catch (e) {} }
+    prevFocus = null;
+  }
+  function countUp(el, from, to) {
+    if (reduced() || from === to) { el.textContent = to; return; }
+    const t0 = performance.now(), dur = 650;
+    const frame = now => {
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (to - from) * e);
+      if (p < 1) raf = requestAnimationFrame(frame); else el.textContent = to;
+    };
+    raf = requestAnimationFrame(frame);
+  }
+  function burst(mode) {
+    const box = $('txBurst');
+    box.innerHTML = '';
+    if (reduced()) return;
+    const base = mode === 'in' ? '#00934a' : mode === 'pos' ? '#001F6B' : '#E40046';
+    const colors = [base, '#001F6B', base, '#d8d5ce'];
+    for (let i = 0; i < 14; i++) {
+      const a = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.4, d = 70 + Math.random() * 40;
+      const s = document.createElement('i');
+      s.style.setProperty('--dx', Math.cos(a) * d + 'px');
+      s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+      s.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+      s.style.setProperty('--c', colors[i % colors.length]);
+      box.appendChild(s);
+    }
+  }
+
+  function begin(mode, title, step) {
+    clear();
+    const id = ++run;
+    if ($('txOverlay').hidden) prevFocus = document.activeElement;
+    const card = $('txCard');
+    card.dataset.mode = mode;
+    $('txTitle').textContent = title;
+    $('txSub').textContent = step || '';
+    $('txHint').textContent = '';
+    $('txStock').classList.remove('show');
+    $('txBurst').innerHTML = '';
+    $('txBar').classList.remove('run');
+    setActions([]);
+    setState('pending');
+    $('txOverlay').hidden = false;
+    card.focus();
+    timers.push(setTimeout(() => {
+      if (live(id)) $('txHint').textContent = 'เครือข่ายช้ากว่าปกติ — ยังรอเซิร์ฟเวอร์ตอบกลับ อย่ากดซ้ำ';
+    }, SLOW_MS));
+    timers.push(setTimeout(() => {
+      if (!live(id)) return;
+      setState('stuck');
+      $('txTitle').textContent = 'ยังไม่ได้รับการตอบกลับ';
+      $('txSub').textContent = 'รายการอาจถูกบันทึกไปแล้ว กรุณาเช็คประวัติ (Log) ก่อนทำซ้ำ';
+      $('txHint').textContent = '';
+      setActions([{ label: 'ปิดหน้าต่าง', cls: 'btn-primary', onClick: hide }]);
+    }, STUCK_MS));
+    return id;
+  }
+  function step(id, text) { if (live(id)) $('txSub').textContent = text; }
+
+  function success(id, o) {
+    if (!live(id)) { toast(o.title + (o.sub ? ' · ' + o.sub : ''), 'success'); return; }
+    clear();
+    const mode = $('txCard').dataset.mode;
+    setState('success');
+    $('txTitle').textContent = o.title;
+    $('txSub').textContent = o.sub || '';
+    $('txHint').textContent = '';
+    if (typeof o.from === 'number' && typeof o.to === 'number') {
+      $('txFrom').textContent = o.from;
+      $('txStock').classList.add('show');
+      countUp($('txTo'), o.from, o.to);
+    }
+    burst(mode);
+    buzz(35);
+    setActions([{ label: 'เสร็จสิ้น', cls: mode === 'in' ? 'btn-success' : 'btn-primary', onClick: hide }]);
+    const bar = $('txBar');
+    bar.style.setProperty('--tx-dur', AUTO_CLOSE_MS + 'ms');
+    bar.classList.remove('run'); void bar.offsetWidth; bar.classList.add('run');
+    timers.push(setTimeout(() => { if (live(id)) hide(); }, AUTO_CLOSE_MS));
+  }
+
+  // o: { title, msg, retry?: fn }  — pass retry only when it is safe to run the action again.
+  function fail(id, o) {
+    if (!live(id)) { toast(o.msg || o.title, 'error'); return; }
+    clear();
+    setState('error');
+    $('txTitle').textContent = o.title || 'ไม่สำเร็จ';
+    $('txSub').textContent = o.msg || '';
+    $('txHint').textContent = '';
+    $('txStock').classList.remove('show');
+    buzz([60, 40, 60]);
+    const btns = [{ label: 'ปิด', cls: 'btn-ghost', onClick: hide }];
+    if (o.retry) btns.push({ label: 'ลองอีกครั้ง', cls: 'btn-primary', onClick: () => { hide(); o.retry(); } });
+    setActions(btns);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || $('txOverlay').hidden) return;
+    if ($('txCard').dataset.state !== 'pending') hide();
+  });
+  return { begin, step, success, fail, hide };
+})();
+
 // ===== BOOT =====
 async function boot() {
   const hideLoadingAndOpen = () => {
@@ -5154,6 +5382,10 @@ window.confirmAdjust = async () => {
   const moveNote = moved ? `Location/Position: ${oldLocation || '—'} ${oldPosition || '—'} → ${newLocation || '—'} ${newPosition || '—'}` : '';
   const finalNote = [note, moveNote].filter(Boolean).join(' | ');
   const btn = document.getElementById('adjConfirmBtn');
+  const partName = ((adjustItem['Brand'] || '') + ' ' + (adjustItem['Model'] || '')).trim() || adjustItem['Part ID'];
+  const txMode = adjustQty === 0 ? 'pos' : adjustMode;
+  const txId = tx.begin(txMode, txMode === 'pos' ? 'กำลังอัปเดตตำแหน่ง' : (adjustMode === 'out' ? 'กำลังบันทึกการเบิก' : 'กำลังบันทึกการรับเข้า'), 'กำลังอัปเดต Stock...');
+  let rpcDone = false;
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
@@ -5172,6 +5404,8 @@ window.confirmAdjust = async () => {
       throw rpcErr;
     }
 
+    rpcDone = true;
+    tx.step(txId, 'กำลังบันทึกประวัติ...');
     const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
     const adjUndoPayload = {
       action: adjustQty===0 ? 'position' : adjustMode,
@@ -5194,14 +5428,31 @@ window.confirmAdjust = async () => {
       user: getCurrentUserName()
     });
 
+    tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
     await fetchItems(false);
     invalidateLogsCache();
     closeModal('adjustModal');
-    toast(adjustQty===0 ? 'อัปเดตตำแหน่งเรียบร้อย' : `${adjustMode==='in'?'รับของ':'เบิกของ'} ${adjustQty} pcs เรียบร้อย`,'success');
+    const serverStock = parseFloat(finalActual);
+    tx.success(txId, adjustQty===0
+      ? { title: 'อัปเดตตำแหน่งสำเร็จ', sub: `${partName} → ${newLocation || '—'} ${newPosition || ''}`.trim() }
+      : {
+          title: adjustMode==='in' ? 'รับของเข้าสำเร็จ' : 'เบิกของสำเร็จ',
+          sub: `${partName} · ${adjustMode==='in'?'+':'-'}${adjustQty} pcs`,
+          from: cur,
+          to: Number.isFinite(serverStock) ? serverStock : next
+        });
   } catch(e){
-    if(e.message==='ZERO_STOCK') toast('Stock is zero. Cannot withdraw.','error');
-    else if(e.message==='OVER_STOCK') toast('Stock ถูกแก้ไขพร้อมกัน — จำนวนไม่พอ','error');
-    else toast('Error: '+e.message,'error');
+    let msg;
+    if(rpcDone) msg = 'Stock ถูกอัปเดตแล้ว แต่ขั้นตอนหลังบันทึกไม่สำเร็จ ('+e.message+') — อย่ากดซ้ำ ให้เช็คประวัติ (Log)';
+    else if(e.message==='ZERO_STOCK') msg = 'Stock เป็นศูนย์ ไม่สามารถเบิกได้';
+    else if(e.message==='OVER_STOCK') msg = 'Stock ถูกแก้ไขพร้อมกัน — จำนวนไม่พอ กรุณาตรวจสอบแล้วลองใหม่';
+    else msg = e.message;
+    tx.fail(txId, {
+      title: rpcDone ? 'บันทึกไม่ครบขั้นตอน' : (txMode==='pos' ? 'อัปเดตตำแหน่งไม่สำเร็จ' : (adjustMode==='out' ? 'เบิกของไม่สำเร็จ' : 'รับของไม่สำเร็จ')),
+      msg,
+      retry: rpcDone || e.message==='ZERO_STOCK' || e.message==='OVER_STOCK' ? null : window.confirmAdjust
+    });
+    if (rpcDone) { closeModal('adjustModal'); fetchItems(false).catch(()=>{}); }
     setSyncing('error');
   } finally { btn.classList.remove('btn-loading'); }
 };
