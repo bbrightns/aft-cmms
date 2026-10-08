@@ -344,216 +344,71 @@ textarea { resize: vertical; min-height: 60px; }
 .qty-display { font-family: var(--mono); font-size: 32px; font-weight: 700; min-width: 60px; text-align: center; color: var(--agc-blue); }
 
 /* LOG */
-#logList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-#logList {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.log-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
-  padding: 8px 14px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 44px;
-  position: relative;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-.log-card:hover {
-  background: var(--surface2);
-  border-color: var(--border2);
-}
-
-.log-col-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 175px;
-  flex-shrink: 0;
-}
-.log-part-id {
-  font-family: var(--mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--text);
-  letter-spacing: 0.2px;
-  width: 95px;
-  flex-shrink: 0;
-}
-.log-part-id.system-id {
-  color: var(--text3);
-  font-family: var(--sans);
-  font-weight: 600;
-  font-size: 12px;
-}
-.log-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  white-space: nowrap;
-}
-.log-type-in {
-  background-color: #ecfdf5;
-  color: #059669;
-}
-.log-type-out {
-  background-color: #fdf2f8;
-  color: #db2777;
-}
-.log-type-edit {
-  background-color: #eff6ff;
-  color: #2563eb;
-}
-.log-type-delete {
-  background-color: #fffbeb;
-  color: #d97706;
-}
-.log-type-system {
-  background-color: #f3f4f6;
-  color: #4b5563;
-}
-.log-badge i {
-  width: 12px;
-  height: 12px;
-}
-
-.log-col-main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  min-width: 0;
-}
-.log-msg-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-/* Compact Diff Pill Styling */
-.diff-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 2px 8px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 12px;
-  white-space: nowrap;
-}
-.diff-lbl {
-  font-weight: 600;
-  color: var(--text2);
-}
-.diff-old {
-  color: #6b7280;
-  text-decoration: line-through;
-}
-.diff-arr {
-  width: 11px;
-  height: 11px;
-  color: #94a3b8;
-  flex-shrink: 0;
-}
-.diff-new {
-  color: #1d4ed8;
-  font-weight: 700;
-  background: #eff6ff;
-  padding: 0 4px;
-  border-radius: 3px;
-}
-.diff-line-raw {
-  font-size: 12px;
-  color: var(--text2);
-}
-
-.log-col-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-  margin-left: auto;
-}
-.log-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 11.5px;
-  color: var(--text3);
-  white-space: nowrap;
-}
-.log-user, .log-time-new {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.log-user i, .log-time-new i {
-  width: 12px;
-  height: 12px;
-}
-
-.btn-log-undo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 9px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-}
-.btn-log-undo:hover {
-  background: #fff1f2;
-  color: #e11d48;
-  border-color: #fecdd3;
-  box-shadow: 0 1px 2px rgba(225, 29, 72, 0.1);
-}
-.btn-log-undo i {
-  width: 12px;
-  height: 12px;
-}
-
-@media (max-width: 768px) {
-  .log-card {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-    padding: 10px 12px;
-  }
-  .log-col-left {
-    min-width: unset;
-    justify-content: space-between;
-  }
-  .log-col-right {
-    margin-left: 0;
-    justify-content: space-between;
-    border-top: 1px dashed var(--border);
-    padding-top: 6px;
-  }
-}
-.btn-log-undo i {
-  width: 13px;
-  height: 13px;
+#tabLog > * { flex-shrink: 0; }
+#logList { display: block; padding: 0 14px 32px; }
+.lg-toolbar { display: flex; align-items: baseline; gap: 10px; padding: 16px 14px 6px; flex-wrap: wrap; }
+.lg-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--text); }
+.lg-title [data-lucide], .lg-title svg { width: 18px; height: 18px; color: var(--agc-blue); }
+.lg-count { font-size: 12px; font-weight: 500; color: var(--text2); }
+.lg-filters { display: flex; gap: 8px; padding: 6px 14px 10px; overflow-x: auto; scrollbar-width: none; }
+.lg-filters::-webkit-scrollbar { display: none; }
+.lg-filter { position: relative; flex: 0 0 auto; min-height: 34px; padding: 6px 13px; display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--border-strong); background: var(--bg2); color: var(--text2); border-radius: 999px; font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.lg-filter::before { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; }
+.lg-filter:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+.lg-filter.active { border-color: var(--agc-blue); background: #e8ecf8; color: var(--agc-blue); }
+.lg-filter i { font-style: normal; font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text2); }
+.lg-day { position: sticky; top: 0; z-index: 3; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 12px 2px 6px; background: var(--bg); font-size: 13px; font-weight: 800; color: var(--text); }
+.lg-day span { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text2); }
+.lg-group { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.lg-row { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 4px 12px; align-items: start; padding: 12px 14px; border-top: 1px solid var(--border); }
+.lg-row:first-child { border-top: 0; }
+.lg-ico { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--bg2); color: var(--text2); }
+.lg-ico [data-lucide], .lg-ico svg { width: 18px; height: 18px; }
+.lg-in .lg-ico, .lg-add .lg-ico { background: #dcf5e8; color: var(--accent2); }
+.lg-out .lg-ico { background: #fde8ef; color: var(--danger-text); }
+.lg-edit .lg-ico { background: #e8ecf8; color: var(--agc-blue); }
+.lg-delete .lg-ico { background: #fef3cd; color: var(--warn); }
+.lg-main { min-width: 0; }
+.lg-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.lg-pid { flex-shrink: 0; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.lg-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text2); }
+.lg-action { margin-top: 3px; font-size: 14px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.lg-in .lg-action, .lg-add .lg-action { color: var(--accent2); }
+.lg-out .lg-action { color: var(--danger-text); }
+.lg-edit .lg-action { color: var(--agc-blue); }
+.lg-delete .lg-action { color: var(--warn); }
+.lg-sub { margin-top: 2px; font-size: 12.5px; line-height: 1.45; color: var(--text2); overflow-wrap: anywhere; }
+.lg-sub .lg-o { text-decoration: line-through; text-decoration-color: rgba(17,24,39,.4); }
+.lg-sub .lg-n { color: var(--text); font-weight: 700; }
+.lg-toggle { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px 0; border: 0; background: none; color: var(--agc-blue); font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; }
+.lg-toggle [data-lucide], .lg-toggle svg { width: 14px; height: 14px; transition: transform .15s; }
+.lg-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.lg-diff { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; padding: 12px; background: var(--bg); border-radius: 8px; }
+.lg-diff[hidden] { display: none; }
+.lg-diff-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 4px 12px; }
+.lg-diff-lbl { font-size: 12px; font-weight: 700; color: var(--text2); }
+.lg-vals { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 13px; line-height: 1.45; }
+.lg-val { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 6px; }
+.lg-val b { font-size: 11px; font-weight: 700; color: var(--text3); padding-top: 1px; }
+.lg-val span { overflow-wrap: anywhere; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; }
+.lg-val.o span { color: var(--text2); text-decoration: line-through; text-decoration-color: rgba(17,24,39,.35); }
+.lg-val.n span { color: var(--text); font-weight: 600; }
+.lg-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+.lg-who { font-size: 12px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.lg-time { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+.lg-undo { position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 2px 4px; background: none; border: 0; border-radius: 6px; font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; white-space: nowrap; }
+.lg-undo::before { content: ''; position: absolute; left: -8px; right: -8px; top: -9px; bottom: -9px; }
+.lg-undo:hover { color: var(--danger-text); text-decoration: underline; text-underline-offset: 3px; }
+.lg-undo [data-lucide], .lg-undo svg { width: 13px; height: 13px; }
+.lg-toggle:focus-visible, .lg-undo:focus-visible, .lg-filter:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
+@media (max-width: 767px) {
+  #logList { padding: 0 10px 32px; }
+  .lg-toolbar, .lg-filters { padding-left: 10px; padding-right: 10px; }
+  .lg-row { grid-template-columns: 36px minmax(0, 1fr); padding: 12px; }
+  .lg-side { grid-column: 2; flex-direction: row; align-items: center; justify-content: space-between; text-align: left; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
+  .lg-side > div { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .lg-diff-row { grid-template-columns: minmax(0, 1fr); }
+  .lg-undo { min-height: 34px; }
 }
 
 /* EMPTY */
@@ -2241,8 +2096,10 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
    The Log view has its own heading, so the inventory search + filter chips are hidden while it shows. */
 @media (max-width: 767px) {
   html body #pageInventory .tabs, html body #pageInventory #searchResultMeta { display: none !important; }
-  html body #pageInventory.log-view .controls-bar, html body #pageInventory.log-view #quickFilterChips { display: none !important; }
 }
+/* The Log has its own filters: the inventory search, chips, count line and column picker never apply to it. */
+html body #pageInventory.log-view .controls-bar, html body #pageInventory.log-view #quickFilterChips,
+html body #pageInventory.log-view #searchResultMeta, html body #pageInventory.log-view .col-picker-btn { display: none !important; }
 
 /* ===== เบิก/รับ page: suggestions before typing ===== */
 .qa-results.qa-defaults { max-height: none; overflow: visible; }
@@ -2306,9 +2163,9 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 <header class="header" style="display: none;">
   <div class="header-nav">
     <img src="logo.png" alt="AGC" class="logo-img">
-    <span class="nav-home" style="cursor: default;">AFT-CMMS</span>
-    <span class="nav-sep">/</span>
-    <a href="store.html" class="nav-mod">Storage Management</a>
+    <span class="nav-home">AFT-CMMS</span>
+    <span class="nav-sep" aria-hidden="true">–</span>
+    <span class="nav-mod">Store Management</span>
   </div>
   <div class="header-right">
     <button class="header-back" id="headerBack" onclick="goHome()"><i data-lucide="home"></i> หน้าหลัก</button>
@@ -2581,15 +2438,12 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
       <div id="resultCount" style="padding:6px 16px 10px;color:var(--text3);font-size:12px;font-family:var(--mono);font-weight:600;"></div>
     </div>
     <div id="tabLog" style="display:none">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px 4px;">
-        <span style="font-size:13px;font-weight:700;color:var(--text2);display:flex;align-items:center;gap:6px;">
-          <i data-lucide="history" style="width:16px;height:16px;color:var(--agc-blue);"></i> ประวัติการทำรายการ (Transaction Log)
-        </span>
-        <button class="btn btn-ghost" style="color:var(--danger);font-size:12px;padding:5px 10px;height:auto;gap:5px;border:1px solid rgba(228,0,70,0.2);" onclick="openClearLogsModal()">
-          <i data-lucide="trash-2" style="width:13px;height:13px;"></i> ล้าง Log ทั้งหมด
-        </button>
+      <div class="lg-toolbar">
+        <h2 class="lg-title"><i data-lucide="history"></i> ประวัติการทำรายการ</h2>
+        <span class="lg-count" id="logCount"></span>
       </div>
-      <div style="padding:14px;display:flex;flex-direction:column;gap:8px;" id="logList">
+      <div class="lg-filters" id="logFilters" role="group" aria-label="กรองประเภทรายการ"></div>
+      <div id="logList">
         <div class="empty"><div class="empty-icon"><i data-lucide="clipboard-list" style="width:36px;height:36px"></i></div><p>ยังไม่มี transaction</p></div>
       </div>
     </div>
@@ -3889,83 +3743,139 @@ function getFieldLabelTH(field) {
   return FIELD_LABELS_TH[clean] || clean;
 }
 
+// ===== TRANSACTION LOG VIEW =====
+// One row per entry, grouped by day. Edits that touch several fields are collapsed behind "ดูรายละเอียด";
+// 1-2 short changes (e.g. Stock 10 -> 6) stay inline. Long text wraps/clamps and never leaves its row.
+const LOG_TYPE_UI = {
+  in:     { label: 'รับเข้า',     icon: 'log-in',   group: 'move' },
+  out:    { label: 'เบิกออก',     icon: 'log-out',  group: 'move' },
+  edit:   { label: 'แก้ไข',       icon: 'pencil',   group: 'edit' },
+  add:    { label: 'เพิ่มรายการ', icon: 'plus',     group: 'change' },
+  delete: { label: 'ลบรายการ',    icon: 'trash-2',  group: 'change' },
+  system: { label: 'ระบบ',        icon: 'settings', group: 'other' }
+};
+const LOG_FILTERS = [['all', 'ทั้งหมด'], ['move', 'เบิก / รับ'], ['edit', 'แก้ไข'], ['change', 'เพิ่ม / ลบ']];
+let logFilter = 'all';
+let _logsRendered = [];
+
+function logTypeOf(l) { return l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'); }
+function logTypeUi(type) { return LOG_TYPE_UI[type] || LOG_TYPE_UI.system; }
+
+function parseLogNote(note) {
+  const clean = String(note || '').split('__UNDO_DATA__:')[0].trim();
+  const diffs = [], texts = [];
+  clean.split('\n').forEach(rawLine => rawLine.split(' | ').forEach(piece => {
+    const line = piece.trim();
+    if (!line) return;
+    const sep = line.includes('->') ? '->' : (line.includes('→') ? '→' : null);
+    const colon = line.indexOf(':');
+    if (sep && colon > 0) {
+      const [oldPart, ...newParts] = line.slice(colon + 1).split(sep);
+      diffs.push({ label: getFieldLabelTH(line.slice(0, colon)), old: (oldPart || '').trim(), neu: newParts.join(sep).trim() });
+    } else {
+      texts.push(line);
+    }
+  }));
+  return { diffs, texts };
+}
+
+function logWhen(ts) {
+  const d = ts && ts.toDate ? ts.toDate() : new Date(ts);
+  if (!ts || isNaN(d.getTime())) return { key: 'unknown', label: 'ไม่ระบุวันที่', time: '' };
+  const same = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  const today = new Date(), yesterday = new Date(); yesterday.setDate(today.getDate() - 1);
+  const dateStr = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+  const label = same(d, today) ? 'วันนี้ · ' + dateStr : same(d, yesterday) ? 'เมื่อวาน · ' + dateStr : dateStr;
+  return { key: d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(), label, time: d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }) };
+}
+
+function logRowHtml(l, idx) {
+  const type = logTypeOf(l), ui = logTypeUi(type);
+  const isSystem = l.partId === 'SYSTEM';
+  const when = logWhen(l.ts);
+  const user = l.user || l._updatedBy || l.updatedBy || 'System';
+  const part = !isSystem && l.partId ? items.find(x => x['Part ID'] === l.partId) : null;
+  const partName = part ? ((part['Brand'] || '') + ' ' + (part['Model'] || '')).trim() : '';
+  const { diffs, texts } = parseLogNote(l.note);
+  let action = String(l.msg || '').replace(/^[^\p{L}\p{N}]+/u, '').trim() || ui.label;
+  const short = v => v.length <= 28;
+  const inline = diffs.length > 0 && diffs.length <= 2 && diffs.every(d => short(d.old) && short(d.neu));
+  let sub = '', detail = '';
+  if (diffs.length && inline) {
+    sub = diffs.map(d => `${escapeHtml(d.label)}: <span class="lg-o">${escapeHtml(d.old || '—')}</span> → <span class="lg-n">${escapeHtml(d.neu || '—')}</span>`).join('<br>');
+  } else if (diffs.length) {
+    const labels = diffs.map(d => d.label);
+    if (type === 'edit') action = `${action} ${diffs.length} ช่อง`;
+    sub = escapeHtml(labels.slice(0, 3).join(', ') + (labels.length > 3 ? ` +${labels.length - 3}` : ''));
+    const id = 'lgd-' + idx;
+    const rows = diffs.map(d => `<div class="lg-diff-row"><div class="lg-diff-lbl">${escapeHtml(d.label)}</div><div class="lg-vals">
+        <div class="lg-val o"><b>ก่อน</b><span>${escapeHtml(d.old || '—')}</span></div>
+        <div class="lg-val n"><b>หลัง</b><span>${escapeHtml(d.neu || '—')}</span></div></div></div>`).join('');
+    detail = `<button type="button" class="lg-toggle" aria-expanded="false" aria-controls="${id}" data-n="${diffs.length}" onclick="toggleLogDetail(this)"><span class="lg-toggle-text">ดูรายละเอียด (${diffs.length})</span><i data-lucide="chevron-down"></i></button>
+      <div class="lg-diff" id="${id}" hidden>${rows}</div>`;
+  }
+  const note = texts.length ? `<div class="lg-sub">${escapeHtml(texts.join(' · '))}</div>` : '';
+  const undoId = String(l.id).replace(/[^\w-]/g, '');
+  return `<article class="lg-row lg-${type}">
+    <div class="lg-ico" aria-hidden="true"><i data-lucide="${ui.icon}"></i></div>
+    <div class="lg-main">
+      <div class="lg-head"><span class="lg-pid">${escapeHtml(isSystem ? 'SYSTEM' : (l.partId || ''))}</span>${partName ? `<span class="lg-name">${escapeHtml(partName)}</span>` : ''}</div>
+      <div class="lg-action">${escapeHtml(action)}</div>
+      ${sub ? `<div class="lg-sub">${sub}</div>` : ''}${note}${detail}
+    </div>
+    <div class="lg-side">
+      <div><div class="lg-who">${escapeHtml(user)}</div><div class="lg-time">${escapeHtml(when.time)}</div></div>
+      <button type="button" class="lg-undo" onclick="confirmUndoLog('${undoId}')" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>
+    </div>
+  </article>`;
+}
+
+function renderLogFilters(all) {
+  const box = document.getElementById('logFilters');
+  if (!box) return;
+  const count = f => f === 'all' ? all.length : all.filter(l => logTypeUi(logTypeOf(l)).group === f).length;
+  box.innerHTML = LOG_FILTERS.map(([f, label]) =>
+    `<button type="button" class="lg-filter ${logFilter === f ? 'active' : ''}" aria-pressed="${logFilter === f}" onclick="setLogFilter('${f}')">${label} <i>${count(f)}</i></button>`).join('');
+}
+
+window.setLogFilter = (f) => { logFilter = f; renderLog(_logsRendered); };
+window.toggleLogDetail = (btn) => {
+  const panel = document.getElementById(btn.getAttribute('aria-controls'));
+  if (!panel) return;
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', String(!open));
+  panel.hidden = open;
+  btn.querySelector('.lg-toggle-text').textContent = open ? `ดูรายละเอียด (${btn.dataset.n})` : 'ซ่อนรายละเอียด';
+};
+
 function renderLog(logs) {
+  _logsRendered = logs || [];
   const el = document.getElementById('logList');
-  if(!el) return;
-  if(!logs.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon"><i data-lucide="clipboard-list"></i></div><p>ยังไม่มี transaction</p></div>';
+  if (!el) return;
+  const countEl = document.getElementById('logCount');
+  if (countEl) countEl.textContent = _logsRendered.length ? `${_logsRendered.length} รายการล่าสุด` : '';
+  renderLogFilters(_logsRendered);
+  if (!_logsRendered.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon"><i data-lucide="clipboard-list" style="width:36px;height:36px"></i></div><p>ยังไม่มี transaction</p></div>';
     refreshIcons();
     return;
   }
-  el.innerHTML = logs.map(l=>{
-    const t = formatLogTime(l.ts);
-    const user = l.user || l._updatedBy || l.updatedBy || 'System';
-    const typeConfig = getLogTypeConfig(l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'));
-    
-    let cleanNoteText = l.note ? l.note.split('__UNDO_DATA__:')[0].trim() : '';
-    let mainContentHtml = '';
-    
-    if (cleanNoteText) {
-      const rawLines = cleanNoteText.split('\n').filter(Boolean);
-      const splitItems = [];
-      rawLines.forEach(rl => {
-        if (rl.includes(' | ')) {
-          rl.split(' | ').forEach(sub => { if (sub.trim()) splitItems.push(sub.trim()); });
-        } else {
-          splitItems.push(rl.trim());
-        }
-      });
-
-      const formattedItems = splitItems.map(line => {
-        if (line.includes('->') || line.includes('→')) {
-          const sep = line.includes('->') ? '->' : '→';
-          const parts = line.split(':');
-          const rawField = (parts[0] || '').trim();
-          const rest = parts.slice(1).join(':') || '';
-          const valParts = rest.split(sep);
-          const oldVal = (valParts[0] || '').trim();
-          const newVal = (valParts[1] || '').trim();
-          const fieldLabel = getFieldLabelTH(rawField);
-
-          return `<span class="diff-pill">
-            <span class="diff-lbl">${escapeHtml(fieldLabel)}:</span>
-            <span class="diff-old">${escapeHtml(oldVal || '—')}</span>
-            <i data-lucide="arrow-right" class="diff-arr"></i>
-            <span class="diff-new">${escapeHtml(newVal || '—')}</span>
-          </span>`;
-        }
-        return `<span class="diff-line-raw">${escapeHtml(line)}</span>`;
-      }).join('');
-      
-      mainContentHtml = formattedItems || `<span class="log-msg-text">${escapeHtml(l.msg || '')}</span>`;
-    } else {
-      mainContentHtml = `<span class="log-msg-text">${escapeHtml(l.msg || '')}</span>`;
-    }
-    
-    const isSystem = l.partId === 'SYSTEM';
-    const partDisplay = isSystem ? 'SYSTEM' : l.partId;
-    
-    return `<div class="log-card log-${l.type || (isSystem ? 'system' : 'edit')}">
-      <div class="log-col-left">
-        <span class="log-part-id ${isSystem ? 'system-id' : ''}">${escapeHtml(partDisplay || '')}</span>
-        <span class="log-badge ${typeConfig.class}">
-          <i data-lucide="${typeConfig.icon}"></i> ${typeConfig.label}
-        </span>
-      </div>
-      <div class="log-col-main">
-        ${mainContentHtml}
-      </div>
-      <div class="log-col-right">
-        <div class="log-meta">
-          <span class="log-user"><i data-lucide="user"></i> ${escapeHtml(user)}</span>
-          <span class="log-time-new"><i data-lucide="clock"></i> ${escapeHtml(t)}</span>
-        </div>
-        <button class="btn-log-undo" onclick="confirmUndoLog('${l.id}')" title="ย้อนกลับรายการนี้">
-          <i data-lucide="rotate-ccw"></i> ย้อนกลับ
-        </button>
-      </div>
-    </div>`;
-  }).join('');
+  const shown = _logsRendered.filter(l => logFilter === 'all' || logTypeUi(logTypeOf(l)).group === logFilter);
+  if (!shown.length) {
+    el.innerHTML = '<div class="empty"><p>ไม่มีรายการในหมวดนี้</p></div>';
+    refreshIcons();
+    return;
+  }
+  const days = [];
+  shown.forEach((l, i) => {
+    const w = logWhen(l.ts);
+    let day = days[days.length - 1];
+    if (!day || day.key !== w.key) { day = { key: w.key, label: w.label, rows: [] }; days.push(day); }
+    day.rows.push(logRowHtml(l, i));
+  });
+  el.innerHTML = days.map(d => `<section aria-label="${escapeHtml(d.label)}">
+    <div class="lg-day">${escapeHtml(d.label)}<span>${d.rows.length} รายการ</span></div>
+    <div class="lg-group">${d.rows.join('')}</div></section>`).join('');
   refreshIcons();
 }
 
