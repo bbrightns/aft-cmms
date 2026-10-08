@@ -249,9 +249,15 @@ tr:hover td { background: var(--surface2); }
 .inv-card-btn.primary:hover, .inv-card-btn.primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
 .inv-card-btn.withdraw { background: #E40046; color: #fff; border-color: #E40046; }
 .inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #c3003c; border-color: #c3003c; color: #fff; }
-.inv-card-btn.quote-primary { background: var(--agc-blue); color: #fff; border-color: var(--agc-blue); }
-.inv-card-btn.quote-primary:hover, .inv-card-btn.quote-primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
-.inv-card-btn.quote { background: #fff; color: var(--agc-blue); border-color: var(--agc-blue); }
+/* ขอราคา buttons (card, table row, Detail footer): light-blue fill, darker blue border, navy text.
+   Contrast: text #001F6B on #AEC6FF = 8.7:1; border #5B83D6 on white = 3.7:1 (the fill alone is only 1.7:1 on white). */
+.inv-card-btn.quote, .inv-card-btn.quote-primary, .btn-icon.quote-btn, .btn.quote-btn {
+  background: #AEC6FF; color: var(--agc-blue); border: 1.5px solid #5B83D6;
+}
+.inv-card-btn.quote:hover, .inv-card-btn.quote:active, .inv-card-btn.quote-primary:hover, .inv-card-btn.quote-primary:active,
+.btn-icon.quote-btn:hover, .btn.quote-btn:hover {
+  background: #9BB8FA; color: var(--agc-blue); border-color: #3F66BB;
+}
 .inv-card-btn.deposit { background: #007A3D; color: #fff; border-color: #007A3D; }
 .inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #007c3e; border-color: #007c3e; color: #fff; }
 
@@ -2043,6 +2049,10 @@ input[type=password]:not(:focus), input[type=email]:not(:focus), input[type=tel]
 select:not(:focus), textarea:not(:focus), .qa-search-wrap input[type=text]:not(:focus) { border-color: var(--border-strong); }
 .btn-ghost, .btn-icon, .filter-toggle, .close-btn, .col-picker-btn, .qty-btn-big, .quick-filter-chip:not(.active),
 .inv-card-btn:not(.withdraw):not(.deposit) { border-color: var(--border-strong); }
+/* ...but ขอราคา keeps its own blue edge (must out-rank the generic rule above) */
+.inv-card-btn.quote:not(.withdraw):not(.deposit), .inv-card-btn.quote-primary:not(.withdraw):not(.deposit) { border-color: #5B83D6; }
+.inv-card-btn.quote:not(.withdraw):not(.deposit):hover, .inv-card-btn.quote-primary:not(.withdraw):not(.deposit):hover,
+.inv-card-btn.quote:not(.withdraw):not(.deposit):active, .inv-card-btn.quote-primary:not(.withdraw):not(.deposit):active { border-color: #3F66BB; }
 input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 .position-3-grid input::placeholder { color: #5f5f78; opacity: 1; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -2698,7 +2708,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="detailCloseBtn" onclick="closeModal('detailModal')"><i data-lucide="x"></i> ปิด</button>
-      <button class="btn btn-ghost" id="detailQuoteBtn"><i data-lucide="mail"></i> ขอราคา</button>
+      <button class="btn quote-btn" id="detailQuoteBtn"><i data-lucide="mail"></i> ขอราคา</button>
       <button class="btn" style="background:var(--warn);color:#fff" id="detailAdjustBtn"><i data-lucide="package"></i> ปรับสต็อก</button>
       <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> แก้ไขข้อมูล</button>
     </div>
@@ -5599,7 +5609,7 @@ function renderTable() {
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
       <td data-col="actions"><div class="row-actions">
         <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
-        ${reorder ? `<button class="btn-icon" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
+        ${reorder ? `<button class="btn-icon quote-btn" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
         <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="ลบรายการ" aria-label="ลบรายการ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="trash-2"></i></button>
       </div></td>
     </tr>`;
