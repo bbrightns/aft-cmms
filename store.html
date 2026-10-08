@@ -770,15 +770,6 @@ html, body {
   background:#e0e4f0;
   box-shadow:0 2px 8px rgba(0,31,107,0.08);
 }
-.log-meta {
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  margin-left:6px;
-  color:var(--text3);
-  font-size:11px;
-  font-family:var(--mono);
-}
 @media (max-width: 767px) {
   .quick-filter-chips { padding:10px 12px 0; }
 }
@@ -3672,22 +3663,6 @@ function formatLogTime(ts) {
   }
 }
 
-function getLogTypeConfig(type) {
-  switch (type) {
-    case 'in':
-    case 'add':
-      return { label: 'รับเข้า', class: 'log-type-in', icon: 'plus-circle' };
-    case 'out':
-      return { label: 'เบิกออก', class: 'log-type-out', icon: 'minus-circle' };
-    case 'edit':
-      return { label: 'แก้ไข', class: 'log-type-edit', icon: 'edit' };
-    case 'delete':
-      return { label: 'ลบ', class: 'log-type-delete', icon: 'trash-2' };
-    default:
-      return { label: 'ระบบ', class: 'log-type-system', icon: 'settings' };
-  }
-}
-
 async function insertLog(logObj) {
   try {
     const { error } = await supabase.from('logs').insert([logObj]);
@@ -3769,8 +3744,12 @@ const LOG_TYPE_UI = {
 const LOG_FILTERS = [['all', 'ทั้งหมด'], ['move', 'เบิก / รับ'], ['edit', 'แก้ไข'], ['change', 'เพิ่ม / ลบ']];
 let logFilter = 'all';
 let _logsRendered = [];
+const _logOpen = new Set();   // ids of log rows whose before/after panel is expanded
 
-function logTypeOf(l) { return l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit'); }
+function logTypeOf(l) {
+  const t = l.type || (l.partId === 'SYSTEM' ? 'system' : 'edit');
+  return LOG_TYPE_UI[t] ? t : 'system';   // unknown/legacy types render as system rows and sit under "อื่นๆ"
+}
 function logTypeUi(type) { return LOG_TYPE_UI[type] || LOG_TYPE_UI.system; }
 
 function parseLogNote(note) {
@@ -3781,9 +3760,11 @@ function parseLogNote(note) {
     if (!line) return;
     const sep = line.includes('->') ? '->' : (line.includes('→') ? '→' : null);
     const colon = line.indexOf(':');
-    if (sep && colon > 0) {
+    const field = colon > 0 ? line.slice(0, colon).trim() : '';
+    // The app writes "<column>: <old> → <new>". Anything else (a typed note such as "ย้ายจาก A -> B") stays plain text.
+    if (sep && Object.prototype.hasOwnProperty.call(FIELD_LABELS_TH, field)) {
       const [oldPart, ...newParts] = line.slice(colon + 1).split(sep);
-      diffs.push({ label: getFieldLabelTH(line.slice(0, colon)), old: (oldPart || '').trim(), neu: newParts.join(sep).trim() });
+      diffs.push({ label: getFieldLabelTH(field), old: (oldPart || '').trim(), neu: newParts.join(sep).trim() });
     } else {
       texts.push(line);
     }
@@ -3819,15 +3800,16 @@ function logRowHtml(l, idx) {
     const labels = diffs.map(d => d.label);
     if (type === 'edit') action = `${action} ${diffs.length} ช่อง`;
     sub = escapeHtml(labels.slice(0, 3).join(', ') + (labels.length > 3 ? ` +${labels.length - 3}` : ''));
-    const id = 'lgd-' + idx;
+    const idKey = String(l.id);
+    const id = 'lgd-' + idKey.replace(/[^\w-]/g, '_');
+    const isOpen = _logOpen.has(idKey);
     const rows = diffs.map(d => `<div class="lg-diff-row"><div class="lg-diff-lbl">${escapeHtml(d.label)}</div><div class="lg-vals">
         <div class="lg-val o"><b>ก่อน</b><span>${escapeHtml(d.old || '—')}</span></div>
         <div class="lg-val n"><b>หลัง</b><span>${escapeHtml(d.neu || '—')}</span></div></div></div>`).join('');
-    detail = `<button type="button" class="lg-toggle" aria-expanded="false" aria-controls="${id}" data-n="${diffs.length}" onclick="toggleLogDetail(this)"><span class="lg-toggle-text">ดูรายละเอียด (${diffs.length})</span><i data-lucide="chevron-down"></i></button>
-      <div class="lg-diff" id="${id}" hidden>${rows}</div>`;
+    detail = `<button type="button" class="lg-toggle" aria-expanded="${isOpen}" aria-controls="${id}" data-n="${diffs.length}" data-log-id="${escapeHtml(idKey)}" onclick="toggleLogDetail(this)"><span class="lg-toggle-text">${isOpen ? 'ซ่อนรายละเอียด' : `ดูรายละเอียด (${diffs.length})`}</span><i data-lucide="chevron-down"></i></button>
+      <div class="lg-diff" id="${id}"${isOpen ? '' : ' hidden'}>${rows}</div>`;
   }
   const note = texts.length ? `<div class="lg-sub">${escapeHtml(texts.join(' · '))}</div>` : '';
-  const undoId = String(l.id).replace(/[^\w-]/g, '');
   return `<article class="lg-row lg-${type}">
     <div class="lg-ico" aria-hidden="true"><i data-lucide="${ui.icon}"></i></div>
     <div class="lg-main">
@@ -3837,7 +3819,7 @@ function logRowHtml(l, idx) {
     </div>
     <div class="lg-side">
       <div><div class="lg-who">${escapeHtml(user)}</div><div class="lg-time">${escapeHtml(when.time)}</div></div>
-      <button type="button" class="lg-undo" onclick="confirmUndoLog('${undoId}')" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>
+      <button type="button" class="lg-undo" data-id="${escapeHtml(String(l.id))}" onclick="confirmUndoLog(this.dataset.id)" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>
     </div>
   </article>`;
 }
@@ -3846,7 +3828,9 @@ function renderLogFilters(all) {
   const box = document.getElementById('logFilters');
   if (!box) return;
   const count = f => f === 'all' ? all.length : all.filter(l => logTypeUi(logTypeOf(l)).group === f).length;
-  box.innerHTML = LOG_FILTERS.map(([f, label]) =>
+  const filters = LOG_FILTERS.concat(count('other') ? [['other', 'อื่นๆ']] : []);
+  if (!filters.some(([f]) => f === logFilter)) logFilter = 'all';
+  box.innerHTML = filters.map(([f, label]) =>
     `<button type="button" class="lg-filter ${logFilter === f ? 'active' : ''}" aria-pressed="${logFilter === f}" onclick="setLogFilter('${f}')">${label} <i>${count(f)}</i></button>`).join('');
 }
 
@@ -3857,6 +3841,7 @@ window.toggleLogDetail = (btn) => {
   const open = btn.getAttribute('aria-expanded') === 'true';
   btn.setAttribute('aria-expanded', String(!open));
   panel.hidden = open;
+  if (open) _logOpen.delete(btn.dataset.logId); else _logOpen.add(btn.dataset.logId);
   btn.querySelector('.lg-toggle-text').textContent = open ? `ดูรายละเอียด (${btn.dataset.n})` : 'ซ่อนรายละเอียด';
 };
 
@@ -5157,10 +5142,12 @@ window.tx = (() => {
 (() => {
   const t = document.getElementById('userDisplayNameText');
   if (!t || !t.parentElement) return;
-  new MutationObserver(() => {
+  const sync = () => {
     t.parentElement.title = t.textContent;
     t.parentElement.setAttribute('aria-label', 'บัญชีผู้ใช้ ' + t.textContent);   // the name text is hidden on phones
-  }).observe(t, { childList: true, characterData: true, subtree: true });
+  };
+  new MutationObserver(sync).observe(t, { childList: true, characterData: true, subtree: true });
+  sync();
 })();
 
 // ===== BOOT =====
