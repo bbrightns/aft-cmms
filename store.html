@@ -249,6 +249,9 @@ tr:hover td { background: var(--surface2); }
 .inv-card-btn.primary:hover, .inv-card-btn.primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
 .inv-card-btn.withdraw { background: #E40046; color: #fff; border-color: #E40046; }
 .inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #c3003c; border-color: #c3003c; color: #fff; }
+.inv-card-btn.quote-primary { background: var(--agc-blue); color: #fff; border-color: var(--agc-blue); }
+.inv-card-btn.quote-primary:hover, .inv-card-btn.quote-primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
+.inv-card-btn.quote { background: #fff; color: var(--agc-blue); border-color: var(--agc-blue); }
 .inv-card-btn.deposit { background: #007A3D; color: #fff; border-color: #007A3D; }
 .inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #007c3e; border-color: #007c3e; color: #fff; }
 
@@ -506,6 +509,7 @@ textarea { resize: vertical; min-height: 60px; }
   .modal-body { flex: 1; overflow-y: auto; padding-bottom: 80px; }
   .modal-footer { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); z-index: 250; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); display: flex; gap: 8px; }
   .modal-footer .btn { flex: 1; padding: 14px 12px; font-size: 15px; }
+  #detailCloseBtn { display: none; }
   .modal-overlay { padding: 0; align-items: stretch; }
   .modal { max-width: 100% !important; width: 100%; border-radius: 0; max-height: 100vh; height: 100vh; }
 }
@@ -2332,7 +2336,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.10.1</div>
+    <div class="home-version">v1.11.0</div>
 
 
     <!-- Compat stubs -->
@@ -2692,9 +2696,37 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     </div>
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('detailModal')"><i data-lucide="x"></i> ปิด</button>
+      <button class="btn btn-ghost" id="detailCloseBtn" onclick="closeModal('detailModal')"><i data-lucide="x"></i> ปิด</button>
+      <button class="btn btn-ghost" id="detailQuoteBtn"><i data-lucide="mail"></i> ขอราคา</button>
       <button class="btn" style="background:var(--warn);color:#fff" id="detailAdjustBtn"><i data-lucide="package"></i> ปรับสต็อก</button>
       <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> แก้ไขข้อมูล</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Request Quotation (opens the default mail app via mailto:) -->
+<div class="modal-overlay" id="quoteModal" style="display:none" onclick="closeOnOverlay(event,'quoteModal')">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div><div class="modal-title"><i data-lucide="mail"></i> ขอราคา</div><div style="font-size:12px;color:var(--text2);margin-top:3px" id="quoteSubtitle"></div></div>
+      <button class="close-btn" onclick="closeModal('quoteModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="quoteBuyer">ส่งถึงจัดซื้อ</label>
+        <select id="quoteBuyer"></select>
+      </div>
+      <div class="form-group">
+        <label for="quoteQty">จำนวนที่ต้องการซื้อ</label>
+        <input type="number" id="quoteQty" min="1" step="1" inputmode="numeric" placeholder="ระบุจำนวน">
+        <div class="field-error" id="err_quoteQty"></div>
+        <div class="form-helper" id="quoteQtyHint"></div>
+      </div>
+      <div class="form-helper">ระบบจะเปิดแอปอีเมลของเครื่องนี้พร้อมข้อความที่กรอกไว้ให้ ตรวจสอบแล้วกดส่งเองอีกครั้ง</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('quoteModal')"><i data-lucide="x"></i> ยกเลิก</button>
+      <button class="btn btn-primary" onclick="submitQuote()"><i data-lucide="mail"></i> เปิดอีเมล</button>
     </div>
   </div>
 </div>
@@ -5566,6 +5598,7 @@ function renderTable() {
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
       <td data-col="actions"><div class="row-actions">
         <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
+        ${reorder ? `<button class="btn-icon" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
         <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="ลบรายการ" aria-label="ลบรายการ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="trash-2"></i></button>
       </div></td>
     </tr>`;
@@ -5588,6 +5621,7 @@ function renderCards() {
     const position = r['Position'] || '';
     const locHtml = (location ? highlightText(location, q) : '') + (position ? ` <span style="color:var(--agc-blue);font-weight:700;font-family:var(--mono);margin-left:6px">${highlightText(position, q)}</span>` : '');
     const reorder = getReorderSuggestion(r);
+    const emptyStock = getActualNumber(r['Actual']) <= 0;   // nothing to withdraw: offer ขอราคา in its place
     const hasBrand = r['Brand'] && r['Brand'].trim();
     const displayName = hasBrand ? ((r['Brand']||'') + ' ' + (r['Model']||'')) : (r['Description'] || '—');
     return `<div class="inv-card" onclick="openEdit('${r._id}')" style="cursor:pointer">
@@ -5612,8 +5646,11 @@ function renderCards() {
         ${reorder ? `<div class="reorder-chip"><i data-lucide="shopping-cart" style="width:12px;height:12px"></i>Suggest order: ${reorder} pcs</div>` : ''}
       </div>
       <div class="inv-card-actions">
-        <button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>
+        ${emptyStock && reorder
+          ? `<button class="inv-card-btn quote-primary" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>`
+          : `<button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>`}
         <button class="inv-card-btn deposit" onclick="event.stopPropagation();openAdjust('${r._id}', 'in')"><i data-lucide="log-in" style="width:14px;height:14px"></i> รับของ</button>
+        ${!emptyStock && reorder ? `<button class="inv-card-btn quote" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>` : ''}
       </div>
     </div>`;
   }).join('');
@@ -5932,6 +5969,68 @@ window.confirmAdjust = async () => {
   } finally { btn.classList.remove('btn-loading'); }
 };
 
+// ===== REQUEST QUOTATION (mailto: opens the device's default mail app) =====
+const PURCHASING_CONTACTS = [
+  { name: 'Bunjerd Posee',  email: 'bunjerd.phosri@agc.com' },
+  { name: 'Piyoros Nilrat', email: 'piyoros.nilrat@agc.com' },
+  { name: 'Ittipat Numsoy', email: 'ittipat.numsoy@agc.com' },
+  { name: 'Praween (Test)', email: 'praween.piya@agc.com' }
+];
+let quoteItemId = null;
+
+window.openQuote = (id) => {
+  const r = items.find(x => x._id === id); if (!r) return;
+  quoteItemId = id;
+  const sel = document.getElementById('quoteBuyer');
+  sel.innerHTML = '<option value="">— เลือกผู้จัดซื้อ —</option>' +
+    PURCHASING_CONTACTS.map((c, i) => `<option value="${i}">${escapeHtml(c.name)}</option>`).join('');
+  const suggest = getReorderSuggestion(r);
+  document.getElementById('quoteQty').value = suggest || '';
+  document.getElementById('quoteQtyHint').textContent = suggest ? `แนะนำ ${suggest} (เติมถึง Max)` : '';
+  document.getElementById('err_quoteQty').textContent = '';
+  document.getElementById('quoteSubtitle').textContent = [r['Part ID'], r['Brand'], r['Model']].filter(Boolean).join(' · ');
+  document.getElementById('quoteModal').style.display = 'flex';
+  refreshIcons();
+};
+
+window.submitQuote = () => {
+  const r = items.find(x => x._id === quoteItemId); if (!r) return;
+  const idx = document.getElementById('quoteBuyer').value;
+  if (idx === '') { toast('กรุณาเลือกผู้จัดซื้อ', 'error'); return; }
+  const qty = Number(document.getElementById('quoteQty').value);
+  if (!Number.isInteger(qty) || qty < 1) {
+    document.getElementById('err_quoteQty').textContent = 'ระบุจำนวนเป็นเลขจำนวนเต็มที่มากกว่า 0';
+    return;
+  }
+  const buyer = PURCHASING_CONTACTS[Number(idx)];
+  const first = buyer.name.split(' ')[0];
+  const sub = (r['Sub Category'] || '').trim();
+  const brand = (r['Brand'] || '').trim();
+  const model = (r['Model'] || '').trim();
+  const detail = (r['Description'] || '').trim();
+  const photo = (r['imageUrl'] || '').trim();
+  const sender = getCurrentUserName().replace(/\s*\(Guest\)$/i, '');
+  const title = [sub, brand].filter(Boolean).join(' ') || model || r['Part ID'] || '';
+
+  const lines = [
+    `เรียน K. ${first},`,
+    `     รบกวนขอราคา ${title}`,
+    '',
+    `Brand: ${brand || '-'}`,
+    `Model: ${model || '-'}`,
+    `Detail: ${detail || '-'}`,
+    `จำนวน: ${qty}`,
+  ];
+  if (photo) lines.push('', `รูปภาพ: ${photo}`);
+  lines.push('', 'Best regards,', sender);
+
+  const subject = `รบกวนขอราคา ${[sub, brand, model].filter(Boolean).join(' ') || r['Part ID'] || ''}`;
+  const url = `mailto:${buyer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(lines.join('\r\n'))}`;
+  if (url.length > 1900) toast('ข้อความยาวมาก อีเมลบางแอปอาจตัดเนื้อหา', 'warn');
+  closeModal('quoteModal');
+  window.location.href = url;
+};
+
 window.openDetail = (id) => {
   const r=items.find(x=>x._id===id); if(!r) return;
   const sc=stockStatus(r['Actual'],r['Min']);
@@ -5969,6 +6068,7 @@ window.openDetail = (id) => {
       <div class="detail-item"><div class="detail-label">Last Updated</div><div class="detail-val">${formatUpdatedAt(r._updatedAt)}</div></div>
       <div class="detail-item"><div class="detail-label">Updated By</div><div class="detail-val">${escapeHtml(r._updatedBy || r._device || '—')}</div></div>
     </div>`;
+  document.getElementById('detailQuoteBtn').onclick=()=>{closeModal('detailModal');openQuote(id);};
   document.getElementById('detailAdjustBtn').onclick=()=>{closeModal('detailModal');openAdjust(id);};
   document.getElementById('detailEditBtn').onclick=()=>{closeModal('detailModal');openEdit(id);};
   document.getElementById('detailModal').style.display='flex';
