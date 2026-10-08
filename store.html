@@ -536,7 +536,8 @@ textarea { resize: vertical; min-height: 60px; }
 /* ===== TRANSACTION STATUS OVERLAY (เบิกของ / รับของ) ===== */
 .tx-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(17,24,39,0.62); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
 .tx-overlay[hidden] { display: none; }
-.tx-card { --tx: var(--agc-red); position: relative; overflow: hidden; width: 100%; max-width: 340px; background: var(--surface); border: 1.5px solid var(--border2); border-top: 6px solid var(--tx); border-radius: 16px; padding: 28px 20px 20px; text-align: center; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.28s cubic-bezier(.2,1.3,.4,1); }
+.tx-card { --tx: var(--agc-red); position: relative; width: 100%; max-width: 340px; max-height: calc(100dvh - 40px); overflow-x: hidden; overflow-y: auto; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 16px; padding: 30px 20px 20px; text-align: center; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.28s cubic-bezier(.2,1.3,.4,1); }
+.tx-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--tx); }
 .tx-card[data-mode="in"] { --tx: var(--accent2); }
 .tx-card[data-mode="pos"], .tx-card[data-mode="edit"] { --tx: var(--agc-blue); }
 .tx-card[data-mode="add"] { --tx: var(--accent2); }
@@ -4737,7 +4738,8 @@ window.tx = (() => {
       box.appendChild(btn);
     });
     box.classList.toggle('show', buttons.length > 0);
-    if (buttons.length) box.firstElementChild.focus();
+    // focusVisible:false = no ring for touch/mouse users; keyboard users still get it on Tab
+    if (buttons.length) box.firstElementChild.focus({ focusVisible: false });
   }
   function hide() {
     clear(); run++;
@@ -4789,7 +4791,7 @@ window.tx = (() => {
     setActions([]);
     setState('pending');
     $('txOverlay').hidden = false;
-    card.focus();
+    card.focus({ focusVisible: false });
     timers.push(setTimeout(() => {
       if (live(id)) $('txHint').textContent = 'เครือข่ายช้ากว่าปกติ — ยังรอเซิร์ฟเวอร์ตอบกลับ อย่ากดซ้ำ';
     }, SLOW_MS));
