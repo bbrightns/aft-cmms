@@ -346,10 +346,12 @@ textarea { resize: vertical; min-height: 60px; }
 /* LOG */
 #tabLog > * { flex-shrink: 0; }
 #logList { display: block; padding: 0 14px 32px; }
-.lg-toolbar { display: flex; align-items: baseline; gap: 10px; padding: 16px 14px 6px; flex-wrap: wrap; }
-.lg-title { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 800; color: var(--text); }
-.lg-title [data-lucide], .lg-title svg { width: 18px; height: 18px; color: var(--agc-blue); }
-.lg-count { font-size: 12px; font-weight: 500; color: var(--text2); }
+.lg-toolbar { display: flex; align-items: baseline; gap: 4px 8px; padding: 16px 14px 6px; flex-wrap: wrap; }
+/* Title and count share one text baseline. The icon sits outside the baseline group: as a flex item an svg's
+   "baseline" is its bottom edge, which is what pushed the count 9px below the title before. */
+.lg-title-ico { align-self: center; flex-shrink: 0; width: 18px; height: 18px; color: var(--agc-blue); }
+.lg-title { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.3; color: var(--text); }
+.lg-count { margin-left: 2px; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text2); }
 .lg-filters { display: flex; gap: 8px; padding: 6px 14px 10px; overflow-x: auto; scrollbar-width: none; }
 .lg-filters::-webkit-scrollbar { display: none; }
 .lg-filter { position: relative; flex: 0 0 auto; min-height: 34px; padding: 6px 13px; display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--border-strong); background: var(--bg2); color: var(--text2); border-radius: 999px; font-family: var(--sans); font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
@@ -369,9 +371,11 @@ textarea { resize: vertical; min-height: 60px; }
 .lg-edit .lg-ico { background: #e8ecf8; color: var(--agc-blue); }
 .lg-delete .lg-ico { background: #fef3cd; color: var(--warn); }
 .lg-main { min-width: 0; }
-.lg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-width: 0; }
-.lg-pid { min-width: 0; overflow-wrap: anywhere; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
-.lg-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text2); }
+/* Part ID and part name always share one line: the name is truncated with an ellipsis. Only an abnormally long Part ID
+   (clamped to the row width) wraps inside its own box, so every row keeps the same rhythm. */
+.lg-head { display: flex; align-items: baseline; gap: 0 8px; min-width: 0; }
+.lg-pid { flex: 0 0 auto; max-width: 100%; overflow-wrap: anywhere; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.lg-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text2); }
 .lg-action { margin-top: 3px; font-size: 14px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
 .lg-in .lg-action, .lg-add .lg-action { color: var(--accent2); }
 .lg-out .lg-action { color: var(--danger-text); }
@@ -404,6 +408,7 @@ textarea { resize: vertical; min-height: 60px; }
 @media (max-width: 767px) {
   #logList { padding: 0 10px 32px; }
   .lg-toolbar, .lg-filters { padding-left: 10px; padding-right: 10px; }
+  .lg-toolbar { padding-top: 14px; }
   .lg-row { grid-template-columns: 36px minmax(0, 1fr); padding: 12px; }
   .lg-side { grid-column: 2; flex-direction: row; align-items: center; justify-content: space-between; text-align: left; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--border); }
   .lg-side > div { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
@@ -2442,7 +2447,8 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     </div>
     <div id="tabLog" style="display:none">
       <div class="lg-toolbar">
-        <h2 class="lg-title"><i data-lucide="history"></i> ประวัติการทำรายการ</h2>
+        <i data-lucide="history" class="lg-title-ico" aria-hidden="true"></i>
+        <h2 class="lg-title">ประวัติการทำรายการ</h2>
         <span class="lg-count" id="logCount"></span>
       </div>
       <div class="lg-filters" id="logFilters" role="group" aria-label="กรองประเภทรายการ"></div>
