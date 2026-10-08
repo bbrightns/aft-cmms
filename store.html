@@ -237,6 +237,8 @@ tr:hover td { background: var(--surface2); }
 .card-taxonomy-text { font-size: 12px; color: var(--text2); font-weight: 500; }
 .card-location-line { width: 100%; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); margin-top: 4px; }
 .card-location-line [data-lucide] { color: var(--text3); width: 13px; height: 13px; flex-shrink: 0; }
+.pos-empty { display: inline-block; min-width: 52px; padding: 2px 9px; border: 1.5px dashed var(--border2); border-radius: 6px; color: var(--text3); font-family: var(--mono); font-size: 12px; font-weight: 600; text-align: center; }
+.pos-empty.needs { border-color: var(--warn); color: var(--warn); font-family: var(--sans); font-size: 11px; font-weight: 700; white-space: nowrap; }
 .pos-chip { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12px; font-weight: 700; color: #fff; background: var(--agc-blue); padding: 3px 9px; border-radius: 6px; letter-spacing: 0.3px; }
 .inv-card-loc-icon { color: var(--text3); }
 .inv-card-actions { display: flex; gap: 6px; }
@@ -278,6 +280,38 @@ tr:hover td { background: var(--surface2); }
 .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
 .btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 15px; border: 1.5px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all 0.15s; }
 .btn-icon:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+.btn-icon.btn-icon-label { width: auto; padding: 0 10px; gap: 6px; font-family: var(--sans); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.btn-icon:focus-visible, .col-picker-btn:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
+
+/* Inventory table: wider text columns, sticky Part ID, column picker */
+table.hc-dept [data-col="dept"] { display: none; }
+table.hc-subcat [data-col="subcat"] { display: none; }
+table.hc-brand [data-col="brand"] { display: none; }
+table.hc-model [data-col="model"] { display: none; }
+table.hc-desc [data-col="desc"] { display: none; }
+table.hc-plant [data-col="plant"] { display: none; }
+table.hc-area [data-col="area"] { display: none; }
+table.hc-class [data-col="class"] { display: none; }
+table.hc-location [data-col="location"] { display: none; }
+table.hc-position [data-col="position"] { display: none; }
+table.hc-minmax [data-col="minmax"] { display: none; }
+td[data-col="model"] { max-width: 260px; }
+td[data-col="desc"] { max-width: 300px; }
+table th:first-child, table td:first-child { position: sticky; left: 0; background: var(--bg); box-shadow: 1px 0 0 var(--border); }
+table th:first-child { z-index: 7; background: var(--surface2); }
+table td:first-child { z-index: 2; }
+tr:hover td:first-child { background: var(--surface2); }
+.col-picker-btn { margin: 0 12px 0 auto; align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid var(--border); background: var(--bg2); color: var(--text2); border-radius: 8px; font-family: var(--sans); font-size: 12px; font-weight: 700; cursor: pointer; }
+.col-picker-btn:hover, .col-picker-btn[aria-expanded="true"] { border-color: var(--agc-blue); color: var(--agc-blue); }
+.col-picker-btn [data-lucide] { width: 14px; height: 14px; }
+@media (max-width: 767px) { .col-picker-btn { display: none; } }
+.col-picker { position: fixed; z-index: 300; min-width: 210px; padding: 10px 12px; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 12px; box-shadow: var(--shadow-md); }
+.col-picker[hidden] { display: none; }
+.col-picker-title { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: 1px; margin-bottom: 6px; }
+.col-picker label { display: flex; align-items: center; gap: 10px; padding: 7px 4px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; border-radius: 6px; }
+.col-picker label:hover { background: var(--bg2); }
+.col-picker input { width: 16px; height: 16px; accent-color: var(--agc-blue); }
+.col-picker-reset { margin-top: 6px; width: 100%; padding: 8px; border: 1.5px solid var(--border); background: var(--bg2); border-radius: 8px; font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; }
 .btn-icon.del:hover { border-color: var(--danger); color: var(--danger); background: #fde8ef; }
 
 /* MODALS */
@@ -2395,6 +2429,7 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
       <button class="quick-filter-chip" data-filter-group="stock" data-chip="ok" onclick="setQuickFilter('ok')">In Stock <span class="chip-count chip-count-ok" id="chipCountOk">0</span></button>
       <button class="quick-filter-chip" data-filter-group="stock" data-chip="low" onclick="setQuickFilter('low')">Low <span class="chip-count chip-count-low" id="chipCountLow">0</span></button>
       <button class="quick-filter-chip" data-filter-group="stock" data-chip="nostock" onclick="setQuickFilter('nostock')">No Stock <span class="chip-count chip-count-warn" id="chipCountNoStock">0</span></button>
+      <button class="quick-filter-chip" data-filter-group="stock" data-chip="nopos" onclick="setQuickFilter('nopos')" title="มีของในสต็อก แต่ยังไม่ได้ระบุตำแหน่งเก็บ">ไม่มีตำแหน่ง <span class="chip-count chip-count-warn" id="chipCountNoPos">0</span></button>
       <span class="quick-filter-sep" aria-hidden="true"></span>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="ELEC" onclick="setQuickFilter('ELEC')">ELEC</button>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="MECH" onclick="setQuickFilter('MECH')">MECH</button>
@@ -2403,24 +2438,26 @@ body.inv-scroll-compact #pageInventory .search-result-meta {
     <div class="tabs">
       <div class="tab active" onclick="setTab('inventory',this)">Inventory</div>
       <div class="tab" onclick="setTab('log',this)">Transaction Log</div>
+      <button type="button" class="col-picker-btn" id="colPickerBtn" aria-haspopup="true" aria-expanded="false" aria-controls="colPicker" onclick="toggleColPicker(event)"><i data-lucide="columns-3"></i> คอลัมน์</button>
     </div>
+    <div class="col-picker" id="colPicker" role="dialog" aria-label="เลือกคอลัมน์ที่แสดง" hidden></div>
     <div id="tabInventory">
       <div class="table-wrap">
         <table><thead><tr>
-          <th onclick="sortBy('Part ID')">Part ID <span class="sort-icon">↕</span></th>
-          <th onclick="sortBy('Department')">Dept <span class="sort-icon">↕</span></th>
-          <th onclick="sortBy('Sub Category')">Sub Cat <span class="sort-icon">↕</span></th>
-          <th onclick="sortBy('Brand')">Brand <span class="sort-icon">↕</span></th>
-          <th>Model</th>
-          <th>Description</th>
-          <th onclick="sortBy('Plant')">Plant <span class="sort-icon">↕</span></th>
-          <th>Area</th>
-          <th onclick="sortBy('CLASS')">Class <span class="sort-icon">↕</span></th>
-          <th>Location</th>
-          <th onclick="sortBy('Position')">Position <span class="sort-icon">↕</span></th>
-          <th onclick="sortBy('Actual')">Stock <span class="sort-icon">↕</span></th>
-          <th>Min/Max</th>
-          <th>Actions</th>
+          <th data-col="partid" onclick="sortBy('Part ID')">Part ID <span class="sort-icon">↕</span></th>
+          <th data-col="dept" onclick="sortBy('Department')">Dept <span class="sort-icon">↕</span></th>
+          <th data-col="subcat" onclick="sortBy('Sub Category')">Sub Cat <span class="sort-icon">↕</span></th>
+          <th data-col="brand" onclick="sortBy('Brand')">Brand <span class="sort-icon">↕</span></th>
+          <th data-col="model">Model</th>
+          <th data-col="desc">Description</th>
+          <th data-col="plant" onclick="sortBy('Plant')">Plant <span class="sort-icon">↕</span></th>
+          <th data-col="area">Area</th>
+          <th data-col="class" onclick="sortBy('CLASS')">Class <span class="sort-icon">↕</span></th>
+          <th data-col="location">Location</th>
+          <th data-col="position" onclick="sortBy('Position')">Position <span class="sort-icon">↕</span></th>
+          <th data-col="stock" onclick="sortBy('Actual')">Stock <span class="sort-icon">↕</span></th>
+          <th data-col="minmax">Min/Max</th>
+          <th data-col="actions">Actions</th>
         </tr></thead><tbody id="tableBody"></tbody></table>
         <div id="emptyState" class="empty" style="display:none"><div class="empty-icon"><i data-lucide="package-search" style="width:36px;height:36px"></i></div><p>ไม่พบรายการที่ตรงกัน</p></div>
       </div>
@@ -3242,6 +3279,70 @@ function doSort() {
   });
 }
 
+// ===== INVENTORY COLUMN PICKER =====
+const INV_COLS = [
+  ['dept','Dept'],['subcat','Sub Cat'],['brand','Brand'],['model','Model'],['desc','Description'],
+  ['plant','Plant'],['area','Area'],['class','Class'],['location','Location'],['position','Position'],['minmax','Min/Max']
+];
+const INV_COLS_DEFAULT_HIDDEN = ['subcat','area','class'];
+const INV_COLS_KEY = 'aft_inv_hidden_cols_v1';
+let invHiddenCols = (() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(INV_COLS_KEY));
+    if (Array.isArray(saved)) return saved.filter(k => INV_COLS.some(c => c[0] === k));
+  } catch (e) {}
+  return INV_COLS_DEFAULT_HIDDEN.slice();
+})();
+function applyColumnVisibility() {
+  const table = document.querySelector('#tabInventory table');
+  if (!table) return;
+  INV_COLS.forEach(([k]) => table.classList.toggle('hc-' + k, invHiddenCols.includes(k)));
+  const btn = document.getElementById('colPickerBtn');
+  if (btn) btn.title = invHiddenCols.length ? `ซ่อนอยู่ ${invHiddenCols.length} คอลัมน์` : 'แสดงทุกคอลัมน์';
+}
+function saveColumnVisibility() {
+  try { localStorage.setItem(INV_COLS_KEY, JSON.stringify(invHiddenCols)); } catch (e) {}
+  applyColumnVisibility();
+}
+function renderColPicker() {
+  const box = document.getElementById('colPicker');
+  if (!box) return;
+  box.innerHTML = '<div class="col-picker-title">แสดงคอลัมน์</div>' +
+    INV_COLS.map(([k, label]) => `<label><input type="checkbox" data-col-key="${k}" ${invHiddenCols.includes(k) ? '' : 'checked'}> ${label}</label>`).join('') +
+    '<button type="button" class="col-picker-reset" id="colPickerReset">คืนค่าเริ่มต้น</button>';
+  box.querySelectorAll('input[data-col-key]').forEach(cb => cb.addEventListener('change', () => {
+    const k = cb.dataset.colKey;
+    invHiddenCols = cb.checked ? invHiddenCols.filter(x => x !== k) : [...new Set([...invHiddenCols, k])];
+    saveColumnVisibility();
+  }));
+  box.querySelector('#colPickerReset').addEventListener('click', () => {
+    invHiddenCols = INV_COLS_DEFAULT_HIDDEN.slice();
+    saveColumnVisibility(); renderColPicker();
+  });
+}
+function closeColPicker() {
+  const box = document.getElementById('colPicker'), btn = document.getElementById('colPickerBtn');
+  if (box) box.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+window.toggleColPicker = (e) => {
+  e.stopPropagation();
+  const box = document.getElementById('colPicker'), btn = document.getElementById('colPickerBtn');
+  if (!box.hidden) { closeColPicker(); return; }
+  renderColPicker();
+  box.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  const r = btn.getBoundingClientRect();
+  box.style.top = (r.bottom + 6) + 'px';
+  box.style.left = Math.max(8, Math.min(r.right - box.offsetWidth, window.innerWidth - box.offsetWidth - 8)) + 'px';
+  const first = box.querySelector('input'); if (first) first.focus();
+};
+document.addEventListener('click', e => { if (!e.target.closest('#colPicker')) closeColPicker(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeColPicker(); });
+window.addEventListener('resize', closeColPicker);
+document.addEventListener('DOMContentLoaded', applyColumnVisibility);
+applyColumnVisibility();
+
 window.sortBy = (col) => {
   if (sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
   doSort(); renderTable(); renderCards();
@@ -3261,6 +3362,7 @@ function updateStats() {
   setCount('chipCountOk', ok);
   setCount('chipCountLow', low);
   setCount('chipCountNoStock', noStock);
+  setCount('chipCountNoPos', items.filter(isStockedWithoutPosition).length);
 
   const meta = document.getElementById('searchResultMeta');
   if(meta) {
@@ -5046,6 +5148,9 @@ function getActualNumber(v) {
   const n = parseFloat(v);
   return Number.isFinite(n) ? n : NaN;
 }
+function isStockedWithoutPosition(r) {
+  return (parseFloat(r['Actual']) || 0) > 0 && !String(r['Position'] || '').trim();
+}
 function isNoStockItem(r) {
   const raw = r?.['Actual'];
   const n = getActualNumber(raw);
@@ -5115,7 +5220,7 @@ function updateQuickFilterChipUI() {
 }
 
 window.setQuickFilter = (type) => {
-  if(type === 'all' || type === 'ok' || type === 'low' || type === 'nostock') {
+  if(type === 'all' || type === 'ok' || type === 'low' || type === 'nostock' || type === 'nopos') {
     activeStockFilter = type || 'all';
     const sf = document.getElementById('stockFilter');
     if(sf) sf.value = type === 'low' ? 'low' : (type === 'ok' ? 'ok' : '');
@@ -5190,6 +5295,7 @@ window.applyFilters = () => {
     if (plant && r['Plant'] !== plant) return false;
     if (stock && stockStatus(r['Actual'], r['Min']) !== stock) return false;
     if (activeStockFilter === 'nostock' && !isNoStockItem(r)) return false;
+    if (activeStockFilter === 'nopos' && !isStockedWithoutPosition(r)) return false;
     if (q) {
       const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS']].join(' ').toLowerCase();
       if (!hay.includes(q)) return false;
@@ -5225,23 +5331,29 @@ function renderTable() {
     const reorder = getReorderSuggestion(r);
     const dept = (r['Department']||'').toUpperCase();
     const deptCls = dept === 'ELEC' ? 'badge-dept-elec' : dept === 'MECH' ? 'badge-dept-mech' : dept === 'RFG' ? 'badge-dept-rfg' : 'badge-none';
-    return `<tr onclick="openEdit('${r._id}')" style="cursor:pointer">
-      <td style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}</td>
-      <td>${dept ? `<span class="badge ${deptCls}">${escapeHtml(dept)}</span>` : '—'}</td>
-      <td>${highlightText(r['Sub Category']||'—', q)}</td>
-      <td>${highlightText(r['Brand']||'—', q)}</td>
-      <td>${highlightText(r['Model']||'—', q)}</td>
-      <td title="${escapeHtml(desc)}">${highlightText(desc||'—', q)}</td>
-      <td><span class="badge ${pb}">${escapeHtml(plant||'—')}</span></td>
-      <td>${highlightText(r['Area']||'—', q)}</td>
-      <td>${highlightText(r['CLASS']||'—', q)}</td>
-      <td>${highlightText(r['Location']||'—', q)}</td>
-      <td><span class="pos-chip"><i data-lucide="map-pin" style="width:10px;height:10px"></i>${highlightText(r['Position']||'—', q)}</span>${reorder?`<div class="reorder-chip">Order ${reorder}</div>`:''}</td>
-      <td><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
-      <td style="font-family:var(--mono)">${escapeHtml(mm)}</td>
-      <td><div class="row-actions">
-        <button class="btn-icon" onclick="event.stopPropagation();openAdjust('${r._id}')" title="Adjust"><i data-lucide="package"></i></button>
-        <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="Delete"><i data-lucide="trash-2"></i></button>
+    const posRaw = (r['Position']||'').trim();
+    const hasStock = (parseFloat(r['Actual'])||0) > 0;
+    const posCell = posRaw
+      ? `<span class="pos-chip"><i data-lucide="map-pin" style="width:10px;height:10px"></i>${highlightText(posRaw, q)}</span>`
+      : (hasStock ? `<span class="pos-empty needs" title="มีของในสต็อกแต่ยังไม่ได้ระบุตำแหน่งเก็บ">ไม่มีตำแหน่ง</span>` : `<span class="pos-empty" aria-label="ไม่มีข้อมูลตำแหน่ง">—</span>`);
+    const tip = v => escapeHtml(v||'');
+    return `<tr onclick="openDetail('${r._id}')" style="cursor:pointer">
+      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}</td>
+      <td data-col="dept">${dept ? `<span class="badge ${deptCls}">${escapeHtml(dept)}</span>` : '—'}</td>
+      <td data-col="subcat" title="${tip(r['Sub Category'])}">${highlightText(r['Sub Category']||'—', q)}</td>
+      <td data-col="brand" title="${tip(r['Brand'])}">${highlightText(r['Brand']||'—', q)}</td>
+      <td data-col="model" title="${tip(r['Model'])}">${highlightText(r['Model']||'—', q)}</td>
+      <td data-col="desc" title="${escapeHtml(desc)}">${highlightText(desc||'—', q)}</td>
+      <td data-col="plant"><span class="badge ${pb}">${escapeHtml(plant||'—')}</span></td>
+      <td data-col="area" title="${tip(r['Area'])}">${highlightText(r['Area']||'—', q)}</td>
+      <td data-col="class">${highlightText(r['CLASS']||'—', q)}</td>
+      <td data-col="location" title="${tip(r['Location'])}">${highlightText(r['Location']||'—', q)}</td>
+      <td data-col="position">${posCell}${reorder?`<div class="reorder-chip">Order ${reorder}</div>`:''}</td>
+      <td data-col="stock"><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
+      <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
+      <td data-col="actions"><div class="row-actions">
+        <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
+        <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="ลบรายการ" aria-label="ลบรายการ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="trash-2"></i></button>
       </div></td>
     </tr>`;
   }).join('');
