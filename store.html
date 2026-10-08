@@ -249,6 +249,8 @@ tr:hover td { background: var(--surface2); }
 .inv-card-btn.primary:hover, .inv-card-btn.primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
 .inv-card-btn.withdraw { background: #E40046; color: #fff; border-color: #E40046; }
 .inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #c3003c; border-color: #c3003c; color: #fff; }
+.inv-card-btn.quote-primary { background: var(--agc-blue); color: #fff; border-color: var(--agc-blue); }
+.inv-card-btn.quote-primary:hover, .inv-card-btn.quote-primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
 .inv-card-btn.quote { background: #fff; color: var(--agc-blue); border-color: var(--agc-blue); }
 .inv-card-btn.deposit { background: #007A3D; color: #fff; border-color: #007A3D; }
 .inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #007c3e; border-color: #007c3e; color: #fff; }
@@ -5619,6 +5621,7 @@ function renderCards() {
     const position = r['Position'] || '';
     const locHtml = (location ? highlightText(location, q) : '') + (position ? ` <span style="color:var(--agc-blue);font-weight:700;font-family:var(--mono);margin-left:6px">${highlightText(position, q)}</span>` : '');
     const reorder = getReorderSuggestion(r);
+    const emptyStock = getActualNumber(r['Actual']) <= 0;   // nothing to withdraw: offer ขอราคา in its place
     const hasBrand = r['Brand'] && r['Brand'].trim();
     const displayName = hasBrand ? ((r['Brand']||'') + ' ' + (r['Model']||'')) : (r['Description'] || '—');
     return `<div class="inv-card" onclick="openEdit('${r._id}')" style="cursor:pointer">
@@ -5643,9 +5646,11 @@ function renderCards() {
         ${reorder ? `<div class="reorder-chip"><i data-lucide="shopping-cart" style="width:12px;height:12px"></i>Suggest order: ${reorder} pcs</div>` : ''}
       </div>
       <div class="inv-card-actions">
-        <button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>
+        ${emptyStock && reorder
+          ? `<button class="inv-card-btn quote-primary" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>`
+          : `<button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>`}
         <button class="inv-card-btn deposit" onclick="event.stopPropagation();openAdjust('${r._id}', 'in')"><i data-lucide="log-in" style="width:14px;height:14px"></i> รับของ</button>
-        ${reorder ? `<button class="inv-card-btn quote" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>` : ''}
+        ${!emptyStock && reorder ? `<button class="inv-card-btn quote" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>` : ''}
       </div>
     </div>`;
   }).join('');
