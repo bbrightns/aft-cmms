@@ -6306,11 +6306,16 @@ window.requestCloseModal = async (id) => {
 };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || e.defaultPrevented) return;
-  const otherOpen = [...document.querySelectorAll('.modal-overlay, .qr-modal')].some(n =>
+  const openLayers = [...document.querySelectorAll('.modal-overlay, .qr-modal')].filter(n =>
     n.id !== 'editModal' && !n.hidden && getComputedStyle(n).display !== 'none');
-  if (otherOpen) return;   // a layer on top (lightbox, QR scanner, ...) owns Escape
   const dlg = document.getElementById('dlgOverlay'), txo = document.getElementById('txOverlay');
-  if ((dlg && !dlg.hidden) || (txo && !txo.hidden)) return;   // those handle their own Escape
+  const dialogOpen = (dlg && !dlg.hidden) || (txo && !txo.hidden);   // those handle their own Escape
+  // Detail / ขอราคา ignore backdrop taps, so Esc is how the keyboard dismisses them (only when nothing sits on top).
+  if (!dialogOpen && openLayers.length === 1 && (openLayers[0].id === 'detailModal' || openLayers[0].id === 'quoteModal')) {
+    e.preventDefault(); window.closeModal(openLayers[0].id); return;
+  }
+  if (openLayers.length) return;   // a layer on top (lightbox, QR scanner, ...) owns Escape
+  if (dialogOpen) return;
   const m = document.getElementById('editModal');
   if (m && m.style.display === 'flex') { e.preventDefault(); requestCloseModal('editModal'); }
 });
