@@ -538,7 +538,9 @@ textarea { resize: vertical; min-height: 60px; }
 .tx-overlay[hidden] { display: none; }
 .tx-card { --tx: var(--agc-red); position: relative; overflow: hidden; width: 100%; max-width: 340px; background: var(--surface); border: 1.5px solid var(--border2); border-top: 6px solid var(--tx); border-radius: 16px; padding: 28px 20px 20px; text-align: center; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.28s cubic-bezier(.2,1.3,.4,1); }
 .tx-card[data-mode="in"] { --tx: var(--accent2); }
-.tx-card[data-mode="pos"] { --tx: var(--agc-blue); }
+.tx-card[data-mode="pos"], .tx-card[data-mode="edit"] { --tx: var(--agc-blue); }
+.tx-card[data-mode="add"] { --tx: var(--accent2); }
+.tx-card[data-mode="del"] { --tx: var(--warn); }
 .tx-card[data-state="error"], .tx-card[data-state="stuck"] { --tx: #111827; }
 .tx-card[data-state="error"] { animation: txShake 0.45s ease; }
 @keyframes txPop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
@@ -4263,6 +4265,9 @@ window.saveItem = async () => {
   }
 
   const btn = document.getElementById('saveItemBtn');
+  const isEdit = !!editItemId;
+  const txId = tx.begin(isEdit ? 'edit' : 'add', isEdit ? 'กำลังบันทึกการแก้ไข' : 'กำลังเพิ่มรายการใหม่', isEdit ? 'กำลังตรวจสอบข้อมูล...' : 'กำลังออกเลข Part ID...');
+  let dbDone = false;
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
@@ -4273,6 +4278,7 @@ window.saveItem = async () => {
     }
     
     if (photoChanged) {
+      tx.step(txId, selectedPhotoFile ? 'กำลังอัปโหลดรูปภาพ...' : 'กำลังลบรูปภาพ...');
       if (selectedPhotoFile) {
         const compressedBlob = await compressImage(selectedPhotoFile);
         const cleanPartId = finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -4331,6 +4337,7 @@ window.saveItem = async () => {
       _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName()
     };
 
+    tx.step(txId, 'กำลังบันทึกข้อมูล...');
     if (editItemId) {
       const oldItem = items.find(x => x._id === editItemId);
       const changeNote = getItemChangeSummary(oldItem, data);
@@ -4340,6 +4347,8 @@ window.saveItem = async () => {
         .update(data)
         .eq('id', editItemId);
       if (updateErr) throw updateErr;
+      dbDone = true;
+      tx.step(txId, 'กำลังบันทึกประวัติ...');
 
       const editUndoPayload = { action: 'edit', partId: finalPartId, itemId: editItemId, before: oldItem, after: data };
       await insertLog({
@@ -4352,15 +4361,18 @@ window.saveItem = async () => {
         user: getCurrentUserName()
       });
 
+      tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
       await fetchItems(false);
       invalidateLogsCache();
-      toast('บันทึกสำเร็จ','success');
+      tx.success(txId, { title: 'บันทึกการแก้ไขสำเร็จ', sub: `${finalPartId} · ${(brand + ' ' + model).trim() || desc || '—'}` });
     } else {
       const newId = crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15);
       const { error: insertErr } = await supabase
         .from('inventory')
         .insert([{ id: newId, ...data }]);
       if (insertErr) throw insertErr;
+      dbDone = true;
+      tx.step(txId, 'กำลังบันทึกประวัติ...');
 
       const addNoteText = `${data['Plant']||'—'} / ${data['Main Category']||'—'} / ${data['Sub Category']||'—'} | ${data['Location']||'—'} ${data['Position']||'—'}`;
       const addUndoPayload = { action: 'add', partId: finalPartId, itemId: newId, itemData: { id: newId, ...data } };
@@ -4374,16 +4386,27 @@ window.saveItem = async () => {
         user: getCurrentUserName()
       });
 
+      tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
       await fetchItems(false);
       invalidateLogsCache();
-      if (finalPartId !== partId) {
-        toast(`เพิ่มรายการสำเร็จ (หมายเลข Part ID: ${finalPartId})`,'success');
-      } else {
-        toast('เพิ่มรายการสำเร็จ','success');
-      }
+      tx.success(txId, {
+        title: 'เพิ่มรายการสำเร็จ',
+        sub: `Part ID ${finalPartId}${finalPartId !== partId ? ' (ออกเลขใหม่)' : ''} · ${(brand + ' ' + model).trim() || desc || '—'}`
+      });
     }
     closeModal('editModal');
-  } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
+  } catch(e){
+    const msg = dbDone
+      ? 'บันทึกข้อมูลแล้ว แต่ขั้นตอนหลังบันทึกไม่สำเร็จ (' + e.message + ') — อย่ากดซ้ำ ให้เช็คประวัติ (Log)'
+      : e.message;
+    tx.fail(txId, {
+      title: dbDone ? 'บันทึกไม่ครบขั้นตอน' : (isEdit ? 'บันทึกการแก้ไขไม่สำเร็จ' : 'เพิ่มรายการไม่สำเร็จ'),
+      msg,
+      retry: dbDone ? null : window.saveItem
+    });
+    if (dbDone) { closeModal('editModal'); fetchItems(false).catch(() => {}); }
+    setSyncing('error');
+  }
   finally { btn.classList.remove('btn-loading'); }
 };
 
@@ -4398,6 +4421,9 @@ window.confirmDelete = async () => {
   if(!deleteItemId) return;
   const r=items.find(x=>x._id===deleteItemId);
   const btn = document.getElementById('confirmDeleteBtn');
+  const delName = r ? ((r['Part ID'] || '') + ' · ' + ((r['Brand'] || '') + ' ' + (r['Model'] || '')).trim()) : '';
+  const txId = tx.begin('del', 'กำลังลบรายการ', 'กำลังลบข้อมูล...');
+  let dbDone = false;
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
@@ -4406,6 +4432,8 @@ window.confirmDelete = async () => {
       .delete()
       .eq('id', deleteItemId);
     if (delErr) throw delErr;
+    dbDone = true;
+    tx.step(txId, 'กำลังบันทึกประวัติ...');
 
     if (r) {
       const delUndoPayload = { action: 'delete', partId: r['Part ID']||'', itemId: deleteItemId, deletedItem: r };
@@ -4419,11 +4447,23 @@ window.confirmDelete = async () => {
         user: getCurrentUserName()
       });
     }
+    tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
     await fetchItems(false);
     invalidateLogsCache();
     closeModal('deleteModal');
-    toast('ลบรายการเรียบร้อย','warn');
-  } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
+    tx.success(txId, { title: 'ลบรายการเรียบร้อย', sub: delName });
+  } catch(e){
+    const msg = dbDone
+      ? 'ลบข้อมูลแล้ว แต่ขั้นตอนหลังบันทึกไม่สำเร็จ (' + e.message + ') — ให้เช็คประวัติ (Log)'
+      : e.message;
+    tx.fail(txId, {
+      title: dbDone ? 'ลบแล้ว แต่บันทึกไม่ครบขั้นตอน' : 'ลบรายการไม่สำเร็จ',
+      msg,
+      retry: dbDone ? null : window.confirmDelete
+    });
+    if (dbDone) { closeModal('deleteModal'); fetchItems(false).catch(() => {}); }
+    setSyncing('error');
+  }
   finally { btn.classList.remove('btn-loading'); }
 };
 
@@ -4720,7 +4760,8 @@ window.tx = (() => {
     const box = $('txBurst');
     box.innerHTML = '';
     if (reduced()) return;
-    const base = mode === 'in' ? '#00934a' : mode === 'pos' ? '#001F6B' : '#E40046';
+    if (mode === 'del') return;
+    const base = (mode === 'in' || mode === 'add') ? '#00934a' : (mode === 'pos' || mode === 'edit') ? '#001F6B' : '#E40046';
     const colors = [base, '#001F6B', base, '#d8d5ce'];
     for (let i = 0; i < 14; i++) {
       const a = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.4, d = 70 + Math.random() * 40;
@@ -4779,7 +4820,7 @@ window.tx = (() => {
     }
     burst(mode);
     buzz(35);
-    setActions([{ label: 'เสร็จสิ้น', cls: mode === 'in' ? 'btn-success' : 'btn-primary', onClick: hide }]);
+    setActions([{ label: 'เสร็จสิ้น', cls: (mode === 'in' || mode === 'add') ? 'btn-success' : 'btn-primary', onClick: hide }]);
     const bar = $('txBar');
     bar.style.setProperty('--tx-dur', AUTO_CLOSE_MS + 'ms');
     bar.classList.remove('run'); void bar.offsetWidth; bar.classList.add('run');
