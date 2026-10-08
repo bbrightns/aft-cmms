@@ -369,8 +369,8 @@ textarea { resize: vertical; min-height: 60px; }
 .lg-edit .lg-ico { background: #e8ecf8; color: var(--agc-blue); }
 .lg-delete .lg-ico { background: #fef3cd; color: var(--warn); }
 .lg-main { min-width: 0; }
-.lg-head { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.lg-pid { flex-shrink: 0; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.lg-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; min-width: 0; }
+.lg-pid { min-width: 0; overflow-wrap: anywhere; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
 .lg-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text2); }
 .lg-action { margin-top: 3px; font-size: 14px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
 .lg-in .lg-action, .lg-add .lg-action { color: var(--accent2); }
@@ -2153,6 +2153,18 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 .scan-choice-btn.in { background: var(--accent2); }
 .scan-choice-btn [data-lucide], .scan-choice-btn svg { width: 24px; height: 24px; }
 .scan-choice-btn:focus-visible { outline: 3px solid var(--agc-blue); outline-offset: 2px; }
+
+/* ===== LONG TEXT SAFETY ===== */
+.header-right { min-width: 0; }
+.header-right > * { flex-shrink: 0; }
+.header-right > .user-profile-menu { flex-shrink: 1; min-width: 0; }
+#userDisplayNameText { min-width: 0; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The mobile rules above gave .header-right flex:0 0 auto and .header clips overflow, so on a 360px phone the Live
+   indicator was silently cut off (even with the name "Bright"). Let the group shrink, and on phones show only the user
+   icon (the full name is the tooltip / aria-label) and, on very narrow screens, only the Live dot. */
+@media (max-width: 767px) { .header-right { flex: 0 1 auto; } }
+@media (max-width: 480px) { #userDisplayNameText { display: none; } }
+@media (max-width: 360px) { #syncText { display: none; } }
 </style>
 
 </head>
@@ -2174,7 +2186,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     
     <div class="header-divider" id="headerDivider"></div>
     
-    <div class="user-profile-menu" id="userProfileMenu" style="display:none" onclick="openProfileModal()">
+    <div class="user-profile-menu" id="userProfileMenu" role="button" tabindex="0" style="display:none" onclick="openProfileModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click()}">
       <i data-lucide="user" style="width:14px;height:14px"></i>
       <span id="userDisplayNameText">Loading...</span>
     </div>
@@ -4198,7 +4210,10 @@ function setAdjustPositionValue(val) {
   if(base && ![...baseEl.options].some(o => o.value === base)) {
     const opt = document.createElement('option');
     opt.value = base; opt.textContent = base + ' (ค่าเดิม)'; opt.dataset.legacy = '1';
-    baseEl.insertBefore(opt, baseEl.options[1] || null);
+    // options[1] lives inside an <optgroup>, which is not a direct child of the <select>, so insertBefore threw and the
+    // whole adjust popup failed to open for legacy positions like A-1-1. Insert right after the blank first option instead.
+    const firstOpt = baseEl.firstElementChild;
+    baseEl.insertBefore(opt, firstOpt ? firstOpt.nextElementSibling : null);
   }
   baseEl.value = base;
   rowEl.value = row;
@@ -5136,6 +5151,16 @@ window.tx = (() => {
     if ($('txCard').dataset.state !== 'pending') hide();
   });
   return { begin, step, success, fail, hide };
+})();
+
+// Full display name as a tooltip when the header truncates it.
+(() => {
+  const t = document.getElementById('userDisplayNameText');
+  if (!t || !t.parentElement) return;
+  new MutationObserver(() => {
+    t.parentElement.title = t.textContent;
+    t.parentElement.setAttribute('aria-label', 'บัญชีผู้ใช้ ' + t.textContent);   // the name text is hidden on phones
+  }).observe(t, { childList: true, characterData: true, subtree: true });
 })();
 
 // ===== BOOT =====
