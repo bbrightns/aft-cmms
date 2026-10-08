@@ -2231,6 +2231,15 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
     padding: 6px 12px 8px !important; border-bottom: 1px solid var(--border) !important;
   }
 }
+
+/* ===== MOBILE: DROP THE "Showing X / Y" LINE AND THE TAB BAR =====
+   Screen height is scarce on phones. Chips already show the counts, and the Transaction Log is
+   reachable from the Home page (goTransactionLog). Desktop keeps both (the column picker lives in the tab row).
+   The Log view has its own heading, so the inventory search + filter chips are hidden while it shows. */
+@media (max-width: 767px) {
+  html body #pageInventory .tabs, html body #pageInventory #searchResultMeta { display: none !important; }
+  html body #pageInventory.log-view .controls-bar, html body #pageInventory.log-view #quickFilterChips { display: none !important; }
+}
 </style>
 
 </head>
@@ -3644,6 +3653,15 @@ window.clearSearch = () => {
   applyFilters();
   updateFilterSelectStyles();
 };
+
+// Mark #pageInventory while the Transaction Log is showing, so mobile can hide the inventory-only search + filters.
+(() => {
+  const log = document.getElementById('tabLog'), page = document.getElementById('pageInventory');
+  if (!log || !page) return;
+  const sync = () => page.classList.toggle('log-view', log.style.display !== 'none');
+  new MutationObserver(sync).observe(log, { attributes: true, attributeFilter: ['style'] });
+  sync();
+})();
 
 window.setTab = (tab, el) => {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
