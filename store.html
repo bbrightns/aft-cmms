@@ -2193,7 +2193,10 @@ input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 /* ===== PHONE TOUCH TARGETS (>=44px) + SINGLE-ROW FILTER CHIPS ===== */
 @media (max-width: 767px) {
   #pageInventory .merged-filter-chips { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; -webkit-overflow-scrolling: touch; padding-bottom: 8px !important; }
-  #pageInventory .merged-filter-chips .quick-filter-chip { min-height: 44px; padding: 8px 14px; font-size: 13px; white-space: nowrap; }
+  /* Visually compact pill (34px) with an invisible ~8px extension above/below so the tap target is still 44px.
+     Making the pill itself 44px tall looked bloated on phones. */
+  #pageInventory .merged-filter-chips .quick-filter-chip { position: relative; min-height: 34px; padding: 6px 13px; font-size: 13px; white-space: nowrap; }
+  #pageInventory .merged-filter-chips .quick-filter-chip::before { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; }
   #pageInventory .quick-filter-sep { flex: 0 0 auto; }
   #pageInventory .search-wrap input[type=text], #searchInput { min-height: 44px; font-size: 16px; }
   #pageInventory .btn-scan { width: 44px !important; height: 44px !important; min-width: 44px; }
