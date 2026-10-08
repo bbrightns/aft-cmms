@@ -351,6 +351,7 @@ textarea { resize: vertical; min-height: 60px; }
    "baseline" is its bottom edge, which is what pushed the count 9px below the title before. */
 .lg-title-ico { align-self: center; flex-shrink: 0; width: 18px; height: 18px; color: var(--agc-blue); }
 .lg-title { margin: 0; font-size: 16px; font-weight: 800; line-height: 1.3; color: var(--text); }
+.lg-count:empty { display: none; }
 .lg-count { margin-left: 2px; font-size: 12px; font-weight: 500; line-height: 1.3; color: var(--text2); }
 .lg-filters { display: flex; gap: 8px; padding: 6px 14px 10px; overflow-x: auto; scrollbar-width: none; }
 .lg-filters::-webkit-scrollbar { display: none; }
@@ -374,7 +375,7 @@ textarea { resize: vertical; min-height: 60px; }
 /* Part ID and part name always share one line: the name is truncated with an ellipsis. Only an abnormally long Part ID
    (clamped to the row width) wraps inside its own box, so every row keeps the same rhythm. */
 .lg-head { display: flex; align-items: baseline; gap: 0 8px; min-width: 0; }
-.lg-pid { flex: 0 0 auto; max-width: 100%; overflow-wrap: anywhere; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
+.lg-pid { flex: 0 0 auto; max-width: calc(100% - 8px); overflow-wrap: anywhere; font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--text); }
 .lg-name { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; color: var(--text2); }
 .lg-action { margin-top: 3px; font-size: 14px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
 .lg-in .lg-action, .lg-add .lg-action { color: var(--accent2); }
@@ -3587,6 +3588,8 @@ function padPosField(el) {
   if(el.value.length === 1) el.value = '0' + el.value;
 }
 
+window.syncPosition = syncPosition;
+window.padPosField = padPosField;
 window.updatePositionPreview = () => { syncPosition(); };
 
 function setPositionValue(val) {
@@ -4168,6 +4171,7 @@ window.closeModal = (id) => {
   }
   const el = document.getElementById(id);
   if (el) el.style.display = 'none';
+  if (id === 'editModal') _editSnapshot = null;
 };
 
 
@@ -5144,6 +5148,7 @@ window.tx = (() => {
 
   document.addEventListener('keydown', e => {
     if (e.key !== 'Escape' || $('txOverlay').hidden) return;
+    e.preventDefault();
     if ($('txCard').dataset.state !== 'pending') hide();
   });
   return { begin, step, success, fail, hide };
@@ -5807,6 +5812,7 @@ window.qaShowConfirm = () => {
   refreshIcons();
 };
 
+window.updateAdjPreview = updateAdjPreview;
 function updateAdjPreview() {
   if(!adjustItem) return;
   const cur=parseFloat(adjustItem['Actual'])||0;
@@ -6187,7 +6193,10 @@ window.requestCloseModal = async (id) => {
   closeModal(id);
 };
 document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Escape') return;
+  if (e.key !== 'Escape' || e.defaultPrevented) return;
+  const otherOpen = [...document.querySelectorAll('.modal-overlay, .qr-modal')].some(n =>
+    n.id !== 'editModal' && !n.hidden && getComputedStyle(n).display !== 'none');
+  if (otherOpen) return;   // a layer on top (lightbox, QR scanner, ...) owns Escape
   const dlg = document.getElementById('dlgOverlay'), txo = document.getElementById('txOverlay');
   if ((dlg && !dlg.hidden) || (txo && !txo.hidden)) return;   // those handle their own Escape
   const m = document.getElementById('editModal');
