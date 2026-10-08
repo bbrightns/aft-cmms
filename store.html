@@ -249,9 +249,15 @@ tr:hover td { background: var(--surface2); }
 .inv-card-btn.primary:hover, .inv-card-btn.primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
 .inv-card-btn.withdraw { background: #E40046; color: #fff; border-color: #E40046; }
 .inv-card-btn.withdraw:hover, .inv-card-btn.withdraw:active { background: #c3003c; border-color: #c3003c; color: #fff; }
-.inv-card-btn.quote-primary { background: var(--agc-blue); color: #fff; border-color: var(--agc-blue); }
-.inv-card-btn.quote-primary:hover, .inv-card-btn.quote-primary:active { background: #002b8a; border-color: #002b8a; color: #fff; }
-.inv-card-btn.quote { background: #fff; color: var(--agc-blue); border-color: var(--agc-blue); }
+/* ขอราคา buttons (card, table row, Detail footer): light-blue fill, darker blue border, navy text.
+   Contrast: text #001F6B on #AEC6FF = 8.7:1; border #5B83D6 on white = 3.7:1 (the fill alone is only 1.7:1 on white). */
+.inv-card-btn.quote, .inv-card-btn.quote-primary, .btn-icon.quote-btn, .btn.quote-btn {
+  background: #AEC6FF; color: var(--agc-blue); border: 1.5px solid #5B83D6;
+}
+.inv-card-btn.quote:hover, .inv-card-btn.quote:active, .inv-card-btn.quote-primary:hover, .inv-card-btn.quote-primary:active,
+.btn-icon.quote-btn:hover, .btn.quote-btn:hover {
+  background: #9BB8FA; color: var(--agc-blue); border-color: #3F66BB;
+}
 .inv-card-btn.deposit { background: #007A3D; color: #fff; border-color: #007A3D; }
 .inv-card-btn.deposit:hover, .inv-card-btn.deposit:active { background: #007c3e; border-color: #007c3e; color: #fff; }
 
@@ -327,7 +333,8 @@ td[data-col="desc"] { max-width: 300px; }
 .modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
 .modal-title { font-size: 20px; font-weight: 700; color: var(--agc-blue); }
 .modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-.modal-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+/* Footer stays visible while the modal body scrolls (phones override this with a fixed bar below) */
+.modal-footer { position: sticky; bottom: 0; z-index: 5; background: var(--surface); padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
 .form-group { display: flex; flex-direction: column; gap: 5px; }
@@ -2042,6 +2049,10 @@ input[type=password]:not(:focus), input[type=email]:not(:focus), input[type=tel]
 select:not(:focus), textarea:not(:focus), .qa-search-wrap input[type=text]:not(:focus) { border-color: var(--border-strong); }
 .btn-ghost, .btn-icon, .filter-toggle, .close-btn, .col-picker-btn, .qty-btn-big, .quick-filter-chip:not(.active),
 .inv-card-btn:not(.withdraw):not(.deposit) { border-color: var(--border-strong); }
+/* ...but ขอราคา keeps its own blue edge (must out-rank the generic rule above) */
+.inv-card-btn.quote:not(.withdraw):not(.deposit), .inv-card-btn.quote-primary:not(.withdraw):not(.deposit) { border-color: #5B83D6; }
+.inv-card-btn.quote:not(.withdraw):not(.deposit):hover, .inv-card-btn.quote-primary:not(.withdraw):not(.deposit):hover,
+.inv-card-btn.quote:not(.withdraw):not(.deposit):active, .inv-card-btn.quote-primary:not(.withdraw):not(.deposit):active { border-color: #3F66BB; }
 input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
 .position-3-grid input::placeholder { color: #5f5f78; opacity: 1; }
 .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
@@ -2336,7 +2347,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.11.0</div>
+    <div class="home-version">v1.11.1</div>
 
 
     <!-- Compat stubs -->
@@ -2697,7 +2708,7 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
       <button class="btn btn-ghost" id="detailCloseBtn" onclick="closeModal('detailModal')"><i data-lucide="x"></i> ปิด</button>
-      <button class="btn btn-ghost" id="detailQuoteBtn"><i data-lucide="mail"></i> ขอราคา</button>
+      <button class="btn quote-btn" id="detailQuoteBtn"><i data-lucide="mail"></i> ขอราคา</button>
       <button class="btn" style="background:var(--warn);color:#fff" id="detailAdjustBtn"><i data-lucide="package"></i> ปรับสต็อก</button>
       <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> แก้ไขข้อมูล</button>
     </div>
@@ -5598,7 +5609,7 @@ function renderTable() {
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
       <td data-col="actions"><div class="row-actions">
         <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
-        ${reorder ? `<button class="btn-icon" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
+        ${reorder ? `<button class="btn-icon quote-btn" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
         <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="ลบรายการ" aria-label="ลบรายการ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="trash-2"></i></button>
       </div></td>
     </tr>`;
@@ -6256,7 +6267,8 @@ window.closeQRScanner = () => {
 // A tap on the dark backdrop used to close the 24-field edit form and throw away everything typed. Modals that hold
 // user input (edit/add item, CSV import, profile) now ignore backdrop taps and give a small "nudge" instead; they close
 // with the X / ยกเลิก button. The edit form additionally asks before discarding, but only when something was changed.
-const FORM_MODALS = new Set(['editModal', 'csvModal', 'profileModal']);
+// detailModal / quoteModal join them: an accidental tap outside should not dismiss the item being viewed or a half-filled quote.
+const FORM_MODALS = new Set(['editModal', 'csvModal', 'profileModal', 'detailModal', 'quoteModal']);
 let _editSnapshot = null;
 
 function serializeEditForm() {
@@ -6294,11 +6306,16 @@ window.requestCloseModal = async (id) => {
 };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape' || e.defaultPrevented) return;
-  const otherOpen = [...document.querySelectorAll('.modal-overlay, .qr-modal')].some(n =>
+  const openLayers = [...document.querySelectorAll('.modal-overlay, .qr-modal')].filter(n =>
     n.id !== 'editModal' && !n.hidden && getComputedStyle(n).display !== 'none');
-  if (otherOpen) return;   // a layer on top (lightbox, QR scanner, ...) owns Escape
   const dlg = document.getElementById('dlgOverlay'), txo = document.getElementById('txOverlay');
-  if ((dlg && !dlg.hidden) || (txo && !txo.hidden)) return;   // those handle their own Escape
+  const dialogOpen = (dlg && !dlg.hidden) || (txo && !txo.hidden);   // those handle their own Escape
+  // Detail / ขอราคา ignore backdrop taps, so Esc is how the keyboard dismisses them (only when nothing sits on top).
+  if (!dialogOpen && openLayers.length === 1 && (openLayers[0].id === 'detailModal' || openLayers[0].id === 'quoteModal')) {
+    e.preventDefault(); window.closeModal(openLayers[0].id); return;
+  }
+  if (openLayers.length) return;   // a layer on top (lightbox, QR scanner, ...) owns Escape
+  if (dialogOpen) return;
   const m = document.getElementById('editModal');
   if (m && m.style.display === 'flex') { e.preventDefault(); requestCloseModal('editModal'); }
 });
