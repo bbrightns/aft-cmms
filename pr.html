@@ -296,6 +296,72 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 
 .hidden { display: none !important; }
 
+/* ===== DASHBOARD ===== */
+#tabDash { flex: 1; min-height: 0; overflow-y: auto; }
+#prPage.dash-view .controls-bar, #prPage.dash-view #quickFilterChips, #prPage.dash-view #searchResultMeta { display: none; }
+.dash { padding: 16px; max-width: 1400px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.dash-filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+.dash-filter { display: flex; flex-direction: column; gap: 4px; min-width: 150px; flex: 0 1 190px; }
+.dash-filter select { background-color: var(--surface); }
+.dash-filter select.filter-active { border-color: var(--agc-red) !important; background: #fde8ef; color: var(--danger-text); font-weight: 700; }
+.seg { display: inline-flex; border: 1.5px solid var(--border-strong); border-radius: 8px; overflow: hidden; background: var(--surface); height: 34px; }
+.seg button { border: none; background: none; padding: 0 12px; font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; white-space: nowrap; }
+.seg button + button { border-left: 1.5px solid var(--border-strong); }
+.seg button.on { background: var(--agc-blue); color: #fff; }
+.dash-reset { height: 34px; }
+.dash-note { font-family: var(--mono); font-size: 11px; color: var(--text3); font-weight: 600; }
+.kpi-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px; min-width: 0; }
+.kpi-label { font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-family: var(--mono); }
+.kpi-val { font-family: var(--mono); font-size: 24px; font-weight: 700; color: var(--agc-blue); margin-top: 6px; line-height: 1.1; overflow-wrap: anywhere; }
+.kpi-val .unit { font-size: 12px; color: var(--text3); margin-left: 4px; }
+.kpi-sub { font-size: 12px; color: var(--text2); margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 14px 16px 12px; min-width: 0; }
+.panel.full { grid-column: 1 / -1; }
+.panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.panel-title { font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--agc-blue); }
+.panel-sub { font-family: var(--mono); font-size: 10.5px; color: var(--text3); font-weight: 600; white-space: nowrap; }
+.panel-empty { padding: 28px 0; text-align: center; color: var(--text3); font-size: 13px; }
+/* ranking: label | bar | value, one hue (magnitude) */
+.rank { display: flex; flex-direction: column; }
+.rank-row { display: grid; grid-template-columns: 22px minmax(90px, 34%) minmax(0, 1fr) auto; align-items: center; gap: 10px; padding: 6px 6px; border-radius: 8px; cursor: pointer; border: none; background: none; text-align: left; font-family: var(--sans); width: 100%; }
+.rank-row:hover, .rank-row:focus-visible { background: var(--bg2); }
+.rank-row.on { background: #f0f2fa; box-shadow: inset 3px 0 0 var(--agc-blue); }
+.rank-row.static { cursor: default; }
+.rank-row.static:hover { background: none; }
+.rank-no { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text3); text-align: right; }
+.rank-name { font-size: 13px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-track { height: 10px; background: var(--bg2); border-radius: 4px; overflow: hidden; }
+.rank-bar { height: 100%; background: var(--agc-blue); border-radius: 0 4px 4px 0; min-width: 2px; }
+.rank-row.other .rank-bar { background: var(--border2); }
+.rank-val { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--text); text-align: right; white-space: nowrap; }
+.rank-val small { display: block; font-size: 10.5px; font-weight: 600; color: var(--text3); }
+/* monthly columns */
+.trend { position: relative; }
+.trend-plot { display: flex; align-items: flex-end; gap: 4px; height: 180px; padding: 0 2px; border-bottom: 1px solid var(--border2);
+  background-image: linear-gradient(to top, var(--border) 1px, transparent 1px); background-size: 100% 25%; }
+.trend-col { flex: 1; height: 100%; display: flex; align-items: flex-end; justify-content: center; position: relative; cursor: default; min-width: 0; }
+.trend-col::before { content: ''; position: absolute; inset: 0 -2px; }
+.trend-bar { width: min(100%, 36px); background: var(--agc-blue); border-radius: 4px 4px 0 0; min-height: 1px; position: relative; }
+.trend-col:hover .trend-bar, .trend-col.hl .trend-bar { background: var(--agc-blue2); box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--agc-blue2); }
+.trend-col.is-empty .trend-bar { background: var(--border); }
+.trend-axis { display: flex; gap: 4px; padding: 6px 2px 0; }
+/* labels may spill into the unlabelled neighbour columns, centred under their own column */
+.trend-axis span { flex: 1; display: flex; justify-content: center; font-family: var(--mono); font-size: 10px; color: var(--text3); font-weight: 600; white-space: nowrap; min-width: 0; }
+.trend-y { position: absolute; right: 0; top: -2px; font-family: var(--mono); font-size: 10px; color: var(--text3); font-weight: 600; background: var(--surface); padding-left: 4px; }
+.dash-tip { position: fixed; z-index: 400; pointer-events: none; background: var(--text); color: #fff; border-radius: 8px; padding: 8px 10px; font-size: 12px; line-height: 1.45; box-shadow: var(--shadow-md); max-width: 240px; }
+.dash-tip b { font-family: var(--mono); }
+.dash-tip[hidden] { display: none; }
+@media (max-width: 1023px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .dash-grid { grid-template-columns: 1fr; } }
+@media (max-width: 767px) {
+  .dash { padding: 12px; }
+  .dash-filter { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .kpi-val { font-size: 19px; }
+  .trend-plot { height: 150px; }
+  .rank-row { grid-template-columns: 20px minmax(80px, 38%) minmax(0, 1fr) auto; gap: 8px; min-height: 44px; }
+}
+
 /* ===== RESPONSIVE (store breakpoints) ===== */
 @media (min-width: 768px) { .card-list { display: none !important; } }
 @media (max-width: 767px) {
@@ -314,7 +380,6 @@ label .req { color: var(--agc-red); margin-left: 2px; }
   #searchInput { min-height: 44px; font-size: 16px; }
   .btn-square { width: 44px; height: 44px; }
   .tabs { padding: 0 8px; }
-  .tabs.mobile-hidden { display: none; }
   .tab { min-height: 44px; }
   .btn, .modal-footer .btn { min-height: 44px; }
   .close-btn { width: 44px; height: 44px; }
@@ -393,6 +458,7 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 
   <div class="tabs" id="tabsBar">
     <button class="tab active" data-tab="list" onclick="switchTab('list')">PR List</button>
+    <button class="tab" data-tab="dash" onclick="switchTab('dash')">Dashboard</button>
     <button class="tab" data-tab="drafts" id="draftTabBtn" onclick="switchTab('drafts')">Drafts <span class="tab-badge" id="draftBadge">0</span></button>
     <button type="button" class="col-picker-btn" id="colPickerBtn" aria-haspopup="true" aria-expanded="false" aria-controls="colPicker" onclick="toggleColPicker(event)"><i data-lucide="columns-3"></i> Columns</button>
   </div>
@@ -424,6 +490,40 @@ label .req { color: var(--agc-red); margin-left: 2px; }
       <div id="listEmpty" class="empty hidden"></div>
     </div>
     <div class="card-list" id="prCardList"></div>
+  </div>
+
+  <div id="tabDash" class="hidden">
+    <div class="dash">
+      <div class="dash-filters">
+        <div class="dash-filter"><label for="dPeriod">Period</label><select id="dPeriod" onchange="setDash('period', this.value)"></select></div>
+        <div class="dash-filter"><label for="dSection">Section</label><select id="dSection" onchange="setDash('section', this.value)"></select></div>
+        <div class="dash-filter"><label for="dPerson">Requested by</label><select id="dPerson" onchange="setDash('person', this.value)"></select></div>
+        <div class="dash-filter"><label for="dStatus">Status</label>
+          <select id="dStatus" onchange="setDash('status', this.value)">
+            <option value="valid">All except unapproved</option><option value="all">All statuses</option>
+            <option value="ordered">Ordered (PO issued)</option><option value="open">Not ordered yet</option>
+          </select></div>
+        <div class="dash-filter" style="flex:0 0 auto;min-width:0"><label>Measure</label>
+          <div class="seg" role="group" aria-label="Measure">
+            <button type="button" id="dMeasurePR" class="on" onclick="setDash('measure','pr')">PR amount</button>
+            <button type="button" id="dMeasurePO" onclick="setDash('measure','po')">PO amount</button>
+          </div></div>
+        <button class="btn btn-ghost dash-reset" onclick="resetDash()"><i data-lucide="rotate-ccw"></i> Reset</button>
+      </div>
+      <div class="dash-note" id="dashNote"></div>
+      <div class="kpi-row" id="dashKpis"></div>
+      <div class="panel full">
+        <div class="panel-head"><div class="panel-title">Monthly spend</div><div class="panel-sub" id="trendSub"></div></div>
+        <div class="trend" id="dashTrend"></div>
+      </div>
+      <div class="dash-grid">
+        <div class="panel"><div class="panel-head"><div class="panel-title">Spend by section</div><div class="panel-sub">THB · click to filter</div></div><div class="rank" id="rankSection"></div></div>
+        <div class="panel"><div class="panel-head"><div class="panel-title">Spend by requester</div><div class="panel-sub">THB · click to filter</div></div><div class="rank" id="rankPersonSpend"></div></div>
+        <div class="panel"><div class="panel-head"><div class="panel-title">PRs raised by requester</div><div class="panel-sub">count · click to filter</div></div><div class="rank" id="rankPersonCount"></div></div>
+        <div class="panel"><div class="panel-head"><div class="panel-title">Top vendors</div><div class="panel-sub">THB · click to list PRs</div></div><div class="rank" id="rankVendor"></div></div>
+      </div>
+    </div>
+    <div class="dash-tip" id="dashTip" hidden></div>
   </div>
 
   <div id="tabDrafts" class="hidden">
@@ -733,6 +833,18 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+// Post Date in the purchasing export is "nn-nn-yy" and the order is not labelled. Decide it from the data:
+// a first part above 12 can only be a day (dd-mm-yy), a second part above 12 only a day (mm-dd-yy).
+let dateMDY = false;
+function detectDateOrder(){
+  let dmy = 0, mdy = 0;
+  prRecords.forEach(r => {
+    const m = /^(\d{1,2})[-/](\d{1,2})[-/]\d{2,4}$/.exec(String(r['Post Date'] || '').trim());
+    if (!m) return;
+    if (+m[1] > 12) dmy++; else if (+m[2] > 12) mdy++;
+  });
+  dateMDY = mdy > dmy;
+}
 function parseDateToMs(v){
   if (v == null || v === '') return 0;
   const n = Number(v);
@@ -741,9 +853,10 @@ function parseDateToMs(v){
   const parts = String(v).split(/[-/]/);
   if (parts.length === 3) {
     if (parts[0].length === 4) { const d = new Date(+parts[0], +parts[1] - 1, +parts[2]); return isNaN(d) ? 0 : d.getTime(); }
-    const day = Number(parts[0]);
+    let day = Number(parts[0]);
     const monRaw = parts[1];
-    const monNum = Number(monRaw);
+    let monNum = Number(monRaw);
+    if (dateMDY && !isNaN(monNum)) [day, monNum] = [monNum, day];
     let yr = Number(parts[2]);
     if (yr < 100) yr += yr < 50 ? 2000 : 1900;
     if (!isNaN(monNum) && monNum >= 1 && monNum <= 12) return new Date(yr, monNum - 1, day).getTime();
@@ -760,8 +873,9 @@ function fmtDate(v){
   return ('0' + d.getDate()).slice(-2) + ' ' + MON[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
 }
 function todayPostDate(){
-  const d = new Date();
-  return ('0' + d.getDate()).slice(-2) + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + String(d.getFullYear()).slice(2);
+  // written in the same order as the imported data, so sorting and the dashboard stay consistent
+  const d = new Date(), dd = ('0' + d.getDate()).slice(-2), mm = ('0' + (d.getMonth() + 1)).slice(-2), yy = String(d.getFullYear()).slice(2);
+  return dateMDY ? `${mm}-${dd}-${yy}` : `${dd}-${mm}-${yy}`;
 }
 function fmtAmount(n){
   if (n == null || n === '' || isNaN(n)) return '—';
@@ -774,7 +888,7 @@ window.addEventListener('offline', () => $('offlineBanner').classList.add('show'
 
 /* ===== DATA ===== */
 function loadCache(){
-  try { const raw = localStorage.getItem(LS_CACHE); if (raw) { prRecords = JSON.parse(raw); return true; } } catch(e){}
+  try { const raw = localStorage.getItem(LS_CACHE); if (raw) { prRecords = JSON.parse(raw); detectDateOrder(); return true; } } catch(e){}
   return false;
 }
 function saveCache(){ try { localStorage.setItem(LS_CACHE, JSON.stringify(prRecords)); } catch(e){} }
@@ -790,6 +904,7 @@ async function loadFromSupabase(){
       if (data.length < 1000) break;
     }
     prRecords = all.map(({ id, ...rest }) => ({ _id: id, ...rest }));
+    detectDateOrder();
     saveCache(); setSync('live'); return true;
   } catch(e){ console.error('Load PR failed', e); setSync('error'); toast('Could not load PRs — showing cached data', 'error'); return false; }
 }
@@ -895,6 +1010,7 @@ function applyFilters(){
     th.querySelector('.sort-icon').textContent = on ? (sortAsc ? '↑' : '↓') : '↕';
   });
   renderTable(); renderCards(); renderChips(); renderMeta();
+  if (activeTab === 'dash') renderDashboard();
   try { localStorage.setItem(LS_FILTERS, JSON.stringify({ q, statusFilter, delivFilter, sortCol, sortAsc })); } catch(e){}
 }
 function renderMeta(){
@@ -1031,14 +1147,189 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('colPic
 window.addEventListener('resize', closeColPicker);
 document.addEventListener('scroll', e => { const t = e.target; if ($('colPicker').hidden || (t && t.nodeType === 1 && t.closest('#colPicker'))) return; closeColPicker(); }, true);
 
+/* ===== DASHBOARD ===== */
+const DASH_DEFAULT = { period: 'ytd', section: '', person: '', status: 'valid', measure: 'pr' };
+let dash = (() => { try { return { ...DASH_DEFAULT, ...JSON.parse(localStorage.getItem('aft_pr_dash') || '{}') }; } catch(e){ return { ...DASH_DEFAULT }; } })();
+const isTHB = r => String(r['Currency Key'] || 'THB').toUpperCase() === 'THB';
+const fmtCompact = n => {
+  const a = Math.abs(n);
+  if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace(/\.?0+$/, '') + 'M';
+  if (a >= 1e3) return (n / 1e3).toFixed(a >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'k';
+  return String(Math.round(n));
+};
+function amountOf(r){
+  const v = dash.measure === 'po' ? r['PO Amount'] : r['PR Amount'];
+  const n = Number(v); return isNaN(n) ? 0 : n;
+}
+function periodRange(p){
+  const now = new Date(), y = now.getFullYear();
+  if (p === 'ytd') return [new Date(y, 0, 1).getTime(), Infinity];
+  if (p === '12m') return [new Date(y, now.getMonth() - 11, 1).getTime(), Infinity];
+  if (p === '3m') return [new Date(y, now.getMonth() - 2, 1).getTime(), Infinity];
+  if (/^\d{4}$/.test(p)) return [new Date(+p, 0, 1).getTime(), new Date(+p + 1, 0, 1).getTime()];
+  return [-Infinity, Infinity];
+}
+function dashRecords(){
+  const [from, to] = periodRange(dash.period);
+  return prRecords.filter(r => {
+    const t = parseDateToMs(r['Post Date']);
+    if (dash.period !== 'all' && (!t || t < from || t >= to)) return false;
+    if (dash.section && (r['Section'] || '—') !== dash.section) return false;
+    if (dash.person && (r['Creator'] || '—') !== dash.person) return false;
+    const k = statusKey(r['Status']);
+    if (dash.status === 'valid' && k === 'unapproved') return false;
+    if (dash.status === 'ordered' && !hasPO(r)) return false;
+    if (dash.status === 'open' && (hasPO(r) || k === 'unapproved')) return false;
+    return true;
+  });
+}
+function fillSelect(id, values, current, allLabel){
+  const sel = $(id);
+  sel.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`).join('');
+  sel.value = values.includes(current) ? current : '';
+  sel.classList.toggle('filter-active', !!sel.value);
+}
+function groupSum(rows, keyFn){
+  const m = new Map();
+  rows.forEach(r => { const k = keyFn(r) || '—'; const g = m.get(k) || { key: k, sum: 0, count: 0 }; g.sum += amountOf(r); g.count++; m.set(k, g); });
+  return [...m.values()];
+}
+function rankHtml(list, { by, onPick, picked, unit }){
+  if (!list.length) return '<div class="panel-empty">No data for these filters</div>';
+  const sorted = list.slice().sort((a, b) => b[by] - a[by] || a.key.localeCompare(b.key));
+  const TOP = 10;
+  let rows = sorted.slice(0, TOP);
+  const rest = sorted.slice(TOP);
+  if (rest.length) rows.push({ key: `Other (${rest.length})`, sum: rest.reduce((s, g) => s + g.sum, 0), count: rest.reduce((s, g) => s + g.count, 0), other: true });
+  const total = sorted.reduce((s, g) => s + g[by], 0) || 1;
+  const max = Math.max(...rows.filter(g => !g.other).map(g => g[by]), 1);
+  return rows.map((g, i) => {
+    const v = g[by], pct = (v / total * 100);
+    const val = by === 'sum' ? fmtAmount(Math.round(v)) : v.toLocaleString();
+    const sub = by === 'sum' ? `${pct.toFixed(pct < 10 ? 1 : 0)}% · ${g.count} PR${g.count === 1 ? '' : 's'}` : `${pct.toFixed(pct < 10 ? 1 : 0)}% · ${fmtCompact(g.sum)} THB`;
+    const clickable = onPick && !g.other;
+    const attrs = clickable ? `onclick="${onPick}(${JSON.stringify(g.key).replace(/"/g, '&quot;')})"` : 'tabindex="-1"';
+    return `<button type="button" class="rank-row${g.other ? ' other static' : ''}${!clickable ? ' static' : ''}${picked === g.key ? ' on' : ''}" ${attrs}
+        title="${escapeHtml(g.key)}: ${val} ${unit}">
+      <span class="rank-no">${g.other ? '' : i + 1}</span>
+      <span class="rank-name">${escapeHtml(g.key)}</span>
+      <span class="rank-track"><span class="rank-bar" style="width:${Math.min(100, v / max * 100).toFixed(1)}%;display:block"></span></span>
+      <span class="rank-val">${val}<small>${sub}</small></span>
+    </button>`;
+  }).join('');
+}
+function renderTrend(rows){
+  // months of the selected period (or the last 12 with data for "all"); every month shown, empty ones flat
+  const ms = rows.map(r => parseDateToMs(r['Post Date'])).filter(Boolean);
+  const box = $('dashTrend');
+  if (!ms.length) { box.innerHTML = '<div class="panel-empty">No dated PRs for these filters</div>'; $('trendSub').textContent = ''; return; }
+  const ym = t => { const d = new Date(t); return d.getFullYear() * 12 + d.getMonth(); };
+  const [from, to] = periodRange(dash.period);
+  const now = new Date(), nowYM = now.getFullYear() * 12 + now.getMonth();
+  let start = isFinite(from) ? ym(from) : Math.min(...ms.map(ym));
+  let end = isFinite(to) ? ym(to - 1) : Math.max(...ms.map(ym));
+  if (dash.period === 'ytd' || dash.period === '12m' || dash.period === '3m') end = nowYM;
+  if (end - start > 35) start = end - 35;      // cap at 36 columns
+  const buckets = new Map();
+  for (let k = start; k <= end; k++) buckets.set(k, { sum: 0, count: 0 });
+  rows.forEach(r => { const t = parseDateToMs(r['Post Date']); if (!t) return; const b = buckets.get(ym(t)); if (b) { b.sum += amountOf(r); b.count++; } });
+  const arr = [...buckets.entries()];
+  const max = Math.max(...arr.map(([, b]) => b.sum), 1);
+  // label every Nth month so each label gets ~48px, whatever the screen width
+  const step = Math.max(1, Math.ceil(arr.length / Math.max(1, Math.floor((box.clientWidth || 600) / 48))));
+  const lbl = k => MON[k % 12] + ' ' + String(Math.floor(k / 12)).slice(2);
+  box.innerHTML =
+    `<div class="trend-plot">${arr.map(([k, b]) => `<div class="trend-col${b.count ? '' : ' is-empty'}" data-k="${k}" data-sum="${b.sum}" data-count="${b.count}">
+        <div class="trend-bar" style="height:${b.sum ? Math.max(1.5, b.sum / max * 100).toFixed(1) : 0.6}%"></div></div>`).join('')}
+      </div><span class="trend-y">${fmtCompact(max)}</span>
+     <div class="trend-axis">${arr.map(([k], i) => `<span>${i % step === 0 ? lbl(k) : ''}</span>`).join('')}</div>`;
+  const total = arr.reduce((s, [, b]) => s + b.sum, 0);
+  $('trendSub').textContent = `THB · avg ${fmtCompact(total / arr.length)} / month`;
+  const tip = $('dashTip');
+  box.querySelectorAll('.trend-col').forEach(col => {
+    const show = e => {
+      const k = +col.dataset.k;
+      tip.innerHTML = `${MON[k % 12]} ${Math.floor(k / 12)}<br><b>${fmtAmount(Math.round(+col.dataset.sum))}</b> THB · ${col.dataset.count} PRs`;
+      tip.hidden = false;
+      const x = e.touches ? e.touches[0].clientX : e.clientX, y = e.touches ? e.touches[0].clientY : e.clientY;
+      tip.style.left = Math.min(window.innerWidth - tip.offsetWidth - 8, x + 12) + 'px';
+      tip.style.top = Math.max(8, y - tip.offsetHeight - 12) + 'px';
+      col.classList.add('hl');
+    };
+    col.addEventListener('mousemove', show);
+    col.addEventListener('touchstart', show, { passive: true });
+    col.addEventListener('mouseleave', () => { tip.hidden = true; col.classList.remove('hl'); });
+  });
+}
+function renderDashboard(){
+  // filter option lists come from all data so a pick never disappears from its own dropdown
+  const years = [...new Set(prRecords.map(r => parseDateToMs(r['Post Date'])).filter(Boolean).map(t => new Date(t).getFullYear()))].sort((a, b) => b - a);
+  const pSel = $('dPeriod');
+  pSel.innerHTML = '<option value="ytd">This year</option><option value="12m">Last 12 months</option><option value="3m">Last 3 months</option>' +
+    years.map(y => `<option value="${y}">${y}</option>`).join('') + '<option value="all">All time</option>';
+  pSel.value = [...pSel.options].some(o => o.value === dash.period) ? dash.period : 'ytd';
+  pSel.classList.toggle('filter-active', pSel.value !== DASH_DEFAULT.period);
+  const uniq = key => [...new Set(prRecords.map(r => r[key] || '—'))].sort((a, b) => a.localeCompare(b));
+  fillSelect('dSection', uniq('Section'), dash.section, 'All sections');
+  fillSelect('dPerson', uniq('Creator'), dash.person, 'Everyone');
+  $('dStatus').value = dash.status; $('dStatus').classList.toggle('filter-active', dash.status !== DASH_DEFAULT.status);
+  $('dMeasurePR').classList.toggle('on', dash.measure === 'pr'); $('dMeasurePO').classList.toggle('on', dash.measure === 'po');
+  $('dMeasurePR').setAttribute('aria-pressed', dash.measure === 'pr'); $('dMeasurePO').setAttribute('aria-pressed', dash.measure === 'po');
+
+  const all = dashRecords();
+  const rows = all.filter(isTHB);
+  const nonTHB = all.length - rows.length;
+  const undated = dash.period === 'all' ? 0 : prRecords.filter(r => !parseDateToMs(r['Post Date'])).length;
+  $('dashNote').textContent = [
+    `${rows.length.toLocaleString()} PRs in view`,
+    nonTHB ? `${nonTHB} non-THB PRs left out of the totals` : '',
+    undated ? `${undated} PRs without a readable Post Date are outside every period` : '',
+    `Post Date read as ${dateMDY ? 'mm-dd-yy' : 'dd-mm-yy'}`
+  ].filter(Boolean).join('  ·  ');
+
+  const total = rows.reduce((s, r) => s + amountOf(r), 0);
+  const sections = groupSum(rows, r => r['Section']).sort((a, b) => b.sum - a.sum);
+  const ordered = rows.filter(hasPO).length;
+  const label = dash.measure === 'po' ? 'PO amount' : 'PR amount';
+  $('dashKpis').innerHTML = `
+    <div class="kpi"><div class="kpi-label">Total ${label}</div><div class="kpi-val">${fmtAmount(Math.round(total))}<span class="unit">THB</span></div><div class="kpi-sub">${fmtCompact(total)} THB</div></div>
+    <div class="kpi"><div class="kpi-label">PRs</div><div class="kpi-val">${rows.length.toLocaleString()}</div><div class="kpi-sub">${ordered.toLocaleString()} with PO (${rows.length ? Math.round(ordered / rows.length * 100) : 0}%)</div></div>
+    <div class="kpi"><div class="kpi-label">Average per PR</div><div class="kpi-val">${rows.length ? fmtAmount(Math.round(total / rows.length)) : '—'}<span class="unit">THB</span></div><div class="kpi-sub">median ${rows.length ? fmtAmount(Math.round(median(rows.map(amountOf)))) : '—'}</div></div>
+    <div class="kpi"><div class="kpi-label">Top section</div><div class="kpi-val" style="font-size:20px">${sections[0] ? escapeHtml(sections[0].key) : '—'}</div><div class="kpi-sub">${sections[0] && total ? Math.round(sections[0].sum / total * 100) + '% of spend · ' + fmtCompact(sections[0].sum) + ' THB' : ''}</div></div>`;
+
+  renderTrend(rows);
+  $('rankSection').innerHTML = rankHtml(sections, { by: 'sum', onPick: 'pickSection', picked: dash.section, unit: 'THB' });
+  const people = groupSum(rows, r => r['Creator']);
+  $('rankPersonSpend').innerHTML = rankHtml(people, { by: 'sum', onPick: 'pickPerson', picked: dash.person, unit: 'THB' });
+  $('rankPersonCount').innerHTML = rankHtml(people, { by: 'count', onPick: 'pickPerson', picked: dash.person, unit: 'PRs' });
+  $('rankVendor').innerHTML = rankHtml(groupSum(rows, r => r['PR_Vendor'] || r['PO_Vendor']), { by: 'sum', onPick: 'pickVendor', unit: 'THB' });
+  try { localStorage.setItem('aft_pr_dash', JSON.stringify(dash)); } catch(e){}
+  refreshIcons();
+}
+function median(a){ if (!a.length) return 0; const s = a.slice().sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; }
+window.setDash = (k, v) => { dash[k] = v; renderDashboard(); };
+window.resetDash = () => { dash = { ...DASH_DEFAULT }; renderDashboard(); };
+window.pickSection = (v) => { dash.section = dash.section === v ? '' : v; renderDashboard(); };
+window.pickPerson = (v) => { dash.person = dash.person === v ? '' : v; renderDashboard(); };
+// vendor: jump to the PR list searching that vendor
+window.pickVendor = (v) => {
+  statusFilter = 'all'; delivFilter = '';
+  $('searchInput').value = v; $('clearBtn').classList.add('visible');
+  switchTab('list'); applyFilters();
+};
+
 /* ===== TABS ===== */
 window.switchTab = (which) => {
   activeTab = which;
   document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
   $('tabList').classList.toggle('hidden', which !== 'list');
   $('tabDrafts').classList.toggle('hidden', which !== 'drafts');
+  $('tabDash').classList.toggle('hidden', which !== 'dash');
+  $('prPage').classList.toggle('dash-view', which === 'dash');
   $('colPickerBtn').classList.toggle('hidden', which !== 'list');
   closeColPicker();
+  if (which === 'dash') renderDashboard();
+  try { localStorage.setItem('aft_pr_tab', which === 'dash' ? 'dash' : 'list'); } catch(e){}
 };
 
 /* ===== DETAIL ===== */
@@ -1318,7 +1609,6 @@ function updateDrafts(){
   const drafts = loadDrafts();
   $('draftTabBtn').classList.toggle('hidden', !drafts.length);
   $('draftBadge').textContent = drafts.length;
-  $('tabsBar').classList.toggle('mobile-hidden', !drafts.length);
   if (!drafts.length && activeTab === 'drafts') switchTab('list');
   const fmtSaved = iso => { const d = new Date(iso); return isNaN(d) ? '—' : ('0' + d.getDate()).slice(-2) + ' ' + MON[d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
   $('draftTbody').innerHTML = drafts.map(d => `
@@ -1537,6 +1827,7 @@ async function init(){
   await loadFromSupabase();
   $('loadingOverlay').style.display = 'none'; $('prPage').classList.remove('hidden');
   applyFilters(); refreshIcons();
+  try { if (localStorage.getItem('aft_pr_tab') === 'dash') switchTab('dash'); } catch(e){}
   startRealtime();
 }
 
