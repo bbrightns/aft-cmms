@@ -239,6 +239,16 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 .budget-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .detail-items { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
 .detail-items table { font-size: 12px; }
+/* Missing-field feedback on Submit: banner with jump links + a message under each field */
+.form-alert { position: sticky; top: 0; z-index: 4; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: #fde8ef; border: 1.5px solid var(--agc-red); border-radius: 10px; box-shadow: var(--shadow); animation: revealIn .2s ease; }
+.form-alert-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: var(--danger-text); }
+.form-alert-title [data-lucide] { color: var(--agc-red); width: 18px; height: 18px; }
+.form-alert-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.form-alert-list button { border: 1.5px solid var(--agc-red); background: #fff; color: var(--danger-text); border-radius: 999px; padding: 3px 10px; font-family: var(--sans); font-size: 12px; font-weight: 700; cursor: pointer; }
+.form-alert-list button:hover { background: var(--agc-red); color: #fff; }
+.field-error { font-size: 11px; font-weight: 700; color: var(--danger-text); line-height: 1.3; }
+.modal.shake { animation: txShake 0.45s ease; }
+
 /* Justification (out of plan + over the threshold) */
 .justify { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--surface2); border: 1.5px solid var(--border-strong); border-left: 4px solid var(--warn); border-radius: 10px; animation: revealIn .25s ease; }
 @keyframes revealIn { from { opacity: 0; transform: translateY(-6px); } }
@@ -641,6 +651,7 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
       <button class="close-btn" onclick="closeCreateModal()" aria-label="Close"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
+      <div class="form-alert hidden" id="formAlert" role="alert" aria-live="assertive"></div>
       <div class="form-section-title">General</div>
       <div class="form-row">
         <div class="form-group full">
@@ -1941,7 +1952,7 @@ function resetForm(){
   ['f_section','f_workClass','f_category','f_planType','f_purchaser','f_creator','f_budgetSection','j_what','j_why','j_whyNow','j_alt'].forEach(id => $(id).value = '');
   $('f_requestType').value = 'Purchase'; $('f_discount').value = 0;
   $('f_budgetSuffix').innerHTML = '<option value="">—</option>';
-  document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
+  clearFormErrors();
   pendingFiles = []; renderQuotFiles();
   toggleBudgetMode();
   currentItems = [makeBlankItem(), makeBlankItem(), makeBlankItem()]; renderItemRows();
@@ -2011,11 +2022,51 @@ function needsJustification(){
   if (ccy !== 'THB') return false;   // no exchange rate here, so only THB totals are checked
   return calcTotals(currentItems, $('f_discount').value).grand > JUSTIFY_MIN;
 }
+/* ===== MISSING-FIELD FEEDBACK ===== */
+function clearFieldError(el){
+  if (!el || !el.classList.contains('input-error')) return;
+  el.classList.remove('input-error');
+  document.querySelectorAll(`#createModal .field-error[data-for="${el.id}"], #formAlert button[data-for="${el.id}"]`).forEach(n => n.remove());
+  refreshAlert();
+}
+function refreshAlert(){
+  const box = $('formAlert'), left = box.querySelectorAll('button').length;
+  if (!left) { box.classList.add('hidden'); return; }
+  const t = box.querySelector('.form-alert-title span'); if (t) t.textContent = `${left} required field${left > 1 ? 's' : ''} missing`;
+}
+function clearFormErrors(){
+  document.querySelectorAll('#createModal .input-error').forEach(e => e.classList.remove('input-error'));
+  document.querySelectorAll('#createModal .field-error').forEach(e => e.remove());
+  $('formAlert').classList.add('hidden'); $('formAlert').innerHTML = '';
+}
+function focusField(el){
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  setTimeout(() => { try { el.focus({ preventScroll: true }); } catch(e){} }, 250);
+}
+// list: [{ el, label, msg?, after? }] in form order
+function flagMissing(list){
+  list.forEach((m, i) => {
+    if (!m.el.id) m.el.id = 'miss_' + i;
+    m.el.classList.add('input-error');
+    const d = document.createElement('div'); d.className = 'field-error'; d.dataset.for = m.el.id; d.textContent = m.msg || 'Required';
+    if (m.after) m.after.insertAdjacentElement('afterend', d); else (m.el.closest('.form-group') || m.el.parentElement).appendChild(d);
+  });
+  const box = $('formAlert');
+  box.innerHTML = `<div class="form-alert-title"><i data-lucide="alert-circle"></i><span></span></div><div class="form-alert-list">${list.map(m => `<button type="button" data-for="${m.el.id}">${escapeHtml(m.label)}</button>`).join('')}</div>`;
+  box.querySelectorAll('button').forEach((b, i) => { b.onclick = () => focusField(list[i].el); });
+  box.classList.remove('hidden'); refreshAlert(); refreshIcons();
+  const modal = $('createModal').querySelector('.modal'); modal.classList.remove('shake'); void modal.offsetWidth; modal.classList.add('shake');
+  focusField(list[0].el);
+}
+// fixing a field removes its message and its chip; the banner goes away with the last one
+['input', 'change'].forEach(ev => $('createModal').addEventListener(ev, e => { if (e.target.value !== '') clearFieldError(e.target); }));
+
 window.syncJustify = () => {
   const on = needsJustification(), box = $('justifyBox');
   const was = !box.classList.contains('hidden');
   box.classList.toggle('hidden', !on);
   $('justifyChip').classList.toggle('hidden', !on);
+  if (!on) ['j_what', 'j_why', 'j_whyNow'].forEach(id => clearFieldError($(id)));
   if (on && !was) refreshIcons();
 };
 window.updateTotals = () => {
@@ -2115,29 +2166,34 @@ window.deleteDraft = async (id) => {
 /* ===== SUBMIT ===== */
 window.submitPR = async () => {
   const f = readForm();
-  document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
-  const missing = [];
-  if (!f.title) missing.push(['f_title', 'PR Title']);
-  if (!f.section) missing.push(['f_section', 'Section']);
-  if (!f.creator) missing.push(['f_creator', 'Requested By']);
-  if (!f.category) missing.push(['f_category', 'Category']);
-  if (!f.workClass) missing.push(['f_workClass', 'Work Class']);
-  if (!f.planType) missing.push(['f_planType', 'Plan Type']);
-  if (!f.purchaser) missing.push(['f_purchaser', 'Purchaser']);
-  if (!f.budgetCode) missing.push([$('f_category').value === 'Investment' ? 'f_budgetFree' : ($('f_budgetSection').value ? 'f_budgetSuffix' : 'f_budgetSection'), 'Budget Code']);
+  clearFormErrors();
+  const miss = [];
+  const need = (ok, id, label, msg) => { if (!ok) miss.push({ el: $(id), label, msg }); };
+  need(f.title, 'f_title', 'PR Title');
+  need(f.section, 'f_section', 'Section');
+  need(f.creator, 'f_creator', 'Requested By');
+  need(f.category, 'f_category', 'Category');
+  need(f.workClass, 'f_workClass', 'Work Class');
+  need(f.planType, 'f_planType', 'Plan Type');
+  need(f.purchaser, 'f_purchaser', 'Purchaser');
+  need(f.budgetCode, $('f_category').value === 'Investment' ? 'f_budgetFree' : ($('f_budgetSection').value ? 'f_budgetSuffix' : 'f_budgetSection'), 'Budget Code',
+       $('f_category').value === 'Investment' ? 'Type the budget code' : ($('f_budgetSection').value ? 'Pick the account' : 'Pick the area and the account'));
+  const validItems = f.items.filter(it => it.description && Number(it.qty) > 0);
+  if (!validItems.length) {
+    const first = $('itemTbody').querySelector('input[type=text]'); first.id = first.id || 'item_first';
+    miss.push({ el: first, label: 'Items', msg: 'Add at least one item with a description and a quantity', after: $('itemTbody').closest('.item-table-wrap') });
+  }
   const needJ = needsJustification();
   if (needJ) {
-    if (!f.justify.what) missing.push(['j_what', 'What']);
-    if (!f.justify.why) missing.push(['j_why', 'Why']);
-    if (!f.justify.whyNow) missing.push(['j_whyNow', 'Why now']);
+    need(f.justify.what, 'j_what', 'What');
+    need(f.justify.why, 'j_why', 'Why');
+    need(f.justify.whyNow, 'j_whyNow', 'Why now');
   }
-  const validItems = f.items.filter(it => it.description && Number(it.qty) > 0);
-  if (missing.length) {
-    missing.forEach(([id]) => $(id).classList.add('input-error'));
-    $(missing[0][0]).focus();
-    toast('Required: ' + missing.map(m => m[1]).join(', '), 'error'); return;
+  if (miss.length) {
+    flagMissing(miss);
+    toast(`${miss.length} required field${miss.length > 1 ? 's' : ''} missing: ` + miss.map(m => m.label).join(', '), 'error');
+    return;
   }
-  if (!validItems.length) { toast('Add at least one item with a description and qty', 'error'); return; }
   const { grand } = calcTotals(validItems, f.discount);
   const record = {
     'PR No.': '', 'PO No.': '', 'Creator': f.creator, 'PR Title': f.title,
