@@ -96,6 +96,26 @@ td.td-amount { text-align: right; font-family: var(--mono); font-weight: 700; co
 td.td-mono { font-family: var(--mono); font-size: 12px; color: var(--text2); }
 td.td-muted { color: var(--text2); font-size: 12px; }
 th.th-right { text-align: right; }
+/* Column picker (store .col-picker) */
+.col-picker-btn { margin: 0 12px 0 auto; align-self: center; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border: 1.5px solid var(--border-strong); background: var(--bg2); color: var(--text2); border-radius: 8px; font-family: var(--sans); font-size: 12px; font-weight: 700; cursor: pointer; }
+.col-picker-btn:hover, .col-picker-btn[aria-expanded="true"] { border-color: var(--agc-blue); color: var(--agc-blue); }
+.col-picker-btn [data-lucide] { width: 14px; height: 14px; }
+@media (max-width: 767px) { .col-picker-btn { display: none; } }
+.col-picker { position: fixed; z-index: 300; min-width: 210px; max-height: calc(100vh - 24px); overflow-y: auto; padding: 10px 12px; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 12px; box-shadow: var(--shadow-md); }
+.col-picker[hidden] { display: none; }
+.col-picker-title { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; }
+.col-picker label { display: flex; align-items: center; gap: 10px; padding: 7px 4px; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; border-radius: 6px; text-transform: none; letter-spacing: 0; line-height: 1.3; min-height: 0; }
+.col-picker label:hover { background: var(--bg2); }
+.col-picker label.fixed { color: var(--text3); cursor: default; }
+.col-picker label.fixed:hover { background: none; }
+.col-picker input { width: 16px; height: 16px; accent-color: var(--agc-blue); }
+.col-picker-reset { margin-top: 6px; width: 100%; padding: 8px; border: 1.5px solid var(--border-strong); background: var(--bg2); border-radius: 8px; font-family: var(--sans); font-size: 12px; font-weight: 700; color: var(--text2); cursor: pointer; }
+.col-picker-reset:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+#prTable.hc-po [data-col="po"], #prTable.hc-title [data-col="title"], #prTable.hc-section [data-col="section"], #prTable.hc-class [data-col="class"],
+#prTable.hc-status [data-col="status"], #prTable.hc-delivery [data-col="delivery"], #prTable.hc-amount [data-col="amount"], #prTable.hc-poamount [data-col="poamount"],
+#prTable.hc-vendor [data-col="vendor"], #prTable.hc-creator [data-col="creator"], #prTable.hc-purchaser [data-col="purchaser"], #prTable.hc-budget [data-col="budget"],
+#prTable.hc-posted [data-col="posted"] { display: none; }
+td[data-col="budget"] { max-width: 220px; }
 .ccy { font-size: 10px; color: var(--text3); font-weight: 600; margin-left: 3px; }
 .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 
@@ -374,7 +394,9 @@ label .req { color: var(--agc-red); margin-left: 2px; }
   <div class="tabs" id="tabsBar">
     <button class="tab active" data-tab="list" onclick="switchTab('list')">PR List</button>
     <button class="tab" data-tab="drafts" id="draftTabBtn" onclick="switchTab('drafts')">Drafts <span class="tab-badge" id="draftBadge">0</span></button>
+    <button type="button" class="col-picker-btn" id="colPickerBtn" aria-haspopup="true" aria-expanded="false" aria-controls="colPicker" onclick="toggleColPicker(event)"><i data-lucide="columns-3"></i> Columns</button>
   </div>
+  <div class="col-picker" id="colPicker" role="dialog" aria-label="Choose visible columns" hidden></div>
 
   <div id="tabList">
     <div class="table-wrap">
@@ -382,16 +404,19 @@ label .req { color: var(--agc-red); margin-left: 2px; }
         <thead>
           <tr>
             <th data-sort="PR No." onclick="sortBy('PR No.')">PR No. <span class="sort-icon">↕</span></th>
-            <th data-sort="PO No." onclick="sortBy('PO No.')">PO No. <span class="sort-icon">↕</span></th>
-            <th data-sort="PR Title" onclick="sortBy('PR Title')">Title <span class="sort-icon">↕</span></th>
-            <th data-sort="Section" onclick="sortBy('Section')">Section <span class="sort-icon">↕</span></th>
-            <th data-sort="Work Class" onclick="sortBy('Work Class')">Class <span class="sort-icon">↕</span></th>
-            <th data-sort="Status" onclick="sortBy('Status')">Status <span class="sort-icon">↕</span></th>
-            <th data-sort="Deliv. Status" onclick="sortBy('Deliv. Status')">Delivery <span class="sort-icon">↕</span></th>
-            <th data-sort="PR Amount" class="th-right" onclick="sortBy('PR Amount')">Amount <span class="sort-icon">↕</span></th>
-            <th data-sort="PR_Vendor" onclick="sortBy('PR_Vendor')">Vendor <span class="sort-icon">↕</span></th>
-            <th data-sort="Creator" onclick="sortBy('Creator')">Creator <span class="sort-icon">↕</span></th>
-            <th data-sort="Post Date" onclick="sortBy('Post Date')">Posted <span class="sort-icon">↕</span></th>
+            <th data-col="po" data-sort="PO No." onclick="sortBy('PO No.')">PO No. <span class="sort-icon">↕</span></th>
+            <th data-col="title" data-sort="PR Title" onclick="sortBy('PR Title')">Title <span class="sort-icon">↕</span></th>
+            <th data-col="section" data-sort="Section" onclick="sortBy('Section')">Section <span class="sort-icon">↕</span></th>
+            <th data-col="class" data-sort="Work Class" onclick="sortBy('Work Class')">Class <span class="sort-icon">↕</span></th>
+            <th data-col="status" data-sort="Status" onclick="sortBy('Status')">Status <span class="sort-icon">↕</span></th>
+            <th data-col="delivery" data-sort="Deliv. Status" onclick="sortBy('Deliv. Status')">Delivery <span class="sort-icon">↕</span></th>
+            <th data-col="amount" data-sort="PR Amount" class="th-right" onclick="sortBy('PR Amount')">Amount <span class="sort-icon">↕</span></th>
+            <th data-col="poamount" data-sort="PO Amount" class="th-right" onclick="sortBy('PO Amount')">PO Amount <span class="sort-icon">↕</span></th>
+            <th data-col="vendor" data-sort="PR_Vendor" onclick="sortBy('PR_Vendor')">Vendor <span class="sort-icon">↕</span></th>
+            <th data-col="creator" data-sort="Creator" onclick="sortBy('Creator')">Creator <span class="sort-icon">↕</span></th>
+            <th data-col="purchaser" data-sort="Purchaser" onclick="sortBy('Purchaser')">Purchaser <span class="sort-icon">↕</span></th>
+            <th data-col="budget" data-sort="Budget code" onclick="sortBy('Budget code')">Budget Code <span class="sort-icon">↕</span></th>
+            <th data-col="posted" data-sort="Post Date" onclick="sortBy('Post Date')">Posted <span class="sort-icon">↕</span></th>
           </tr>
         </thead>
         <tbody id="prTbody"></tbody>
@@ -913,16 +938,19 @@ function renderTable(){
   tb.innerHTML = filteredRecords.map(r => `
     <tr class="row-clickable" onclick="openDetail('${r._id}')">
       <td>${escapeHtml(r['PR No.'] || '—')}</td>
-      <td class="td-mono">${hasPO(r) ? escapeHtml(r['PO No.']) : '—'}</td>
-      <td class="td-title" title="${escapeHtml(r['PR Title'] || '')}">${escapeHtml(r['PR Title'] || '—')}</td>
-      <td>${textBadge(r['Section'])}</td>
-      <td>${textBadge(r['Work Class'], 'badge-none')}</td>
-      <td>${statusBadge(r['Status'])}</td>
-      <td>${delivBadge(r['Deliv. Status'])}</td>
-      <td class="td-amount">${fmtAmount(r['PR Amount'])}${String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB' ? `<span class="ccy">${escapeHtml(r['Currency Key'])}</span>` : ''}</td>
-      <td class="td-muted" title="${escapeHtml(r['PR_Vendor'] || '')}">${escapeHtml(r['PR_Vendor'] || '—')}</td>
-      <td class="td-muted">${escapeHtml(r['Creator'] || '—')}</td>
-      <td class="td-mono">${fmtDate(r['Post Date'])}</td>
+      <td data-col="po" class="td-mono">${hasPO(r) ? escapeHtml(r['PO No.']) : '—'}</td>
+      <td data-col="title" class="td-title" title="${escapeHtml(r['PR Title'] || '')}">${escapeHtml(r['PR Title'] || '—')}</td>
+      <td data-col="section">${textBadge(r['Section'])}</td>
+      <td data-col="class">${textBadge(r['Work Class'], 'badge-none')}</td>
+      <td data-col="status">${statusBadge(r['Status'])}</td>
+      <td data-col="delivery">${delivBadge(r['Deliv. Status'])}</td>
+      <td data-col="amount" class="td-amount">${fmtAmount(r['PR Amount'])}${String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB' ? `<span class="ccy">${escapeHtml(r['Currency Key'])}</span>` : ''}</td>
+      <td data-col="poamount" class="td-amount" style="color:var(--text2)">${r['PO Amount'] != null && r['PO Amount'] !== '' ? fmtAmount(r['PO Amount']) : '—'}</td>
+      <td data-col="vendor" class="td-muted" title="${escapeHtml(r['PR_Vendor'] || '')}">${escapeHtml(r['PR_Vendor'] || '—')}</td>
+      <td data-col="creator" class="td-muted">${escapeHtml(r['Creator'] || '—')}</td>
+      <td data-col="purchaser" class="td-muted">${escapeHtml(r['Purchaser'] || '—')}</td>
+      <td data-col="budget" class="td-mono" title="${escapeHtml(r['Budget code'] || '')}">${escapeHtml(r['Budget code'] || '—')}</td>
+      <td data-col="posted" class="td-mono">${fmtDate(r['Post Date'])}</td>
     </tr>`).join('');
   refreshIcons();
 }
@@ -950,12 +978,67 @@ function renderCards(){
   refreshIcons();
 }
 
+/* ===== COLUMN PICKER (same behaviour as the Store inventory table; PR No. always stays) ===== */
+const PR_COLS = [
+  ['po','PO No.'],['title','Title'],['section','Section'],['class','Class'],['status','Status'],['delivery','Delivery'],
+  ['amount','Amount'],['poamount','PO Amount'],['vendor','Vendor'],['creator','Creator'],['purchaser','Purchaser'],['budget','Budget Code'],['posted','Posted']
+];
+const PR_COLS_DEFAULT_HIDDEN = ['section','class','vendor','creator','purchaser','budget','poamount'];
+const PR_COLS_KEY = 'aft_pr_hidden_cols_v1';
+let prHiddenCols = (() => {
+  try { const saved = JSON.parse(localStorage.getItem(PR_COLS_KEY)); if (Array.isArray(saved)) return saved.filter(k => PR_COLS.some(c => c[0] === k)); } catch(e){}
+  return PR_COLS_DEFAULT_HIDDEN.slice();
+})();
+function applyColumnVisibility(){
+  const table = $('prTable');
+  PR_COLS.forEach(([k]) => table.classList.toggle('hc-' + k, prHiddenCols.includes(k)));
+  $('colPickerBtn').title = prHiddenCols.length ? `${prHiddenCols.length} columns hidden` : 'All columns shown';
+}
+function saveColumnVisibility(){
+  try { localStorage.setItem(PR_COLS_KEY, JSON.stringify(prHiddenCols)); } catch(e){}
+  applyColumnVisibility();
+}
+function renderColPicker(){
+  const box = $('colPicker');
+  box.innerHTML = '<div class="col-picker-title">Show columns</div>' +
+    '<label class="fixed"><input type="checkbox" checked disabled> PR No.</label>' +
+    PR_COLS.map(([k, label]) => `<label><input type="checkbox" data-col-key="${k}" ${prHiddenCols.includes(k) ? '' : 'checked'}> ${label}</label>`).join('') +
+    '<button type="button" class="col-picker-reset" id="colPickerReset">Reset to default</button>';
+  box.querySelectorAll('input[data-col-key]').forEach(cb => cb.addEventListener('change', () => {
+    const k = cb.dataset.colKey;
+    prHiddenCols = cb.checked ? prHiddenCols.filter(x => x !== k) : [...new Set([...prHiddenCols, k])];
+    saveColumnVisibility();
+  }));
+  $('colPickerReset').addEventListener('click', () => { prHiddenCols = PR_COLS_DEFAULT_HIDDEN.slice(); saveColumnVisibility(); renderColPicker(); });
+}
+function closeColPicker(){
+  const box = $('colPicker'), btn = $('colPickerBtn');
+  if (box) box.hidden = true;
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+window.toggleColPicker = (e) => {
+  e.stopPropagation();
+  const box = $('colPicker'), btn = $('colPickerBtn');
+  if (!box.hidden) { closeColPicker(); return; }
+  renderColPicker(); box.hidden = false; btn.setAttribute('aria-expanded', 'true');
+  const r = btn.getBoundingClientRect();
+  box.style.top = (r.bottom + 6) + 'px';
+  box.style.left = Math.max(8, Math.min(r.right - box.offsetWidth, window.innerWidth - box.offsetWidth - 8)) + 'px';
+  const first = box.querySelector('input[data-col-key]'); if (first) first.focus();
+};
+document.addEventListener('click', e => { if (!e.target.closest('#colPicker')) closeColPicker(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('colPicker').hidden) { closeColPicker(); $('colPickerBtn').focus(); } });
+window.addEventListener('resize', closeColPicker);
+document.addEventListener('scroll', e => { const t = e.target; if ($('colPicker').hidden || (t && t.nodeType === 1 && t.closest('#colPicker'))) return; closeColPicker(); }, true);
+
 /* ===== TABS ===== */
 window.switchTab = (which) => {
   activeTab = which;
   document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
   $('tabList').classList.toggle('hidden', which !== 'list');
   $('tabDrafts').classList.toggle('hidden', which !== 'drafts');
+  $('colPickerBtn').classList.toggle('hidden', which !== 'list');
+  closeColPicker();
 };
 
 /* ===== DETAIL ===== */
@@ -1448,7 +1531,7 @@ async function init(){
   userName = meta.display_name || meta.full_name || meta.name || session.user.email || '';
   if (userName) { $('userDisplayNameText').textContent = userName; $('userProfileMenu').style.display = 'flex'; }
 
-  restoreFilters();
+  restoreFilters(); applyColumnVisibility();
   if (loadCache()) { $('loadingOverlay').style.display = 'none'; $('prPage').classList.remove('hidden'); applyFilters(); }
   updateDrafts(); refreshIcons();
   await loadFromSupabase();
