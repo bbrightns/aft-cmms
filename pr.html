@@ -615,7 +615,7 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
         <div class="dash-filter"><label for="dPerson">Requested by</label><select id="dPerson" onchange="setDash('person', this.value)"></select></div>
         <div class="dash-filter"><label for="dStatus">Status</label>
           <select id="dStatus" onchange="setDash('status', this.value)">
-            <option value="valid">All except unapproved</option><option value="all">All statuses</option>
+            <option value="valid">All except rejected</option><option value="all">All statuses</option>
             <option value="ordered">Ordered (PO issued)</option><option value="open">Not ordered yet</option>
           </select></div>
         <div class="dash-filter" style="flex:0 0 auto;min-width:0"><label>Measure</label>
@@ -1304,20 +1304,24 @@ function delivKey(s){
 }
 const STATUS_BADGE = { ordered: 'badge-ok', approved: 'badge-blue', approving: 'badge-warn', unapproved: 'badge-danger', other: 'badge-none' };
 const DELIV_BADGE = { delivered: 'badge-ok', partial: 'badge-blue', undelivered: 'badge-warn', other: 'badge-none' };
-function statusBadge(s){
-  const k = statusKey(s);
-  return k === 'none' ? '<span class="badge badge-none">—</span>' : `<span class="badge ${STATUS_BADGE[k]}">${escapeHtml(String(s).trim())}</span>`;
-}
 function delivBadge(s){
   const k = delivKey(s);
   return k === 'none' ? '<span class="badge badge-none">—</span>' : `<span class="badge ${DELIV_BADGE[k]}">${escapeHtml(String(s).trim())}</span>`;
 }
-// in-app requests: show where they are in the approval flow; legacy / imported rows keep the SAP status text
+// One vocabulary for every request, imported (SAP text) or created here: Pending / Approved / Ordered / Rejected.
+// DB text is untouched; this only changes what is shown. In-app requests follow our own "Approval" until SAP's text moves past "approving".
+const STATUS_LABEL = { approving: 'Pending', approved: 'Approved', ordered: 'Ordered', unapproved: 'Rejected' };
+function rkey(r){
+  const k = statusKey(r['Status']);
+  if (r['Approval'] === 'pending') return 'approving';
+  if (r['Approval'] === 'rejected') return 'unapproved';
+  if (r['Approval'] === 'approved' && k === 'approving') return 'approved';
+  return k;
+}
 function statusCell(r){
-  if (r['Approval'] === 'pending') return '<span class="badge badge-warn">Pending approval</span>';
-  // while SAP still says "approving" the real progress is ours: approved -> PR created. Once an import brings a later SAP status, that wins.
-  if (r['Approval'] === 'approved' && statusKey(r['Status']) === 'approving') return hasPRNo(r) ? '<span class="badge badge-blue">PR created</span>' : '<span class="badge badge-blue">Approved</span>';
-  return statusBadge(r['Status']);
+  const k = rkey(r);
+  if (k === 'none') return '<span class="badge badge-none">—</span>';
+  return `<span class="badge ${STATUS_BADGE[k]}">${escapeHtml(STATUS_LABEL[k] || String(r['Status']).trim())}</span>`;
 }
 const textBadge = (v, cls = 'badge-cat') => v ? `<span class="badge ${cls}">${escapeHtml(v)}</span>` : '<span class="badge badge-none">—</span>';
 
@@ -1326,7 +1330,7 @@ function renderChips(){
   const sc = { all: prRecords.length, approving: 0, approved: 0, ordered: 0, unapproved: 0, nopr: 0, pendapp: 0, clerk: 0 };
   const dc = { undelivered: 0, partial: 0, delivered: 0 };
   prRecords.forEach(r => {
-    const k = statusKey(r['Status']); if (k in sc) sc[k]++;
+    const k = rkey(r); if (k in sc) sc[k]++;
     if (!hasPRNo(r)) sc.nopr++;
     if (isPending(r)) sc.pendapp++;
     if (isClerkTodo(r)) sc.clerk++;
@@ -1341,10 +1345,10 @@ function renderChips(){
     (sc.pendapp ? chip('status', 'pendapp', myRoles.has('approver') ? 'Needs my approval' : 'Pending approval', sc.pendapp, 'chip-count-warn') : '') +
     (sc.clerk ? chip('status', 'clerk', myRoles.has('clerk') ? 'To process (PR No.)' : 'Approved, no PR No.', sc.clerk, 'chip-count-warn') : '') +
     (sc.nopr ? chip('status', 'nopr', 'Awaiting PR No.', sc.nopr, 'chip-count-warn') : '') +
-    chip('status', 'approving', 'Approving', sc.approving, 'chip-count-warn') +
+    chip('status', 'approving', 'Pending', sc.approving, 'chip-count-warn') +
     chip('status', 'approved', 'Approved', sc.approved, '') +
     chip('status', 'ordered', 'Ordered', sc.ordered, 'chip-count-ok') +
-    (sc.unapproved ? chip('status', 'unapproved', 'Unapproved', sc.unapproved, 'chip-count-low') : '') +
+    (sc.unapproved ? chip('status', 'unapproved', 'Rejected', sc.unapproved, 'chip-count-low') : '') +
     '<span class="quick-filter-sep" aria-hidden="true"></span>' +
     chip('deliv', 'undelivered', 'Undelivered', dc.undelivered, 'chip-count-warn') +
     chip('deliv', 'partial', 'Partial', dc.partial, '') +
@@ -1372,13 +1376,13 @@ function applyFilters(){
   if (statusFilter === 'nopr' && !prRecords.some(r => !hasPRNo(r))) statusFilter = 'all';
   if (statusFilter === 'pendapp' && !prRecords.some(isPending)) statusFilter = 'all';
   if (statusFilter === 'clerk' && !prRecords.some(isClerkTodo)) statusFilter = 'all';
-  if (statusFilter === 'unapproved' && !prRecords.some(r => statusKey(r['Status']) === 'unapproved')) statusFilter = 'all';
+  if (statusFilter === 'unapproved' && !prRecords.some(r => rkey(r) === 'unapproved')) statusFilter = 'all';
   const q = ($('searchInput').value || '').trim().toLowerCase();
   filteredRecords = prRecords.filter(r => {
     if (statusFilter === 'nopr') { if (hasPRNo(r)) return false; }
     else if (statusFilter === 'pendapp') { if (!isPending(r)) return false; }
     else if (statusFilter === 'clerk') { if (!isClerkTodo(r)) return false; }
-    else if (statusFilter !== 'all' && statusKey(r['Status']) !== statusFilter) return false;
+    else if (statusFilter !== 'all' && rkey(r) !== statusFilter) return false;
     if (delivFilter && delivKey(r['Deliv. Status']) !== delivFilter) return false;
     if (q) {
       const hay = [r['PR No.'], r['PO No.'], r['PR Title'], r['Creator'], r['PR_Vendor'], r['PO_Vendor'], r['Budget code'], r['Item Desc'], r['Section'], r['Status'], r['Quotation No'], r['Purchaser']]
@@ -1569,7 +1573,7 @@ function dashRecords(){
     if (dash.period !== 'all' && (!t || t < from || t >= to)) return false;
     if (dash.section && (r['Section'] || '—') !== dash.section) return false;
     if (dash.person && (r['Creator'] || '—') !== dash.person) return false;
-    const k = statusKey(r['Status']);
+    const k = rkey(r);
     if (dash.status === 'valid' && k === 'unapproved') return false;
     if (dash.status === 'ordered' && !hasPO(r)) return false;
     if (dash.status === 'open' && (hasPO(r) || k === 'unapproved')) return false;
