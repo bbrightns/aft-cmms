@@ -364,6 +364,15 @@ button.file-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); 
 @keyframes txBurst { 0% { opacity: 1; transform: translate(0,0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); } }
 @media (prefers-reduced-motion: reduce) { .tx-arc { animation-duration: 2.4s !important; animation-iteration-count: infinite !important; } .tx-burst { display: none; } }
 
+.approval-banner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 10px; padding: 10px 14px; border-radius: 10px; background: #fef3c7; color: #92400e; font-size: 14px; font-weight: 600; }
+.approval-banner.hidden { display: none; }
+.approval-banner button { margin-left: auto; }
+.approval-box { border: 1.5px solid var(--border2); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.approval-box.pending { border-color: #f59e0b; background: #fffbeb; }
+.approval-box.rejected { border-color: var(--danger); }
+.approval-box .ap-head { font-weight: 800; font-size: 14px; }
+.approval-box .ap-sub { font-size: 13px; color: var(--text2); white-space: pre-wrap; word-break: break-word; }
+.approval-box .ap-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .btn-success { background: var(--accent2); color: #fff; }
 .btn-success:hover { background: #00632f; }
 
@@ -553,6 +562,7 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
       <button class="btn-square" onclick="openCreateModal()" title="New PR" aria-label="New PR"><i data-lucide="plus" style="width:18px;height:18px"></i></button>
     </div>
   </div>
+  <div class="approval-banner hidden" id="approvalBanner" role="status"></div>
   <div class="merged-filter-chips" id="quickFilterChips"></div>
   <div class="search-result-meta" id="searchResultMeta">—</div>
 
@@ -804,6 +814,27 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
   </div>
 </div>
 
+<!-- ===== APPROVE / REJECT (approver) ===== -->
+<div class="modal-overlay" id="decisionModal" data-form="1">
+  <div class="modal" style="max-width:440px" role="dialog" aria-modal="true" aria-labelledby="decisionTitle">
+    <div class="modal-header">
+      <div style="min-width:0"><div class="modal-title" id="decisionTitle">Reject request</div><div class="modal-sub" id="decisionSub"></div></div>
+      <button class="close-btn" onclick="closeDecision()" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="d_note">Reason <span style="color:var(--danger)">*</span></label>
+        <textarea id="d_note" rows="4" placeholder="Tell the requester what to fix or why it is declined"></textarea>
+      </div>
+      <div class="note">The requester sees this reason. A rejected request is closed: create a new one (Duplicate) to resubmit.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost hide-mobile" onclick="closeDecision()">Cancel</button>
+      <button class="btn btn-danger" id="decisionBtn" onclick="submitReject()"><i data-lucide="x-circle"></i> Reject</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== EDIT PR / PO NUMBERS (clerk) ===== -->
 <div class="modal-overlay" id="numbersModal" data-form="1">
   <div class="modal" style="max-width:440px" role="dialog" aria-modal="true" aria-labelledby="numbersTitle">
@@ -929,6 +960,8 @@ function toRow(rec){
   // only sent when there are files, so creating a PR keeps working before the "Attachments" column exists
   if (Array.isArray(rec['Attachments']) && rec['Attachments'].length) row['Attachments'] = rec['Attachments'];
   if (rec['Justification'] && typeof rec['Justification'] === 'object') row['Justification'] = rec['Justification'];   // same: only when present
+  // approval flow: only requests created in the app enter it (imported SAP rows stay NULL); the DB trigger forces 'pending' anyway
+  if (rec['Approval'] === 'pending') row['Approval'] = 'pending';
   return row;
 }
 
@@ -944,6 +977,10 @@ let statusFilter = 'all';
 let delivFilter = '';
 let activeTab = 'list';
 let userName = '';
+let userEmail = '';
+let myRoles = new Set();   // 'approver' and/or 'clerk', from approval_roles (the DB trigger enforces the same rule)
+const isPending = r => r['Approval'] === 'pending';
+const isClerkTodo = r => r['Approval'] === 'approved' && !hasPRNo(r);
 const DEVICE_ID = 'pr_dev_' + Math.random().toString(36).slice(2,8);
 
 const $ = id => document.getElementById(id);
@@ -1270,15 +1307,23 @@ function delivBadge(s){
   const k = delivKey(s);
   return k === 'none' ? '<span class="badge badge-none">—</span>' : `<span class="badge ${DELIV_BADGE[k]}">${escapeHtml(String(s).trim())}</span>`;
 }
+// in-app requests: show where they are in the approval flow; legacy / imported rows keep the SAP status text
+function statusCell(r){
+  if (r['Approval'] === 'pending') return '<span class="badge badge-warn">Pending approval</span>';
+  if (r['Approval'] === 'approved' && statusKey(r['Status']) === 'approving') return '<span class="badge badge-blue">Approved</span>';
+  return statusBadge(r['Status']);
+}
 const textBadge = (v, cls = 'badge-cat') => v ? `<span class="badge ${cls}">${escapeHtml(v)}</span>` : '<span class="badge badge-none">—</span>';
 
 /* ===== FILTER CHIPS ===== */
 function renderChips(){
-  const sc = { all: prRecords.length, approving: 0, approved: 0, ordered: 0, unapproved: 0, nopr: 0 };
+  const sc = { all: prRecords.length, approving: 0, approved: 0, ordered: 0, unapproved: 0, nopr: 0, pendapp: 0, clerk: 0 };
   const dc = { undelivered: 0, partial: 0, delivered: 0 };
   prRecords.forEach(r => {
     const k = statusKey(r['Status']); if (k in sc) sc[k]++;
     if (!hasPRNo(r)) sc.nopr++;
+    if (isPending(r)) sc.pendapp++;
+    if (isClerkTodo(r)) sc.clerk++;
     const d = delivKey(r['Deliv. Status']); if (d in dc) dc[d]++;
   });
   const chip = (group, key, label, count, tone) => {
@@ -1287,6 +1332,8 @@ function renderChips(){
   };
   $('quickFilterChips').innerHTML =
     chip('status', 'all', 'All', sc.all, '') +
+    (sc.pendapp ? chip('status', 'pendapp', myRoles.has('approver') ? 'Needs my approval' : 'Pending approval', sc.pendapp, 'chip-count-warn') : '') +
+    (sc.clerk ? chip('status', 'clerk', myRoles.has('clerk') ? 'To process (PR No.)' : 'Approved, no PR No.', sc.clerk, 'chip-count-warn') : '') +
     (sc.nopr ? chip('status', 'nopr', 'Awaiting PR No.', sc.nopr, 'chip-count-warn') : '') +
     chip('status', 'approving', 'Approving', sc.approving, 'chip-count-warn') +
     chip('status', 'approved', 'Approved', sc.approved, '') +
@@ -1317,10 +1364,14 @@ function cmp(a, b){
 function applyFilters(){
   // a saved chip whose records are all gone (e.g. every request got its PR No.) would show an empty list with no chip to turn off
   if (statusFilter === 'nopr' && !prRecords.some(r => !hasPRNo(r))) statusFilter = 'all';
+  if (statusFilter === 'pendapp' && !prRecords.some(isPending)) statusFilter = 'all';
+  if (statusFilter === 'clerk' && !prRecords.some(isClerkTodo)) statusFilter = 'all';
   if (statusFilter === 'unapproved' && !prRecords.some(r => statusKey(r['Status']) === 'unapproved')) statusFilter = 'all';
   const q = ($('searchInput').value || '').trim().toLowerCase();
   filteredRecords = prRecords.filter(r => {
     if (statusFilter === 'nopr') { if (hasPRNo(r)) return false; }
+    else if (statusFilter === 'pendapp') { if (!isPending(r)) return false; }
+    else if (statusFilter === 'clerk') { if (!isClerkTodo(r)) return false; }
     else if (statusFilter !== 'all' && statusKey(r['Status']) !== statusFilter) return false;
     if (delivFilter && delivKey(r['Deliv. Status']) !== delivFilter) return false;
     if (q) {
@@ -1337,7 +1388,7 @@ function applyFilters(){
     th.classList.toggle('sorted', on);
     th.querySelector('.sort-icon').textContent = on ? (sortAsc ? '↑' : '↓') : '↕';
   });
-  renderTable(); renderCards(); renderChips(); renderMeta();
+  renderTable(); renderCards(); renderChips(); renderMeta(); renderApprovalBanner();
   if (activeTab === 'dash') renderDashboard();
   try { localStorage.setItem(LS_FILTERS, JSON.stringify({ q, statusFilter, delivFilter, sortCol, sortAsc })); } catch(e){}
 }
@@ -1394,7 +1445,7 @@ function renderTable(){
       <td data-col="title" class="td-title" title="${escapeHtml(r['PR Title'] || '')}">${escapeHtml(r['PR Title'] || '—')}</td>
       <td data-col="section">${textBadge(r['Section'])}</td>
       <td data-col="class">${textBadge(r['Work Class'], 'badge-none')}</td>
-      <td data-col="status">${statusBadge(r['Status'])}</td>
+      <td data-col="status">${statusCell(r)}</td>
       <td data-col="delivery">${delivBadge(r['Deliv. Status'])}</td>
       <td data-col="amount" class="td-amount">${fmtAmount(r['PR Amount'])}${String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB' ? `<span class="ccy">${escapeHtml(r['Currency Key'])}</span>` : ''}</td>
       <td data-col="poamount" class="td-amount" style="color:var(--text2)">${r['PO Amount'] != null && r['PO Amount'] !== '' ? fmtAmount(r['PO Amount']) : '—'}</td>
@@ -1425,7 +1476,7 @@ function renderCards(){
       </div>
       ${r['PR_Vendor'] ? `<div class="card-line"><i data-lucide="building-2"></i><span>${escapeHtml(r['PR_Vendor'])}</span></div>` : ''}
       <div class="card-line"><i data-lucide="user"></i><span>${escapeHtml(r['Creator'] || '—')}</span><i data-lucide="calendar" style="margin-left:8px"></i><span>${fmtDate(r['Post Date'])}</span></div>
-      <div class="card-badges">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}${r['Work Class'] ? textBadge(r['Work Class'], 'badge-none') : ''}</div>
+      <div class="card-badges">${statusCell(r)}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}${r['Work Class'] ? textBadge(r['Work Class'], 'badge-none') : ''}</div>
     </div>`).join('');
   refreshIcons();
 }
@@ -1743,8 +1794,8 @@ window.openDetail = (id) => {
       <div class="form-section-title">Item description</div>
       <div class="detail-val" style="margin-top:8px">${escapeHtml(r['Item Desc'])}</div>
     </div>` : '');
-  $('detailBody').innerHTML = `
-    <div class="detail-status">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}<span class="posted">Posted ${fmtDate(r['Post Date'])}</span></div>
+  $('detailBody').innerHTML = approvalBoxHtml(r) + `
+    <div class="detail-status">${statusCell(r)}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}<span class="posted">Posted ${fmtDate(r['Post Date'])}</span></div>
     <div class="detail-amounts">
       <div class="amount-box"><div class="detail-label">PR No.</div>${hasPRNo(r) ? `<div class="amount-val">${escapeHtml(r['PR No.'])}</div>` : '<div class="amount-val muted">Awaiting PR No.</div>'}</div>
       <div class="amount-box"><div class="detail-label">PO No.</div>${hasPO(r) ? `<div class="amount-val">${escapeHtml(r['PO No.'])}</div>` : '<div class="amount-val muted">Not issued</div>'}</div>
@@ -1819,6 +1870,7 @@ function explainError(e){
   if (/bucket not found/i.test(m)) return "Storage bucket 'pr-docs' does not exist yet. Run section 5 of supabase_schema.sql.";
   if (/column/i.test(m) && /Attachments/.test(m)) return 'Column "Attachments" is missing. Run section 5 of supabase_schema.sql.';
   if (/column/i.test(m) && /Justification/.test(m)) return 'Column "Justification" is missing. Run section 6 of supabase_schema.sql.';
+  if (/column/i.test(m) && /Approval/.test(m)) return 'Approval columns are missing. Run section 7 of supabase_schema.sql.';
   if (/row-level security|violates .*polic/i.test(m)) return 'Blocked by a Supabase policy. Check the policies on pr_records and the pr-docs bucket.';
   return m;
 }
@@ -1874,6 +1926,87 @@ window.openAttachment = async (i) => {
   } catch(e){ if (w) w.close(); toast('Could not open file: ' + explainError(e), 'error'); }
 };
 
+/* ===== APPROVAL FLOW ===== */
+// roles come from approval_roles; this only decides what to show. The DB trigger pr_approval_guard is what enforces it.
+async function loadRoles(){
+  try {
+    const { data, error } = await supabase.from('approval_roles').select('role,email');
+    if (error) throw error;
+    myRoles = new Set(data.filter(x => String(x.email).toLowerCase() === userEmail).map(x => x.role));
+  } catch(e){ console.warn('approval_roles not available (run section 7 of supabase_schema.sql)', e); myRoles = new Set(); }
+}
+function approvalBoxHtml(r){
+  const a = r['Approval']; if (!a) return '';
+  const who = escapeHtml(r['Approval By'] || ''), when = r['Approval At'] ? escapeHtml(new Date(r['Approval At']).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })) : '';
+  if (a === 'pending') return `<div class="approval-box pending">
+    <div class="ap-head">Waiting for approval</div>
+    <div class="ap-sub">${myRoles.has('approver') ? 'Check the items, amount and budget, then decide.' : 'An approver has to approve this before the clerk can create the PR in SAP.'}</div>
+    ${myRoles.has('approver') ? `<div class="ap-actions"><button class="btn btn-success" onclick="approvePR()"><i data-lucide="check-circle-2"></i> Approve</button><button class="btn btn-danger" onclick="openReject()"><i data-lucide="x-circle"></i> Reject</button></div>` : ''}
+  </div>`;
+  if (a === 'approved') return `<div class="approval-box">
+    <div class="ap-head">Approved</div>
+    <div class="ap-sub">${who}${when ? ' · ' + when : ''}${hasPRNo(r) ? '' : '\nNext: the clerk creates the PR in SAP, then enters the PR No. here (Edit No.).'}</div>
+  </div>`;
+  return `<div class="approval-box rejected">
+    <div class="ap-head">Rejected</div>
+    <div class="ap-sub">${who}${when ? ' · ' + when : ''}\n${escapeHtml(r['Approval Note'] || '')}</div>
+  </div>`;
+}
+function renderApprovalBanner(){
+  const el = $('approvalBanner');
+  const nA = myRoles.has('approver') ? prRecords.filter(isPending).length : 0;
+  const nC = myRoles.has('clerk') ? prRecords.filter(isClerkTodo).length : 0;
+  if (!nA && !nC) { el.classList.add('hidden'); el.innerHTML = ''; return; }
+  const parts = [];
+  if (nA) parts.push(`<span>${nA} request${nA > 1 ? 's' : ''} waiting for your approval</span><button class="btn btn-primary" onclick="setChip('status','pendapp')">Review</button>`);
+  if (nC) parts.push(`<span>${nC} approved request${nC > 1 ? 's' : ''} need a PR No.</span><button class="btn btn-primary" onclick="setChip('status','clerk')">Open</button>`);
+  el.innerHTML = parts.join('');
+  el.classList.remove('hidden');
+}
+async function decide(r, patch, okTitle){
+  const txId = tx.begin('edit', 'Saving decision', 'Updating the request…');
+  setSync('syncing');
+  try {
+    // only pending rows match, so two approvers (or two tabs) can't decide the same request twice
+    const { data, error } = await supabase.from(PR_COL).update(patch).eq('id', r._id).eq('Approval', 'pending').select('*').single();
+    if (error) throw error;
+    const { id, ...rest } = data;
+    Object.assign(r, rest);
+    saveCache(); applyFilters(); if (openPRId === r._id) openDetail(r._id); setSync('live');
+    tx.success(txId, { title: okTitle, sub: r['PR Title'] || '' });
+    return true;
+  } catch(e){
+    console.error(e); setSync('error');
+    const m = String((e && e.message) || e);
+    const msg = /0 rows|multiple \(or no\) rows|PGRST116/i.test(m) ? 'Someone already decided this request. Reloading.' : /Only an approver/i.test(m) ? 'You are not an approver.' : explainError(e);
+    tx.fail(txId, { title: 'Could not save decision', msg });
+    loadFromSupabase().then(applyFilters);
+    return false;
+  }
+}
+window.approvePR = async () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r || !isPending(r)) return;
+  const ok = await confirmDialog({ title: 'Approve this request?', message: `${r['PR Title'] || ''}\n${fmtAmount(r['PR Amount'])} ${r['Currency Key'] || 'THB'}\n\nThe clerk will then create the PR in SAP.`, okText: 'Approve' });
+  if (!ok) return;
+  await decide(r, { 'Approval': 'approved' }, 'Request approved');
+};
+window.openReject = () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r) return;
+  $('decisionSub').textContent = r['PR Title'] || '';
+  $('d_note').value = ''; $('d_note').classList.remove('input-error');
+  showModal('decisionModal');
+  setTimeout(() => $('d_note').focus(), 50);
+};
+window.closeDecision = () => hideModal('decisionModal');
+window.submitReject = async () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r) return;
+  const note = $('d_note').value.trim();
+  if (!note) { $('d_note').classList.add('input-error'); $('d_note').focus(); toast('Give a reason for rejecting', 'error'); return; }
+  closeDecision();
+  await decide(r, { 'Approval': 'rejected', 'Approval Note': note }, 'Request rejected');
+};
+$('d_note').addEventListener('input', () => $('d_note').classList.remove('input-error'));
+
 /* ===== EDIT PR / PO NUMBERS (the clerk fills these in) ===== */
 window.openNumbers = () => {
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
@@ -1919,7 +2052,8 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || !$('dlgOverlay').hidden || !$('txOverlay').hidden) return;
-  if ($('numbersModal').classList.contains('show')) closeNumbers();
+  if ($('decisionModal').classList.contains('show')) closeDecision();
+  else if ($('numbersModal').classList.contains('show')) closeNumbers();
   else if ($('detailModal').classList.contains('show')) closeDetailModal();
   else if ($('importModal').classList.contains('show')) closeImportModal();
 });
@@ -2247,7 +2381,7 @@ window.submitPR = async () => {
     'Purchaser': f.purchaser || '', 'Entry by': userName || f.creator, 'Request Type': f.requestType,
     'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
     'Items': validItems.map(it => ({ ...it, currency: f.currency })), 'createdAt': new Date().toISOString(), 'device': DEVICE_ID,
-    'Justification': needJ ? f.justify : null
+    'Justification': needJ ? f.justify : null, 'Approval': 'pending'
   };
   const n = pendingFiles.length;
   const txId = tx.begin('add', 'Creating request', 'Checking details…');
@@ -2265,7 +2399,7 @@ window.submitPR = async () => {
     window._activeDraftId = null; pendingFiles = [];
     closeCreateModal(); setSync('live');
     statusFilter = 'all'; delivFilter = ''; switchTab('list'); flashRow(ins.id); applyFilters();
-    tx.success(txId, { title: 'Request created', sub: `${record['PR Title']} · waiting for PR No.${attachments.length ? ` · ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : ''}` });
+    tx.success(txId, { title: 'Request created', sub: `${record['PR Title']} · waiting for approval${attachments.length ? ` · ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : ''}` });
   } catch(e){
     console.error(e); setSync('error');
     // retry only when the server answered with an error (nothing was saved); a dropped connection is ambiguous
@@ -2387,9 +2521,11 @@ async function init(){
     window.location.replace('login.html'); return;
   }
   const meta = session.user.user_metadata || {};
+  userEmail = String(session.user.email || '').toLowerCase();
   userName = meta.display_name || meta.full_name || meta.name || session.user.email || '';
   if (userName) { $('userDisplayNameText').textContent = userName; $('userProfileMenu').style.display = 'flex'; }
 
+  await loadRoles();
   restoreFilters(); applyColumnVisibility();
   if (loadCache()) { $('loadingOverlay').style.display = 'none'; $('prPage').classList.remove('hidden'); applyFilters(); }
   updateDrafts(); refreshIcons();
