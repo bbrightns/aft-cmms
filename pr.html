@@ -239,6 +239,9 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 .budget-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .detail-items { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
 .detail-items table { font-size: 12px; }
+.items-total { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 4px 18px; padding: 8px 4px 0; font-family: var(--mono); font-size: 12px; color: var(--text2); }
+.items-total b { color: var(--text); font-weight: 700; }
+.items-total .grand b { color: var(--agc-blue); font-size: 14px; }
 .detail-items th { position: static; cursor: default; padding: 8px 10px; }
 .detail-items th:hover { color: var(--text3); }
 .detail-items td { padding: 8px 10px; max-width: none; white-space: normal; }
@@ -1666,25 +1669,38 @@ window.openDetail = (id) => {
     <div class="file-list">${atts.map((a, i) => `<button type="button" class="file-chip" onclick="openAttachment(${i})" title="Open ${escapeHtml(a.name)}">
       <i data-lucide="file-text"></i><span class="fname">${escapeHtml(a.name)}</span><span class="fsize">${fmtSize(a.size)}</span><i data-lucide="external-link"></i></button>`).join('')}</div>` : '';
   const items = Array.isArray(r['Items']) ? r['Items'].filter(it => it && it.description) : [];
+  const sub = items.reduce((t, it) => t + (Number(it.qty) || 0) * (Number(it.unitPrice) || 0), 0);
+  const discPct = Number(r['Discount']) || 0;
   const itemsHtml = items.length ? `
-    <div class="form-section-title">Items (${items.length})</div>
-    <div class="detail-items"><table>
-      <thead><tr><th>#</th><th>Description</th><th style="text-align:right">Qty</th><th>Unit</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Amount</th></tr></thead>
-      <tbody>${items.map((it, i) => `<tr>
-        <td style="font-family:var(--mono);color:var(--text3)">${i + 1}</td>
-        <td>${escapeHtml(it.description)}</td>
-        <td style="text-align:right;font-family:var(--mono)">${fmtAmount(it.qty)}</td>
-        <td style="font-family:var(--mono)">${escapeHtml(it.unit || '')}</td>
-        <td style="text-align:right;font-family:var(--mono)">${fmtAmount(it.unitPrice)}</td>
-        <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--agc-blue)">${fmtAmount((Number(it.qty) || 0) * (Number(it.unitPrice) || 0))}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>` : '';
+    <div>
+      <div class="form-section-title">Items (${items.length})</div>
+      <div class="detail-items" style="margin-top:8px"><table>
+        <thead><tr><th>#</th><th>Description</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit price</th><th style="text-align:right">Amount</th></tr></thead>
+        <tbody>${items.map((it, i) => `<tr>
+          <td style="font-family:var(--mono);color:var(--text3)">${i + 1}</td>
+          <td>${escapeHtml(it.description)}</td>
+          <td style="text-align:right;font-family:var(--mono);white-space:nowrap">${fmtAmount(it.qty)} <span style="color:var(--text3)">${escapeHtml(it.unit || '')}</span></td>
+          <td style="text-align:right;font-family:var(--mono);white-space:nowrap">${fmtAmount(it.unitPrice)}</td>
+          <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--agc-blue);white-space:nowrap">${fmtAmount((Number(it.qty) || 0) * (Number(it.unitPrice) || 0))}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+      <div class="items-total">
+        ${discPct ? `<span>Subtotal <b>${fmtAmount(sub)}</b></span><span>Discount ${discPct}% <b>−${fmtAmount(sub * discPct / 100)}</b></span>` : ''}
+        <span class="grand">Total <b>${fmtAmount(r['PR Amount'] != null && r['PR Amount'] !== '' ? r['PR Amount'] : sub * (1 - discPct / 100))} ${ccy}</b></span>
+      </div>
+    </div>` : (r['Item Desc'] ? `
+    <div>
+      <div class="form-section-title">Item description</div>
+      <div class="detail-val" style="margin-top:8px">${escapeHtml(r['Item Desc'])}</div>
+    </div>` : '');
   $('detailBody').innerHTML = `
     <div class="detail-status">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}<span class="posted">Posted ${fmtDate(r['Post Date'])}</span></div>
     <div class="detail-amounts">
       <div class="amount-box"><div class="detail-label">PR No.</div>${hasPRNo(r) ? `<div class="amount-val">${escapeHtml(r['PR No.'])}</div>` : '<div class="amount-val muted">Awaiting PR No.</div>'}</div>
       <div class="amount-box"><div class="detail-label">PO No.</div>${hasPO(r) ? `<div class="amount-val">${escapeHtml(r['PO No.'])}</div>` : '<div class="amount-val muted">Not issued</div>'}</div>
     </div>
+    ${itemsHtml}
+    ${attHtml}
     <div class="detail-grid">
       ${item('PR Amount', r['PR Amount'] != null && r['PR Amount'] !== '' ? fmtAmount(r['PR Amount']) + ' ' + ccy : '', { mono: true, html: true })}
       ${item('PO Amount', r['PO Amount'] != null && r['PO Amount'] !== '' ? fmtAmount(r['PO Amount']) + ' ' + ccy : '', { mono: true, html: true })}
@@ -1703,10 +1719,7 @@ window.openDetail = (id) => {
       ${item('Entry By', r['Entry by'])}
       ${item('Purchaser', r['Purchaser'])}
       ${item('Post Date', r['Post Date'] ? fmtDate(r['Post Date']) : '', { mono: true })}
-      ${items.length ? '' : item('Item Description', r['Item Desc'], { full: true })}
-    </div>
-    ${attHtml}
-    ${itemsHtml}`;
+    </div>`;
   showModal('detailModal');
 };
 window.closeDetailModal = () => { hideModal('detailModal'); openPRId = null; };
