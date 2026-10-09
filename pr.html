@@ -1208,7 +1208,7 @@ function rankHtml(list, { by, onPick, picked, unit }){
     const val = by === 'sum' ? fmtAmount(Math.round(v)) : v.toLocaleString();
     const sub = by === 'sum' ? `${pct.toFixed(pct < 10 ? 1 : 0)}% · ${g.count} PR${g.count === 1 ? '' : 's'}` : `${pct.toFixed(pct < 10 ? 1 : 0)}% · ${fmtCompact(g.sum)} THB`;
     const clickable = onPick && !g.other;
-    const attrs = clickable ? `onclick="${onPick}(${JSON.stringify(g.key).replace(/"/g, '&quot;')})"` : 'tabindex="-1"';
+    const attrs = clickable ? `onclick="${onPick}(${JSON.stringify(g.key).replace(/&/g, '&amp;').replace(/"/g, '&quot;')})"` : 'tabindex="-1"';
     return `<button type="button" class="rank-row${g.other ? ' other static' : ''}${!clickable ? ' static' : ''}${picked === g.key ? ' on' : ''}" ${attrs}
         title="${escapeHtml(g.key)}: ${val} ${unit}">
       <span class="rank-no">${g.other ? '' : i + 1}</span>
@@ -1228,7 +1228,7 @@ function renderTrend(rows){
   const now = new Date(), nowYM = now.getFullYear() * 12 + now.getMonth();
   let start = isFinite(from) ? ym(from) : Math.min(...ms.map(ym));
   let end = isFinite(to) ? ym(to - 1) : Math.max(...ms.map(ym));
-  if (dash.period === 'ytd' || dash.period === '12m' || dash.period === '3m') end = nowYM;
+  if (dash.period === 'ytd' || dash.period === '12m' || dash.period === '3m') end = Math.max(nowYM, ...ms.map(ym));
   if (end - start > 35) start = end - 35;      // cap at 36 columns
   const buckets = new Map();
   for (let k = start; k <= end; k++) buckets.set(k, { sum: 0, count: 0 });
@@ -1268,10 +1268,12 @@ function renderDashboard(){
   pSel.innerHTML = '<option value="ytd">This year</option><option value="12m">Last 12 months</option><option value="3m">Last 3 months</option>' +
     years.map(y => `<option value="${y}">${y}</option>`).join('') + '<option value="all">All time</option>';
   pSel.value = [...pSel.options].some(o => o.value === dash.period) ? dash.period : 'ytd';
+  dash.period = pSel.value;
   pSel.classList.toggle('filter-active', pSel.value !== DASH_DEFAULT.period);
   const uniq = key => [...new Set(prRecords.map(r => r[key] || '—'))].sort((a, b) => a.localeCompare(b));
   fillSelect('dSection', uniq('Section'), dash.section, 'All sections');
   fillSelect('dPerson', uniq('Creator'), dash.person, 'Everyone');
+  dash.section = $('dSection').value; dash.person = $('dPerson').value;   // a saved pick that no longer exists is dropped, not applied invisibly
   $('dStatus').value = dash.status; $('dStatus').classList.toggle('filter-active', dash.status !== DASH_DEFAULT.status);
   $('dMeasurePR').classList.toggle('on', dash.measure === 'pr'); $('dMeasurePO').classList.toggle('on', dash.measure === 'po');
   $('dMeasurePR').setAttribute('aria-pressed', dash.measure === 'pr'); $('dMeasurePO').setAttribute('aria-pressed', dash.measure === 'po');
