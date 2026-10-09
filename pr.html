@@ -1210,7 +1210,7 @@ window.addEventListener('offline', () => $('offlineBanner').classList.add('show'
 
 /* ===== DATA ===== */
 function loadCache(){
-  try { const raw = localStorage.getItem(LS_CACHE); if (raw) { prRecords = JSON.parse(raw); detectDateOrder(); return true; } } catch(e){}
+  try { const raw = localStorage.getItem(LS_CACHE); if (raw) { prRecords = JSON.parse(raw); detectDateOrder(); refreshCurrencyOptions(); return true; } } catch(e){}
   return false;
 }
 function saveCache(){ try { localStorage.setItem(LS_CACHE, JSON.stringify(prRecords)); } catch(e){} }
@@ -1226,7 +1226,7 @@ async function loadFromSupabase(){
       if (data.length < 1000) break;
     }
     prRecords = all.map(({ id, ...rest }) => ({ _id: id, ...rest }));
-    detectDateOrder();
+    detectDateOrder(); refreshCurrencyOptions();
     saveCache(); setSync('live'); return true;
   } catch(e){ console.error('Load PR failed', e); setSync('error'); toast('Could not load PRs — showing cached data', 'error'); return false; }
 }
@@ -1622,7 +1622,7 @@ function renderDashboard(){
   $('dashNote').textContent = [
     `${rows.length.toLocaleString()} PRs in view`,
     converted ? `${converted} non-THB PRs converted at fixed rates` : '',
-    noRate ? `${noRate} PRs in a currency without a fixed rate are left out` : '',
+    noRate ? `${noRate} PRs left out: no fixed rate for ${Object.entries(all.filter(r => !hasRate(r)).reduce((m, r) => { const c = String(r['Currency Key'] || '?').toUpperCase(); m[c] = (m[c] || 0) + 1; return m; }, {})).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} (${n})`).join(', ')}` : '',
     undated ? `${undated} PRs without a readable Post Date are outside every period` : '',
     `Post Date read as ${dateMDY ? 'mm-dd-yy' : 'dd-mm-yy'}`
   ].filter(Boolean).join('  ·  ');
@@ -2024,11 +2024,21 @@ function calcTotals(items, discount){
 }
 // Fixed rates to THB (approximate, one place to edit when finance publishes the budget rates).
 // Used behind the scenes for the justification rule and for the dashboard / list totals.
-const FX_TO_THB = { THB: 1, USD: 35, EUR: 38, JPY: 0.23, CNY: 4.9, MYR: 7.8, IDR: 0.0022, KRW: 0.026 };
-const CURRENCIES = [['THB', 'Thai baht'], ['USD', 'US dollar'], ['EUR', 'Euro'], ['JPY', 'Japanese yen'], ['CNY', 'Chinese yuan'], ['MYR', 'Malaysian ringgit'], ['IDR', 'Indonesian rupiah'], ['KRW', 'South Korean won']];
+const FX_TO_THB = { THB: 1, USD: 35, EUR: 38, CHF: 44, JPY: 0.23, CNY: 4.9, MYR: 7.8, IDR: 0.0022, KRW: 0.026 };
+const CURRENCIES = [['THB', 'Thai baht'], ['USD', 'US dollar'], ['EUR', 'Euro'], ['CHF', 'Swiss franc'], ['JPY', 'Japanese yen'], ['CNY', 'Chinese yuan'], ['MYR', 'Malaysian ringgit'], ['IDR', 'Indonesian rupiah'], ['KRW', 'South Korean won']];
 const fxRate = c => FX_TO_THB[String(c || 'THB').toUpperCase()] ?? null;
 const toTHB = (amount, c) => { const r = fxRate(c); return r == null ? null : (Number(amount) || 0) * r; };
-$('f_currency').innerHTML = CURRENCIES.map(([c, n]) => `<option value="${c}">${c} · ${n}</option>`).join('');
+// THB stays first (the default); then the currencies already used by existing PRs, most used first; then the rest
+function refreshCurrencyOptions(){
+  const sel = $('f_currency'), cur = sel.value || 'THB';
+  const used = {};
+  prRecords.forEach(r => { const c = String(r['Currency Key'] || '').toUpperCase(); if (c) used[c] = (used[c] || 0) + 1; });
+  const rank = c => (c === 'THB' ? Infinity : (used[c] || 0));
+  const ordered = CURRENCIES.map((x, i) => [x, i]).sort((a, b) => rank(b[0][0]) - rank(a[0][0]) || a[1] - b[1]).map(([x]) => x);
+  sel.innerHTML = ordered.map(([c, n]) => `<option value="${c}">${c} · ${n}</option>`).join('');
+  setCcy(cur);
+}
+refreshCurrencyOptions();
 const currentCcy = () => $('f_currency').value || 'THB';
 function setCcy(c){
   c = String(c || 'THB').toUpperCase();
