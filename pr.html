@@ -292,6 +292,67 @@ button.file-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); 
 .dlg-actions .btn { flex: 1; justify-content: center; min-height: 48px; font-size: 14px; }
 @media (max-width: 420px) { .dlg-actions { flex-direction: column-reverse; } }
 
+/* ===== TRANSACTION STATUS OVERLAY (copied from Store) ===== */
+.tx-overlay { position: fixed; inset: 0; z-index: 600; background: rgba(17,24,39,0.62); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+.tx-overlay[hidden] { display: none; }
+.tx-card { --tx: var(--agc-red); position: relative; width: 100%; max-width: 340px; max-height: calc(100dvh - 40px); overflow-x: hidden; overflow-y: auto; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 16px; padding: 30px 20px 20px; text-align: center; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.28s cubic-bezier(.2,1.3,.4,1); }
+.tx-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--tx); }
+.tx-card[data-mode="in"] { --tx: var(--accent2); }
+.tx-card[data-mode="pos"], .tx-card[data-mode="edit"] { --tx: var(--agc-blue); }
+.tx-card[data-mode="add"] { --tx: var(--accent2); }
+.tx-card[data-mode="del"] { --tx: var(--warn); }
+.tx-card[data-state="error"], .tx-card[data-state="stuck"] { --tx: #111827; }
+.tx-card[data-state="error"] { animation: txShake 0.45s ease; }
+@keyframes txPop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes txShake { 10%,90% { transform: translateX(-2px); } 20%,80% { transform: translateX(4px); } 30%,50%,70% { transform: translateX(-7px); } 40%,60% { transform: translateX(7px); } }
+.tx-icon { width: 76px; height: 76px; margin: 0 auto 14px; }
+.tx-icon svg { width: 100%; height: 100%; overflow: visible; }
+.tx-track { fill: none; stroke: var(--border); stroke-width: 5; }
+.tx-arc { fill: none; stroke: var(--tx); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 52 124; transform-origin: 32px 32px; animation: spin 0.9s linear infinite; }
+.tx-disc { fill: var(--tx); transform-origin: 32px 32px; transform: scale(0); }
+.tx-mark { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; stroke-dashoffset: 60; }
+.tx-card[data-state="pending"] .tx-disc, .tx-card[data-state="pending"] .tx-mark,
+.tx-card[data-state="stuck"] .tx-disc, .tx-card[data-state="stuck"] .tx-mark { display: none; }
+.tx-card[data-state="success"] .tx-track, .tx-card[data-state="success"] .tx-arc,
+.tx-card[data-state="error"] .tx-track, .tx-card[data-state="error"] .tx-arc { display: none; }
+.tx-card:not([data-state="success"]) .tx-check, .tx-card[data-state="success"] .tx-cross,
+.tx-card:not([data-state="error"]) .tx-cross { display: none; }
+.tx-card[data-state="success"] .tx-disc, .tx-card[data-state="error"] .tx-disc { animation: txDisc 0.35s cubic-bezier(.2,1.4,.4,1) forwards; }
+.tx-card[data-state="success"] .tx-check, .tx-card[data-state="error"] .tx-cross { animation: txDraw 0.4s 0.2s ease-out forwards; }
+@keyframes txDisc { to { transform: scale(1); } }
+@keyframes txDraw { to { stroke-dashoffset: 0; } }
+.tx-title { font-size: 20px; font-weight: 800; line-height: 1.25; color: var(--text); }
+.tx-sub { margin-top: 4px; font-size: 13px; color: var(--text2); min-height: 18px; word-break: break-word; }
+.tx-stock { display: none; margin-top: 14px; align-items: center; justify-content: center; gap: 10px; font-family: var(--mono); font-weight: 700; }
+.tx-card[data-state="success"] .tx-stock.show { display: flex; }
+.tx-stock .from { font-size: 16px; color: var(--text3); text-decoration: line-through; }
+.tx-stock .arrow { color: var(--text3); }
+.tx-stock .to { font-size: 34px; line-height: 1; color: var(--tx); }
+.tx-hint { margin-top: 12px; font-size: 12px; font-weight: 600; color: var(--warn); min-height: 0; }
+.tx-hint:empty { display: none; }
+.tx-actions { display: none; gap: 8px; margin-top: 16px; }
+.tx-actions.show { display: flex; }
+.tx-actions .btn { flex: 1; justify-content: center; padding: 12px 14px; font-size: 14px; }
+.tx-bar { position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; background: var(--tx); transform-origin: left; transform: scaleX(0); }
+.tx-bar.run { animation: txBar var(--tx-dur, 2200ms) linear forwards; }
+@keyframes txBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+.tx-burst { position: absolute; left: 50%; top: 66px; width: 0; height: 0; pointer-events: none; }
+.tx-burst i { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 2px; background: var(--c, var(--tx)); opacity: 0; animation: txBurst 0.8s ease-out forwards; }
+@keyframes txBurst { 0% { opacity: 1; transform: translate(0,0) rotate(0) scale(1); } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); } }
+@media (prefers-reduced-motion: reduce) { .tx-arc { animation-duration: 2.4s !important; animation-iteration-count: infinite !important; } .tx-burst { display: none; } }
+
+.btn-success { background: var(--accent2); color: #fff; }
+.btn-success:hover { background: #00632f; }
+
+/* New row flash + dashboard grow-in (reduced motion is switched off globally in shared.css) */
+@keyframes rowFlash { from { background: #dcf5e8; } to { background: transparent; } }
+tr.row-new td { animation: rowFlash 2.2s ease-out; }
+.inv-card.row-new { animation: rowFlash 2.2s ease-out; }
+@keyframes growX { from { transform: scaleX(0); } }
+@keyframes growY { from { transform: scaleY(0); } }
+.rank-bar { transform-origin: left; animation: growX .55s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 40ms); }
+.trend-bar { transform-origin: bottom; animation: growY .6s cubic-bezier(.2,.8,.2,1) both; animation-delay: calc(var(--i, 0) * 25ms); }
+
 /* ===== TOAST (store) ===== */
 .toast-container { position: fixed; bottom: 24px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
 .toast { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; min-width: 200px; animation: slideInR 0.3s ease; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); }
@@ -763,6 +824,28 @@ button.file-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); 
   </div>
 </div>
 
+<!-- ===== TRANSACTION STATUS OVERLAY (store) ===== -->
+<div class="tx-overlay" id="txOverlay" hidden>
+  <div class="tx-card" id="txCard" role="alertdialog" aria-modal="true" aria-live="polite" aria-labelledby="txTitle" aria-describedby="txSub" tabindex="-1" data-state="pending" data-mode="out">
+    <div class="tx-burst" id="txBurst" aria-hidden="true"></div>
+    <div class="tx-icon" aria-hidden="true">
+      <svg viewBox="0 0 64 64">
+        <circle class="tx-track" cx="32" cy="32" r="27"/>
+        <circle class="tx-arc" cx="32" cy="32" r="27"/>
+        <circle class="tx-disc" cx="32" cy="32" r="30"/>
+        <path class="tx-mark tx-check" d="M19 33l9 9 17-19"/>
+        <path class="tx-mark tx-cross" d="M22 22l20 20M42 22L22 42"/>
+      </svg>
+    </div>
+    <div class="tx-title" id="txTitle"></div>
+    <div class="tx-sub" id="txSub"></div>
+    <div class="tx-stock" id="txStock"><span class="from" id="txFrom"></span><span class="arrow">→</span><span class="to" id="txTo"></span></div>
+    <div class="tx-hint" id="txHint"></div>
+    <div class="tx-actions" id="txActions"></div>
+    <div class="tx-bar" id="txBar"></div>
+  </div>
+</div>
+
 <!-- ===== CONFIRM DIALOG (store) ===== -->
 <div class="dlg-overlay" id="dlgOverlay" hidden>
   <div class="dlg-card" id="dlgCard" role="alertdialog" aria-modal="true" aria-labelledby="dlgTitle" aria-describedby="dlgMsg" tabindex="-1" data-tone="warn">
@@ -812,6 +895,7 @@ let prRecords = [];
 let filteredRecords = [];
 let currentItems = [];
 let openPRId = null;
+let flashId = null;
 let csvParsed = null;
 let sortCol = 'Post Date';
 let sortAsc = false;
@@ -842,6 +926,147 @@ window.toast = (msg, type='success') => {
   $('toastContainer').appendChild(el);
   setTimeout(() => el.remove(), type==='error' ? 7000 : 4000);
 };
+
+/* ===== TRANSACTION STATUS OVERLAY (store): spinner, then tick / cross, confetti, auto-close bar ===== */
+window.tx = (() => {
+  const $ = id => document.getElementById(id);
+  const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const SLOW_MS = 8000, STUCK_MS = 25000, AUTO_CLOSE_MS = 2200;
+  let run = 0, timers = [], raf = 0, prevFocus = null;
+
+  const clear = () => { timers.forEach(clearTimeout); timers = []; cancelAnimationFrame(raf); };
+  const live = id => id === run && !$('txOverlay').hidden;
+  const buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+  function setState(state) {
+    const card = $('txCard');
+    card.dataset.state = state;
+    card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+  }
+  function setActions(buttons) {
+    const box = $('txActions');
+    box.innerHTML = '';
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className = 'btn ' + (b.cls || 'btn-ghost');
+      btn.textContent = b.label;
+      btn.onclick = b.onClick;
+      box.appendChild(btn);
+    });
+    box.classList.toggle('show', buttons.length > 0);
+    // focusVisible:false = no ring for touch/mouse users; keyboard users still get it on Tab
+    if (buttons.length) box.firstElementChild.focus({ focusVisible: false });
+  }
+  function hide() {
+    clear(); run++;
+    $('txOverlay').hidden = true;
+    $('txBar').classList.remove('run');
+    if (prevFocus && prevFocus.focus) { try { prevFocus.focus(); } catch (e) {} }
+    prevFocus = null;
+  }
+  function countUp(el, from, to) {
+    if (reduced() || from === to) { el.textContent = to; return; }
+    const t0 = performance.now(), dur = 650;
+    const frame = now => {
+      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(from + (to - from) * e);
+      if (p < 1) raf = requestAnimationFrame(frame); else el.textContent = to;
+    };
+    raf = requestAnimationFrame(frame);
+  }
+  function burst(mode) {
+    const box = $('txBurst');
+    box.innerHTML = '';
+    if (reduced()) return;
+    if (mode === 'del') return;
+    const base = (mode === 'in' || mode === 'add') ? '#007A3D' : (mode === 'pos' || mode === 'edit') ? '#001F6B' : '#E40046';
+    const colors = [base, '#001F6B', base, '#d8d5ce'];
+    for (let i = 0; i < 14; i++) {
+      const a = (Math.PI * 2 * i) / 14 + (Math.random() - 0.5) * 0.4, d = 70 + Math.random() * 40;
+      const s = document.createElement('i');
+      s.style.setProperty('--dx', Math.cos(a) * d + 'px');
+      s.style.setProperty('--dy', Math.sin(a) * d + 'px');
+      s.style.setProperty('--rot', (Math.random() * 360 - 180) + 'deg');
+      s.style.setProperty('--c', colors[i % colors.length]);
+      box.appendChild(s);
+    }
+  }
+
+  function begin(mode, title, step) {
+    clear();
+    const id = ++run;
+    if ($('txOverlay').hidden) prevFocus = document.activeElement;
+    const card = $('txCard');
+    card.dataset.mode = mode;
+    $('txTitle').textContent = title;
+    $('txSub').textContent = step || '';
+    $('txHint').textContent = '';
+    $('txStock').classList.remove('show');
+    $('txBurst').innerHTML = '';
+    $('txBar').classList.remove('run');
+    setActions([]);
+    setState('pending');
+    $('txOverlay').hidden = false;
+    card.focus({ focusVisible: false });
+    timers.push(setTimeout(() => {
+      if (live(id)) $('txHint').textContent = 'Network is slow. Still waiting for the server, please do not tap again.';
+    }, SLOW_MS));
+    timers.push(setTimeout(() => {
+      if (!live(id)) return;
+      setState('stuck');
+      $('txTitle').textContent = 'No response yet';
+      $('txSub').textContent = 'It may already be saved. Check the list before trying again.';
+      $('txHint').textContent = '';
+      setActions([{ label: 'Close', cls: 'btn-primary', onClick: hide }]);
+    }, STUCK_MS));
+    return id;
+  }
+  function step(id, text) { if (live(id)) $('txSub').textContent = text; }
+
+  function success(id, o) {
+    if (!live(id)) { toast(o.title + (o.sub ? ' · ' + o.sub : ''), 'success'); return; }
+    clear();
+    const mode = $('txCard').dataset.mode;
+    setState('success');
+    $('txTitle').textContent = o.title;
+    $('txSub').textContent = o.sub || '';
+    $('txHint').textContent = '';
+    if (typeof o.from === 'number' && typeof o.to === 'number') {
+      $('txFrom').textContent = o.from;
+      $('txStock').classList.add('show');
+      countUp($('txTo'), o.from, o.to);
+    }
+    burst(mode);
+    buzz(35);
+    setActions([{ label: 'Done', cls: (mode === 'in' || mode === 'add') ? 'btn-success' : 'btn-primary', onClick: hide }]);
+    const bar = $('txBar');
+    bar.style.setProperty('--tx-dur', AUTO_CLOSE_MS + 'ms');
+    bar.classList.remove('run'); void bar.offsetWidth; bar.classList.add('run');
+    timers.push(setTimeout(() => { if (live(id)) hide(); }, AUTO_CLOSE_MS));
+  }
+
+  // o: { title, msg, retry?: fn }  — pass retry only when it is safe to run the action again.
+  function fail(id, o) {
+    if (!live(id)) { toast(o.msg || o.title, 'error'); return; }
+    clear();
+    setState('error');
+    $('txTitle').textContent = o.title || 'Failed';
+    $('txSub').textContent = o.msg || '';
+    $('txHint').textContent = '';
+    $('txStock').classList.remove('show');
+    buzz([60, 40, 60]);
+    const btns = [{ label: 'Close', cls: 'btn-ghost', onClick: hide }];
+    if (o.retry) btns.push({ label: 'Try again', cls: 'btn-primary', onClick: () => { hide(); o.retry(); } });
+    setActions(btns);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape' || $('txOverlay').hidden) return;
+    e.preventDefault();
+    if ($('txCard').dataset.state !== 'pending') hide();
+  });
+  return { begin, step, success, fail, hide };
+})();
 
 /* ===== CONFIRM DIALOG (store) ===== */
 let _dlgPending = null;
@@ -1096,6 +1321,12 @@ function restoreFilters(){
     $('clearBtn').classList.toggle('visible', !!$('searchInput').value);
   } catch(e){}
 }
+// highlight a just-created row for a moment and bring it into view (it may sit mid-list under the current sort)
+function flashRow(id){
+  flashId = id;
+  setTimeout(() => { const el = [...document.querySelectorAll('.row-new')].find(e => e.offsetParent !== null); if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }, 60);
+  setTimeout(() => { flashId = null; }, 2600);
+}
 window.sortBy = (col) => { if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = col !== 'Post Date' && col !== 'PR Amount'; } applyFilters(); };
 window.onSearchInput = () => { $('clearBtn').classList.toggle('visible', !!$('searchInput').value); applyFilters(); };
 window.clearSearch = () => { $('searchInput').value = ''; $('clearBtn').classList.remove('visible'); applyFilters(); $('searchInput').focus(); };
@@ -1114,7 +1345,7 @@ function renderTable(){
   if (!filteredRecords.length) { tb.innerHTML = ''; empty.innerHTML = emptyHtml(); empty.classList.remove('hidden'); refreshIcons(); return; }
   empty.classList.add('hidden');
   tb.innerHTML = filteredRecords.map(r => `
-    <tr class="row-clickable" onclick="openDetail('${r._id}')">
+    <tr class="row-clickable${r._id === flashId ? ' row-new' : ''}" onclick="openDetail('${r._id}')">
       <td>${hasPRNo(r) ? escapeHtml(r['PR No.']) : '<span class="badge badge-warn">Pending</span>'}</td>
       <td data-col="po" class="td-mono">${hasPO(r) ? escapeHtml(r['PO No.']) : '—'}</td>
       <td data-col="title" class="td-title" title="${escapeHtml(r['PR Title'] || '')}">${escapeHtml(r['PR Title'] || '—')}</td>
@@ -1137,7 +1368,7 @@ function renderCards(){
   const cl = $('prCardList');
   if (!filteredRecords.length) { cl.innerHTML = `<div class="empty">${emptyHtml()}</div>`; refreshIcons(); return; }
   cl.innerHTML = filteredRecords.map(r => `
-    <div class="inv-card" role="button" tabindex="0" onclick="openDetail('${r._id}')" onkeydown="if(event.key==='Enter')openDetail('${r._id}')">
+    <div class="inv-card${r._id === flashId ? ' row-new' : ''}" role="button" tabindex="0" onclick="openDetail('${r._id}')" onkeydown="if(event.key==='Enter')openDetail('${r._id}')">
       <div class="inv-card-top">
         <div class="inv-card-head">
           <div class="card-taxonomy">${r['Section'] ? textBadge(r['Section']) : ''}${hasPRNo(r) ? `<span class="part-id">${escapeHtml(r['PR No.'])}</span>` : '<span class="badge badge-warn">Awaiting PR No.</span>'}</div>
@@ -1271,7 +1502,7 @@ function rankHtml(list, { by, onPick, picked, unit }){
     const sub = by === 'sum' ? `${pct.toFixed(pct < 10 ? 1 : 0)}% · ${g.count} PR${g.count === 1 ? '' : 's'}` : `${pct.toFixed(pct < 10 ? 1 : 0)}% · ${fmtCompact(g.sum)} THB`;
     const clickable = onPick && !g.other;
     const attrs = clickable ? `onclick="${onPick}(${JSON.stringify(g.key).replace(/&/g, '&amp;').replace(/"/g, '&quot;')})"` : 'tabindex="-1"';
-    return `<button type="button" class="rank-row${g.other ? ' other static' : ''}${!clickable ? ' static' : ''}${picked === g.key ? ' on' : ''}" ${attrs}
+    return `<button type="button" style="--i:${i}" class="rank-row${g.other ? ' other static' : ''}${!clickable ? ' static' : ''}${picked === g.key ? ' on' : ''}" ${attrs}
         title="${escapeHtml(g.key)}: ${val} ${unit}">
       <span class="rank-no">${g.other ? '' : i + 1}</span>
       <span class="rank-name">${escapeHtml(g.key)}</span>
@@ -1301,7 +1532,7 @@ function renderTrend(rows){
   const step = Math.max(1, Math.ceil(arr.length / Math.max(1, Math.floor((box.clientWidth || 600) / 48))));
   const lbl = k => MON[k % 12] + ' ' + String(Math.floor(k / 12)).slice(2);
   box.innerHTML =
-    `<div class="trend-plot">${arr.map(([k, b]) => `<div class="trend-col${b.count ? '' : ' is-empty'}" data-k="${k}" data-sum="${b.sum}" data-count="${b.count}">
+    `<div class="trend-plot">${arr.map(([k, b], idx) => `<div class="trend-col${b.count ? '' : ' is-empty'}" style="--i:${idx}" data-k="${k}" data-sum="${b.sum}" data-count="${b.count}">
         <div class="trend-bar" style="height:${b.sum ? Math.max(1.5, b.sum / max * 100).toFixed(1) : 0.6}%"></div></div>`).join('')}
       </div><span class="trend-y">${fmtCompact(max)}</span>
      <div class="trend-axis">${arr.map(([k], i) => `<span>${i % step === 0 ? lbl(k) : ''}</span>`).join('')}</div>`;
@@ -1484,16 +1715,17 @@ window.deletePR = async () => {
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
   const ok = await confirmDialog({ title: hasPRNo(r) ? `Delete PR ${r['PR No.']}?` : 'Delete this request?', message: `${r['PR Title'] || ''}\n\nThis removes it for everyone and cannot be undone.`, okText: 'Delete', tone: 'danger' });
   if (!ok) return;
-  const btn = $('deletePRBtn');
-  btn.classList.add('btn-loading'); setSync('syncing');
+  const txId = tx.begin('del', 'Deleting request', 'Removing from the database…');
+  setSync('syncing');
   try {
     const { error } = await supabase.from(PR_COL).delete().eq('id', r._id);
     if (error) throw error;
+    if (Array.isArray(r['Attachments']) && r['Attachments'].length) tx.step(txId, 'Removing attached files…');
     prRecords = prRecords.filter(x => x._id !== r._id);
-    removeFiles(r['Attachments']);   // best effort: the row is already gone, an orphan file is harmless
-    saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast(hasPRNo(r) ? `Deleted PR ${r['PR No.']}` : 'Deleted request');
-  } catch(e){ console.error(e); setSync('error'); toast('Delete failed: ' + explainError(e), 'error'); }
-  finally { btn.classList.remove('btn-loading'); }
+    await removeFiles(r['Attachments']);   // best effort: the row is already gone, an orphan file is harmless
+    saveCache(); closeDetailModal(); applyFilters(); setSync('live');
+    tx.success(txId, { title: 'Request deleted', sub: [hasPRNo(r) && 'PR ' + r['PR No.'], r['PR Title']].filter(Boolean).join(' · ') });
+  } catch(e){ console.error(e); setSync('error'); tx.fail(txId, { title: 'Could not delete', msg: explainError(e), retry: (e && (e.code || e.statusCode)) ? () => deletePR() : undefined }); }
 };
 
 // Start a new PR pre-filled from the open one (same vendor, budget, items) — common for repeat orders
@@ -1521,7 +1753,7 @@ function explainError(e){
   const m = String((e && e.message) || e);
   if (/bucket not found/i.test(m)) return "Storage bucket 'pr-docs' does not exist yet. Run section 5 of supabase_schema.sql.";
   if (/column/i.test(m) && /Attachments/.test(m)) return 'Column "Attachments" is missing. Run section 5 of supabase_schema.sql.';
-  if (/row-level security|violates .*polic/i.test(m)) return 'Blocked by a Supabase policy. Check the pr-docs storage policies.';
+  if (/row-level security|violates .*polic/i.test(m)) return 'Blocked by a Supabase policy. Check the policies on pr_records and the pr-docs bucket.';
   return m;
 }
 window.onQuotFiles = (ev) => {
@@ -1587,19 +1819,22 @@ window.closeNumbers = () => hideModal('numbersModal');
 window.saveNumbers = async () => {
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
   const pr = $('e_prNo').value.trim(), po = $('e_poNo').value.trim();
-  const btn = $('numbersSaveBtn');
-  btn.classList.add('btn-loading'); setSync('syncing');
+  const txId = tx.begin('edit', 'Saving numbers', 'Updating PR / PO number…');
+  setSync('syncing');
   try {
     const { error } = await supabase.from(PR_COL).update({ 'PR No.': pr || null, 'PO No.': po }).eq('id', r._id);
     if (error) {
-      if (error.code === '23505') { $('e_prNo').classList.add('input-error'); toast(`PR No. ${pr} is already used by another PR`, 'error'); setSync('live'); return; }
+      if (error.code === '23505') {
+        $('e_prNo').classList.add('input-error'); setSync('live');
+        tx.fail(txId, { title: 'PR No. already used', msg: `PR No. ${pr} belongs to another request.` });
+        return;
+      }
       throw error;
     }
     r['PR No.'] = pr; r['PO No.'] = po;
     saveCache(); closeNumbers(); applyFilters(); openDetail(r._id); setSync('live');
-    toast(pr ? `Saved PR ${pr}` : 'PR No. cleared');
-  } catch(e){ console.error(e); setSync('error'); toast('Save failed: ' + explainError(e), 'error'); }
-  finally { btn.classList.remove('btn-loading'); }
+    tx.success(txId, { title: pr ? 'Numbers saved' : 'PR No. cleared', sub: [pr && 'PR ' + pr, po && 'PO ' + po].filter(Boolean).join(' · ') || r['PR Title'] || '' });
+  } catch(e){ console.error(e); setSync('error'); tx.fail(txId, { title: 'Could not save', msg: explainError(e), retry: (e && (e.code || e.statusCode)) ? () => saveNumbers() : undefined }); }
 };
 $('e_prNo').addEventListener('input', () => $('e_prNo').classList.remove('input-error'));
 
@@ -1614,7 +1849,7 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
   });
 });
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape' || !$('dlgOverlay').hidden) return;
+  if (e.key !== 'Escape' || !$('dlgOverlay').hidden || !$('txOverlay').hidden) return;
   if ($('numbersModal').classList.contains('show')) closeNumbers();
   else if ($('detailModal').classList.contains('show')) closeDetailModal();
   else if ($('importModal').classList.contains('show')) closeImportModal();
@@ -1840,12 +2075,14 @@ window.submitPR = async () => {
     'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
     'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID
   };
-  const btn = $('submitPRBtn');
-  btn.classList.add('btn-loading'); setSync('syncing');
+  const n = pendingFiles.length;
+  const txId = tx.begin('add', 'Creating request', 'Checking details…');
+  setSync('syncing');
   let attachments = [];
   try {
     // files first (all or nothing), then the row that points at them
-    if (pendingFiles.length) attachments = await uploadAttachments(pendingFiles);
+    if (n) { tx.step(txId, `Uploading ${n} file${n > 1 ? 's' : ''}…`); attachments = await uploadAttachments(pendingFiles); }
+    tx.step(txId, 'Saving request…');
     record['Attachments'] = attachments;
     const { data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single();
     if (error) { await removeFiles(attachments); throw error; }
@@ -1853,10 +2090,13 @@ window.submitPR = async () => {
     if (window._activeDraftId) clearDraftById(window._activeDraftId);
     window._activeDraftId = null; pendingFiles = [];
     closeCreateModal(); setSync('live');
-    statusFilter = 'all'; delivFilter = ''; switchTab('list'); applyFilters();
-    toast(attachments.length ? `Request created with ${attachments.length} file${attachments.length > 1 ? 's' : ''}. Waiting for PR No.` : 'Request created. Waiting for PR No.');
-  } catch(e){ console.error(e); setSync('error'); toast('Submit failed: ' + explainError(e), 'error'); }
-  finally { btn.classList.remove('btn-loading'); }
+    statusFilter = 'all'; delivFilter = ''; switchTab('list'); flashRow(ins.id); applyFilters();
+    tx.success(txId, { title: 'Request created', sub: `${record['PR Title']} · waiting for PR No.${attachments.length ? ` · ${attachments.length} file${attachments.length > 1 ? 's' : ''}` : ''}` });
+  } catch(e){
+    console.error(e); setSync('error');
+    // retry only when the server answered with an error (nothing was saved); a dropped connection is ambiguous
+    tx.fail(txId, { title: 'Could not create request', msg: explainError(e), retry: (e && (e.code || e.statusCode || /bucket|column|polic/i.test(e.message || ''))) ? () => submitPR() : undefined });
+  }
 };
 
 /* ===== IMPORT ===== */
@@ -1917,14 +2157,17 @@ function chunkBatch(arr, size){ const out = []; for (let i = 0; i < arr.length; 
 window.confirmImport = async () => {
   if (!csvParsed || !csvParsed.length) return;
   const mode = document.querySelector('input[name=importMode]:checked').value;
-  const btn = $('importConfirmBtn');
-  btn.classList.add('btn-loading'); btn.disabled = true; setSync('syncing');
+  const n = csvParsed.length;
+  const txId = tx.begin(mode === 'replace' ? 'del' : 'edit', 'Importing CSV', `Reading ${n.toLocaleString()} rows…`);
+  setSync('syncing');
   try {
     const now = new Date().toISOString();
     const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
+    tx.step(txId, mode === 'replace' ? 'Clearing existing requests…' : 'Merging rows…');
     if (mode === 'replace') {
       const { error: delErr } = await supabase.from(PR_COL).delete().neq('id', '');
       if (delErr) throw delErr;
+      tx.step(txId, 'Writing rows…');
       for (const chunk of chunkBatch(rows, 400)) {
         const { error } = await supabase.from(PR_COL).insert(chunk);
         if (error) throw error;
@@ -1943,10 +2186,11 @@ window.confirmImport = async () => {
       }
     }
     await supabase.from(PR_LOG_COL).insert([{ mode, count: csvParsed.length, device: DEVICE_ID }]);
+    tx.step(txId, 'Refreshing the list…');
     await loadFromSupabase(); closeImportModal(); applyFilters(); setSync('live');
-    toast(`Imported ${csvParsed.length} rows (${mode})`);
-  } catch(e){ console.error(e); setSync('error'); toast('Import failed: ' + e.message, 'error'); }
-  finally { btn.classList.remove('btn-loading'); onImportModeChange(); }
+    tx.success(txId, { title: 'Import complete', sub: `${n.toLocaleString()} rows · ${mode}` });
+  } catch(e){ console.error(e); setSync('error'); tx.fail(txId, { title: 'Import failed', msg: explainError(e) }); }   // no retry: a half-finished import must be checked first
+  finally { onImportModeChange(); }
 };
 
 /* ===== AUTH GATE ===== */
