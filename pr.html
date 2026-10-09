@@ -612,35 +612,35 @@ tr:hover td { background: var(--surface2); }
 <!-- TOAST CONTAINER — store pattern -->
 <div class="toast-container" id="toastContainer"></div>
 
-<!-- JS: PR MODULE (unchanged) -->
+<!-- JS: PR MODULE (Supabase) -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import {
-  getFirestore, collection, getDocs, doc, setDoc, addDoc,
-  deleteDoc, writeBatch, onSnapshot, serverTimestamp,
-  query, orderBy, getDoc
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDU0ny-bb8lecs2CVhpDt3J97Minh0WT94",
-  authDomain: "aft-cmms.firebaseapp.com",
-  projectId: "aft-cmms",
-  storageBucket: "aft-cmms.firebasestorage.app",
-  messagingSenderId: "285697232176",
-  appId: "1:285697232176:web:dc05c62128c49ac10e4cf5"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Same Supabase project as store.html (shared login session)
+const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybHhlYWlnaHBmZ3NkdXFjY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNjg0MDgsImV4cCI6MjA5ODY0NDQwOH0.ep0JJO2Scb7PGUIxtx1t7cHMxuEmc-Jhxjl_12U46O0";
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const PR_COL = 'pr_records';
 const PR_LOG_COL = 'pr_import_logs';
-const LS_CACHE = 'aft_pr_cache';
+const LS_CACHE = 'aft_pr_cache_sb';
+const PR_TEXT_COLS = ['PR No.','PO No.','Creator','PR Title','Section','Item Desc','Category','Work Class','Plan Type','Status','Deliv. Status','PR_Vendor','PO_Vendor','Currency Key','Budget code','Post Date','Purchaser','Entry by','Request Type','Delivery Date','Quotation No','device'];
+const PR_NUM_COLS = ['PR Amount','PO Amount','Discount'];
+const PR_TS_COLS = ['createdAt','importedAt'];
+// Keep only columns that exist in pr_records and coerce types (CSV may carry extra headers / numbers for text columns).
+function toRow(rec){
+  const row = {};
+  PR_TEXT_COLS.forEach(c => { if (rec[c] !== undefined && rec[c] !== null) row[c] = String(rec[c]); });
+  PR_NUM_COLS.forEach(c => { if (rec[c] !== undefined) { const n = rec[c] === '' || rec[c] === null ? null : Number(rec[c]); row[c] = (n === null || isNaN(n)) ? null : n; } });
+  PR_TS_COLS.forEach(c => { if (rec[c]) row[c] = rec[c]; });
+  if (rec['Items'] !== undefined) row['Items'] = rec['Items'];
+  return row;
+}
 const LS_FILTERS = 'aft_pr_filters';
 const LS_DRAFT = 'aft_pr_draft';
 
 let prRecords = [];
+let currentSession = null;
 let filteredRecords = [];
 let currentItems = [];
 let editingPRId = null;
@@ -727,12 +727,17 @@ function loadCache(){
 }
 function saveCache(){ try { localStorage.setItem(LS_CACHE, JSON.stringify(prRecords)); } catch(e){} }
 
-async function loadFromFirebase(){
+async function loadFromSupabase(){
   setSync('syncing');
   try {
-    const snap = await getDocs(collection(db, PR_COL));
-    prRecords = [];
-    snap.forEach(d => prRecords.push({ _id: d.id, ...d.data() }));
+    const all = [];
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await supabase.from(PR_COL).select('*').order('id').range(from, from + 999);
+      if (error) throw error;
+      all.push(...data);
+      if (data.length < 1000) break;
+    }
+    prRecords = all.map(({ id, ...rest }) => ({ _id: id, ...rest }));
     saveCache(); setSync('live'); return true;
   } catch(e){ console.error('Load PR failed', e); setSync('error'); toast('โหลดข้อมูล PR ไม่สำเร็จ — ใช้ cache แทน', 'error'); return false; }
 }
@@ -1106,12 +1111,13 @@ window._prOpenFullView = () => {
 
 window.deletePR = async () => {
   if (!editingPRId) return;
-  if (!confirm('ต้องการลบ PR นี้ใช่หรือไม่? (การลบ Firebase ไม่สามารถย้อนกลับได้)')) return;
+  if (!confirm('ต้องการลบ PR นี้ใช่หรือไม่? (ไม่สามารถย้อนกลับได้)')) return;
   const btn = document.getElementById('deletePRBtn');
   btn.classList.add('btn-loading');
   setSync('syncing');
   try {
-    await deleteDoc(doc(db, PR_COL, editingPRId));
+    const { error } = await supabase.from(PR_COL).delete().eq('id', editingPRId);
+    if (error) throw error;
     prRecords = prRecords.filter(r => r._id !== editingPRId);
     saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast('ลบ PR สำเร็จ');
   } catch(e){ console.error(e); setSync('error'); toast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
@@ -1319,8 +1325,9 @@ window.submitPR = async () => {
   btn.classList.add('btn-loading');
   setSync('syncing');
   try {
-    const ref = await addDoc(collection(db, PR_COL), record);
-    prRecords.unshift({ _id: ref.id, ...record }); saveCache(); applyFilters();
+    const { data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single();
+    if (error) throw error;
+    prRecords.unshift({ _id: ins.id, ...record }); saveCache(); applyFilters();
     if (window._activeDraftId) clearDraftById(window._activeDraftId);
     window._activeDraftId = null; updateDraftTab(); closeCreateModal(); setSync('live');
     toast(`สร้าง PR ${prNo} สำเร็จ`);
@@ -1387,25 +1394,32 @@ window.confirmImport = async () => {
   btn.classList.add('btn-loading');
   setSync('syncing'); btn.disabled = true;
   try {
+    const now = new Date().toISOString();
+    const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
     if (mode === 'replace') {
-      const existing = await getDocs(collection(db, PR_COL));
-      const batches = chunkBatch(existing.docs, 400);
-      for (const chunk of batches) { const b = writeBatch(db); chunk.forEach(d => b.delete(d.ref)); await b.commit(); }
-      const addBatches = chunkBatch(csvParsed, 400);
-      for (const chunk of addBatches) { const b = writeBatch(db); chunk.forEach(rec => { const ref = doc(collection(db, PR_COL)); b.set(ref, { ...rec, importedAt: new Date().toISOString() }); }); await b.commit(); }
+      const { error: delErr } = await supabase.from(PR_COL).delete().neq('id', '');
+      if (delErr) throw delErr;
+      for (const chunk of chunkBatch(rows, 400)) {
+        const { error } = await supabase.from(PR_COL).insert(chunk);
+        if (error) throw error;
+      }
     } else {
-      const existing = await getDocs(collection(db, PR_COL));
-      const byPRNo = new Map();
-      existing.forEach(d => { const data = d.data(); if (data['PR No.']) byPRNo.set(String(data['PR No.']), d.ref); });
-      const chunks = chunkBatch(csvParsed, 400);
-      for (const chunk of chunks) {
-        const b = writeBatch(db);
-        chunk.forEach(rec => { const key = String(rec['PR No.']||''); const ref = (key && byPRNo.get(key)) || doc(collection(db, PR_COL)); b.set(ref, { ...rec, importedAt: new Date().toISOString() }, { merge: true }); });
-        await b.commit();
+      // merge: upsert by PR No. (last row wins inside one CSV); rows without a PR No. are always inserted
+      const byNo = new Map(); const noKey = [];
+      rows.forEach(r => { if (r['PR No.']) byNo.set(r['PR No.'], r); else noKey.push(r); });
+      const keys = new Set(); rows.forEach(r => Object.keys(r).forEach(k => keys.add(k)));
+      const fill = r => { const o = {}; keys.forEach(k => { if (r[k] !== undefined) o[k] = r[k]; }); return o; };
+      for (const chunk of chunkBatch([...byNo.values()].map(fill), 400)) {
+        const { error } = await supabase.from(PR_COL).upsert(chunk, { onConflict: 'PR No.' });
+        if (error) throw error;
+      }
+      for (const chunk of chunkBatch(noKey, 400)) {
+        const { error } = await supabase.from(PR_COL).insert(chunk);
+        if (error) throw error;
       }
     }
-    await addDoc(collection(db, PR_LOG_COL), { mode, count: csvParsed.length, ts: serverTimestamp(), device: DEVICE_ID });
-    await loadFromFirebase(); closeImportModal(); applyFilters(); setSync('live');
+    await supabase.from(PR_LOG_COL).insert([{ mode, count: csvParsed.length, device: DEVICE_ID }]);
+    await loadFromSupabase(); closeImportModal(); applyFilters(); setSync('live');
     toast(`Import สำเร็จ ${csvParsed.length} รายการ (${mode})`);
   } catch(e){ console.error(e); setSync('error'); toast('Import ไม่สำเร็จ: ' + e.message, 'error'); }
   finally { btn.disabled = false; btn.classList.remove('btn-loading'); }
@@ -1422,13 +1436,15 @@ window.switchTab = (which) => {
 };
 
 async function init(){
-  try { await signInAnonymously(auth); } catch(e){ console.warn('anon auth failed', e); }
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) { window.location.replace('login.html'); return; }
+  currentSession = session;
   const hasCache = loadCache();
   if (hasCache) {
     $('loadingOverlay').style.display = 'none'; $('prPage').style.display = '';
     restoreFilters(); applyFilters(); updateDraftTab(); refreshIcons();
   }
-  await loadFromFirebase();
+  await loadFromSupabase();
   $('loadingOverlay').style.display = 'none'; $('prPage').style.display = '';
   restoreFilters(); applyFilters(); updateDraftTab(); refreshIcons();
 }
