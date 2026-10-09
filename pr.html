@@ -1853,9 +1853,12 @@ async function uploadAttachments(files){
     for (let i = 0; i < files.length; i++) {
       const f = files[i];
       const path = `quotations/${folder}/${i + 1}-${safeName(f.name)}`;
-      const { error } = await supabase.storage.from(DOC_BUCKET).upload(path, f, { contentType: f.type || undefined, upsert: false });
+      // some browsers/OSes leave File.type empty; the bucket only accepts PDF/JPG/PNG, so derive it from the extension
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      const contentType = f.type || ({ pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png' })[ext];
+      const { error } = await supabase.storage.from(DOC_BUCKET).upload(path, f, { contentType, upsert: false });
       if (error) throw error;
-      done.push({ kind: 'quotation', name: f.name, path, size: f.size, type: f.type || '' });
+      done.push({ kind: 'quotation', name: f.name, path, size: f.size, type: contentType || '' });
     }
   } catch(e){ await removeFiles(done); throw e; }   // all or nothing: no half-uploaded request
   return done;
