@@ -697,19 +697,19 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
       <div class="form-section-title">Classification</div>
       <div class="form-row">
         <div class="form-group">
-          <label for="f_category">Category</label>
+          <label for="f_category">Category <span class="req">*</span></label>
           <select id="f_category" onchange="toggleBudgetMode()"><option value="">—</option><option>Repairing</option><option>Investment</option></select>
         </div>
         <div class="form-group">
-          <label for="f_workClass">Work Class</label>
+          <label for="f_workClass">Work Class <span class="req">*</span></label>
           <select id="f_workClass"><option value="">—</option><option>Repair A</option><option>Repair B</option><option>Repair C</option><option>Improve</option><option>Safety</option></select>
         </div>
         <div class="form-group">
-          <label for="f_planType">Plan Type</label>
+          <label for="f_planType">Plan Type <span class="req">*</span></label>
           <select id="f_planType" onchange="syncJustify()"><option value="">—</option><option>In plan list</option><option>Out of list</option></select>
         </div>
         <div class="form-group">
-          <label for="f_purchaser">Purchaser</label>
+          <label for="f_purchaser">Purchaser <span class="req">*</span></label>
           <select id="f_purchaser">
             <option value="">—</option>
             <option>Ploypailin</option><option>Narumol</option><option>Piyaros</option><option>Ittipat</option>
@@ -2120,6 +2120,10 @@ window.submitPR = async () => {
   if (!f.title) missing.push(['f_title', 'PR Title']);
   if (!f.section) missing.push(['f_section', 'Section']);
   if (!f.creator) missing.push(['f_creator', 'Requested By']);
+  if (!f.category) missing.push(['f_category', 'Category']);
+  if (!f.workClass) missing.push(['f_workClass', 'Work Class']);
+  if (!f.planType) missing.push(['f_planType', 'Plan Type']);
+  if (!f.purchaser) missing.push(['f_purchaser', 'Purchaser']);
   if (!f.budgetCode) missing.push([$('f_category').value === 'Investment' ? 'f_budgetFree' : ($('f_budgetSection').value ? 'f_budgetSuffix' : 'f_budgetSection'), 'Budget Code']);
   const needJ = needsJustification();
   if (needJ) {
