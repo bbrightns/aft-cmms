@@ -90,6 +90,7 @@ tr:hover td { background: var(--surface2); }
 #prTable th:first-child { z-index: 7; background: var(--surface2); }
 #prTable td:first-child { z-index: 2; font-family: var(--mono); font-weight: 600; color: var(--text); }
 #prTable tr:hover td:first-child { background: var(--surface2); }
+#prTable td { height: 53px; }   /* same row height as the Store inventory table */
 td.td-title { max-width: 360px; min-width: 220px; }
 td.td-amount { text-align: right; font-family: var(--mono); font-weight: 700; color: var(--agc-blue); }
 td.td-mono { font-family: var(--mono); font-size: 12px; color: var(--text2); }
@@ -205,7 +206,7 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 .detail-amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .amount-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
 .amount-box .detail-label { margin-bottom: 4px; }
-.amount-box .amount-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--agc-blue); line-height: 1.2; }
+.amount-box .amount-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--agc-blue); line-height: 1.2; overflow-wrap: anywhere; }
 .amount-box .amount-val.muted { color: var(--text3); font-size: 14px; }
 .amount-box .ccy { font-size: 11px; }
 .detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
@@ -391,7 +392,6 @@ label .req { color: var(--agc-red); margin-left: 2px; }
             <th data-sort="PR_Vendor" onclick="sortBy('PR_Vendor')">Vendor <span class="sort-icon">↕</span></th>
             <th data-sort="Creator" onclick="sortBy('Creator')">Creator <span class="sort-icon">↕</span></th>
             <th data-sort="Post Date" onclick="sortBy('Post Date')">Posted <span class="sort-icon">↕</span></th>
-            <th class="no-sort"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody id="prTbody"></tbody>
@@ -923,7 +923,6 @@ function renderTable(){
       <td class="td-muted" title="${escapeHtml(r['PR_Vendor'] || '')}">${escapeHtml(r['PR_Vendor'] || '—')}</td>
       <td class="td-muted">${escapeHtml(r['Creator'] || '—')}</td>
       <td class="td-mono">${fmtDate(r['Post Date'])}</td>
-      <td><div class="row-actions"><button class="btn-icon" onclick="event.stopPropagation();openDetail('${r._id}')" title="View" aria-label="View PR ${escapeHtml(r['PR No.'] || '')}"><i data-lucide="eye"></i></button></div></td>
     </tr>`).join('');
   refreshIcons();
 }
@@ -982,7 +981,7 @@ window.openDetail = (id) => {
   openPRId = id;
   const ccy = escapeHtml(r['Currency Key'] || 'THB');
   $('detailTitle').textContent = r['PR Title'] || '(untitled)';
-  $('detailSub').textContent = 'PR ' + (r['PR No.'] || '—') + (hasPO(r) ? '  ·  PO ' + r['PO No.'] : '');
+  $('detailSub').textContent = [r['Section'], r['PR_Vendor']].filter(Boolean).join('  ·  ');
   const item = (label, val, opts = {}) => {
     const empty = val == null || String(val).trim() === '';
     return `<div class="detail-item${opts.full ? ' full' : ''}"><div class="detail-label">${label}</div>` +
@@ -1009,12 +1008,12 @@ window.openDetail = (id) => {
   $('detailBody').innerHTML = `
     <div class="detail-status">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}<span class="posted">Posted ${fmtDate(r['Post Date'])}</span></div>
     <div class="detail-amounts">
-      <div class="amount-box"><div class="detail-label">PR Amount</div><div class="amount-val">${fmtAmount(r['PR Amount'])}<span class="ccy">${ccy}</span></div></div>
-      <div class="amount-box"><div class="detail-label">PO Amount</div>${r['PO Amount'] != null && r['PO Amount'] !== '' ? `<div class="amount-val">${fmtAmount(r['PO Amount'])}<span class="ccy">${ccy}</span></div>` : '<div class="amount-val muted">—</div>'}</div>
+      <div class="amount-box"><div class="detail-label">PR No.</div><div class="amount-val">${escapeHtml(r['PR No.'] || '—')}</div></div>
+      <div class="amount-box"><div class="detail-label">PO No.</div>${hasPO(r) ? `<div class="amount-val">${escapeHtml(r['PO No.'])}</div>` : '<div class="amount-val muted">Not issued</div>'}</div>
     </div>
     <div class="detail-grid">
-      ${item('PR No.', r['PR No.'], { mono: true })}
-      ${item('PO No.', hasPO(r) ? r['PO No.'] : '', { mono: true })}
+      ${item('PR Amount', r['PR Amount'] != null && r['PR Amount'] !== '' ? fmtAmount(r['PR Amount']) + ' ' + ccy : '', { mono: true, html: true })}
+      ${item('PO Amount', r['PO Amount'] != null && r['PO Amount'] !== '' ? fmtAmount(r['PO Amount']) + ' ' + ccy : '', { mono: true, html: true })}
       ${item('Section', r['Section'])}
       ${item('Request Type', r['Request Type'])}
       ${item('Category', r['Category'])}
