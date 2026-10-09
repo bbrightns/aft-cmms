@@ -239,6 +239,16 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 .budget-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .detail-items { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
 .detail-items table { font-size: 12px; }
+/* Justification (out of plan + over the threshold) */
+.justify { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: var(--surface2); border: 1.5px solid var(--border-strong); border-left: 4px solid var(--warn); border-radius: 10px; animation: revealIn .25s ease; }
+@keyframes revealIn { from { opacity: 0; transform: translateY(-6px); } }
+.justify-head { display: flex; gap: 10px; align-items: flex-start; }
+.justify-head [data-lucide] { color: var(--warn); width: 20px; height: 20px; flex-shrink: 0; margin-top: 1px; }
+.justify-title { font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--warn); }
+.justify-sub { font-size: 12px; color: var(--text2); margin-top: 2px; line-height: 1.45; }
+.justify textarea { min-height: 56px; background: var(--surface); }
+button.badge { border: none; font: inherit; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; cursor: pointer; margin-left: 8px; }
+.just-view { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
 .items-total { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 4px 18px; padding: 8px 4px 0; font-family: var(--mono); font-size: 12px; color: var(--text2); }
 .items-total b { color: var(--text); font-weight: 700; }
 .items-total .grand b { color: var(--agc-blue); font-size: 14px; }
@@ -696,7 +706,7 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
         </div>
         <div class="form-group">
           <label for="f_planType">Plan Type</label>
-          <select id="f_planType"><option value="">—</option><option>In plan list</option><option>Out of list</option></select>
+          <select id="f_planType" onchange="syncJustify()"><option value="">—</option><option>In plan list</option><option>Out of list</option></select>
         </div>
         <div class="form-group">
           <label for="f_purchaser">Purchaser</label>
@@ -739,7 +749,19 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
           <label class="t-label" for="f_discount" style="min-height:0">Discount %</label>
           <input type="number" id="f_discount" min="0" max="100" step="0.1" value="0" oninput="updateTotals()">
         </div>
-        <div class="totals-row grand"><span class="t-label">Grand Total</span><span class="t-val"><span id="t_grand">0</span><span class="ccy" id="t_ccy">THB</span></span></div>
+        <div class="totals-row grand"><span class="t-label">Grand Total<button type="button" class="badge badge-warn hidden" id="justifyChip" onclick="document.getElementById('justifyBox').scrollIntoView({behavior:'smooth',block:'center'})">Justification needed ↓</button></span><span class="t-val"><span id="t_grand">0</span><span class="ccy" id="t_ccy">THB</span></span></div>
+      </div>
+
+      <div class="justify hidden" id="justifyBox" role="group" aria-labelledby="justifyTitle">
+        <div class="justify-head">
+          <i data-lucide="shield-alert"></i>
+          <div><div class="justify-title" id="justifyTitle">Justification required</div>
+            <div class="justify-sub" id="justifySub">Out of plan list and over 50,000 THB. Fill in What, Why and Why now to continue.</div></div>
+        </div>
+        <div class="form-group"><label for="j_what">What <span class="req">*</span></label><textarea id="j_what" rows="2" placeholder="What is being bought or done?"></textarea></div>
+        <div class="form-group"><label for="j_why">Why <span class="req">*</span></label><textarea id="j_why" rows="2" placeholder="Why is it needed? What problem does it solve?"></textarea></div>
+        <div class="form-group"><label for="j_whyNow">Why now <span class="req">*</span></label><textarea id="j_whyNow" rows="2" placeholder="Why can it not wait for the next plan cycle?"></textarea></div>
+        <div class="form-group"><label for="j_alt">Alternatives &amp; Risk</label><textarea id="j_alt" rows="2" placeholder="Options considered, and the risk of doing nothing (optional)"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -891,6 +913,7 @@ function toRow(rec){
   if (!String(row['PR No.'] ?? '').trim()) row['PR No.'] = null;
   // only sent when there are files, so creating a PR keeps working before the "Attachments" column exists
   if (Array.isArray(rec['Attachments']) && rec['Attachments'].length) row['Attachments'] = rec['Attachments'];
+  if (rec['Justification'] && typeof rec['Justification'] === 'object') row['Justification'] = rec['Justification'];   // same: only when present
   return row;
 }
 
@@ -1668,6 +1691,14 @@ window.openDetail = (id) => {
     <div class="form-section-title">Attachments (${atts.length})</div>
     <div class="file-list">${atts.map((a, i) => `<button type="button" class="file-chip" onclick="openAttachment(${i})" title="Open ${escapeHtml(a.name)}">
       <i data-lucide="file-text"></i><span class="fname">${escapeHtml(a.name)}</span><span class="fsize">${fmtSize(a.size)}</span><i data-lucide="external-link"></i></button>`).join('')}</div>` : '';
+  const jus = (r['Justification'] && typeof r['Justification'] === 'object') ? r['Justification'] : null;
+  const justHtml = jus ? `
+    <div>
+      <div class="form-section-title">Justification</div>
+      <div class="just-view">${[['What', jus.what], ['Why', jus.why], ['Why now', jus.whyNow], ['Alternatives & risk', jus.alternatives]]
+        .filter(([, v]) => v && String(v).trim())
+        .map(([l, v]) => `<div class="detail-item"><div class="detail-label">${l}</div><div class="detail-val" style="white-space:pre-wrap">${escapeHtml(v)}</div></div>`).join('')}</div>
+    </div>` : '';
   const items = Array.isArray(r['Items']) ? r['Items'].filter(it => it && it.description) : [];
   const sub = items.reduce((t, it) => t + (Number(it.qty) || 0) * (Number(it.unitPrice) || 0), 0);
   const discPct = Number(r['Discount']) || 0;
@@ -1699,6 +1730,7 @@ window.openDetail = (id) => {
       <div class="amount-box"><div class="detail-label">PR No.</div>${hasPRNo(r) ? `<div class="amount-val">${escapeHtml(r['PR No.'])}</div>` : '<div class="amount-val muted">Awaiting PR No.</div>'}</div>
       <div class="amount-box"><div class="detail-label">PO No.</div>${hasPO(r) ? `<div class="amount-val">${escapeHtml(r['PO No.'])}</div>` : '<div class="amount-val muted">Not issued</div>'}</div>
     </div>
+    ${justHtml}
     ${itemsHtml}
     ${attHtml}
     <div class="detail-grid">
@@ -1751,7 +1783,8 @@ window.duplicatePR = () => {
     workClass: r['Work Class'] || '', category: r['Category'] || '', planType: r['Plan Type'] || '',
     creator: '', deliveryDate: '', prVendor: r['PR_Vendor'] || '', quotation: '',
     purchaser: r['Purchaser'] || '', discount: Number(r['Discount']) || 0, budgetCode: r['Budget code'] || '',
-    items: Array.isArray(r['Items']) && r['Items'].length ? r['Items'] : [{ ...makeBlankItem(), description: r['Item Desc'] || '', unitPrice: Number(r['PR Amount']) || 0 }]
+    items: Array.isArray(r['Items']) && r['Items'].length ? r['Items'] : [{ ...makeBlankItem(), description: r['Item Desc'] || '', unitPrice: Number(r['PR Amount']) || 0 }],
+    justify: (r['Justification'] && typeof r['Justification'] === 'object') ? r['Justification'] : {}
   });
   prefillCreator();
   $('createSub').textContent = 'Duplicated from ' + (hasPRNo(r) ? 'PR ' + r['PR No.'] : 'a request awaiting its PR No.') + '. Attachments are not copied';
@@ -1766,6 +1799,7 @@ function explainError(e){
   const m = String((e && e.message) || e);
   if (/bucket not found/i.test(m)) return "Storage bucket 'pr-docs' does not exist yet. Run section 5 of supabase_schema.sql.";
   if (/column/i.test(m) && /Attachments/.test(m)) return 'Column "Attachments" is missing. Run section 5 of supabase_schema.sql.';
+  if (/column/i.test(m) && /Justification/.test(m)) return 'Column "Justification" is missing. Run section 6 of supabase_schema.sql.';
   if (/row-level security|violates .*polic/i.test(m)) return 'Blocked by a Supabase policy. Check the policies on pr_records and the pr-docs bucket.';
   return m;
 }
@@ -1904,7 +1938,7 @@ window.closeCreateModal = () => hideModal('createModal');
 
 function resetForm(){
   ['f_title','f_prVendor','f_quotation','f_budgetCode','f_deliveryDate','f_budgetFree'].forEach(id => $(id).value = '');
-  ['f_section','f_workClass','f_category','f_planType','f_purchaser','f_creator','f_budgetSection'].forEach(id => $(id).value = '');
+  ['f_section','f_workClass','f_category','f_planType','f_purchaser','f_creator','f_budgetSection','j_what','j_why','j_whyNow','j_alt'].forEach(id => $(id).value = '');
   $('f_requestType').value = 'Purchase'; $('f_discount').value = 0;
   $('f_budgetSuffix').innerHTML = '<option value="">—</option>';
   document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
@@ -1970,11 +2004,26 @@ function calcTotals(items, discount){
   const disc = Math.min(Math.max(Number(discount) || 0, 0), 100);
   return { sub, grand: sub * (1 - disc / 100) };
 }
+const JUSTIFY_MIN = 50000;   // THB, strictly above
+function needsJustification(){
+  if ($('f_planType').value !== 'Out of list') return false;
+  const ccy = (currentItems.find(it => it.description)?.currency || currentItems[0]?.currency || 'THB').toUpperCase();
+  if (ccy !== 'THB') return false;   // no exchange rate here, so only THB totals are checked
+  return calcTotals(currentItems, $('f_discount').value).grand > JUSTIFY_MIN;
+}
+window.syncJustify = () => {
+  const on = needsJustification(), box = $('justifyBox');
+  const was = !box.classList.contains('hidden');
+  box.classList.toggle('hidden', !on);
+  $('justifyChip').classList.toggle('hidden', !on);
+  if (on && !was) refreshIcons();
+};
 window.updateTotals = () => {
   const { sub, grand } = calcTotals(currentItems, $('f_discount').value);
   $('t_sub').textContent = fmtAmount(sub);
   $('t_grand').textContent = fmtAmount(grand);
   $('t_ccy').textContent = (currentItems.find(it => it.description)?.currency || currentItems[0]?.currency || 'THB').toUpperCase();
+  syncJustify();
 };
 
 function readForm(){
@@ -1985,7 +2034,8 @@ function readForm(){
     creator: $('f_creator').value.trim(), deliveryDate: $('f_deliveryDate').value,
     prVendor: $('f_prVendor').value.trim(), quotation: $('f_quotation').value.trim(),
     budgetCode: $('f_budgetCode').value.trim(), purchaser: $('f_purchaser').value,
-    discount: Number($('f_discount').value || 0), items: currentItems.map(it => ({ ...it }))
+    discount: Number($('f_discount').value || 0), items: currentItems.map(it => ({ ...it })),
+    justify: { what: $('j_what').value.trim(), why: $('j_why').value.trim(), whyNow: $('j_whyNow').value.trim(), alternatives: $('j_alt').value.trim() }
   };
 }
 function fillForm(d){
@@ -1996,6 +2046,8 @@ function fillForm(d){
   $('f_creator').value = d.creator || ''; $('f_deliveryDate').value = d.deliveryDate || '';
   $('f_prVendor').value = d.prVendor || ''; $('f_quotation').value = d.quotation || '';
   $('f_purchaser').value = d.purchaser || ''; $('f_discount').value = d.discount || 0;
+  const jd = d.justify || {};
+  $('j_what').value = jd.what || ''; $('j_why').value = jd.why || ''; $('j_whyNow').value = jd.whyNow || ''; $('j_alt').value = jd.alternatives || '';
   toggleBudgetMode();
   loadBudgetCode(d.budgetCode || '', d.category === 'Investment');
   currentItems = (d.items || []).length ? d.items.map(it => ({ ...makeBlankItem(), ...it })) : [makeBlankItem(), makeBlankItem(), makeBlankItem()];
@@ -2069,6 +2121,12 @@ window.submitPR = async () => {
   if (!f.section) missing.push(['f_section', 'Section']);
   if (!f.creator) missing.push(['f_creator', 'Requested By']);
   if (!f.budgetCode) missing.push([$('f_category').value === 'Investment' ? 'f_budgetFree' : ($('f_budgetSection').value ? 'f_budgetSuffix' : 'f_budgetSection'), 'Budget Code']);
+  const needJ = needsJustification();
+  if (needJ) {
+    if (!f.justify.what) missing.push(['j_what', 'What']);
+    if (!f.justify.why) missing.push(['j_why', 'Why']);
+    if (!f.justify.whyNow) missing.push(['j_whyNow', 'Why now']);
+  }
   const validItems = f.items.filter(it => it.description && Number(it.qty) > 0);
   if (missing.length) {
     missing.forEach(([id]) => $(id).classList.add('input-error'));
@@ -2086,7 +2144,8 @@ window.submitPR = async () => {
     'Budget code': f.budgetCode, 'Post Date': todayPostDate(),
     'Purchaser': f.purchaser || '', 'Entry by': userName || f.creator, 'Request Type': f.requestType,
     'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
-    'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID
+    'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID,
+    'Justification': needJ ? f.justify : null
   };
   const n = pendingFiles.length;
   const txId = tx.begin('add', 'Creating request', 'Checking details…');

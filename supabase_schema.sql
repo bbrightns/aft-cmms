@@ -213,3 +213,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE POLICY "pr-docs read"   ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'pr-docs');
 CREATE POLICY "pr-docs upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'pr-docs');
 CREATE POLICY "pr-docs delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'pr-docs');
+
+-- 6. Purchase Request: justification for out-of-plan requests over 50,000 THB (run after section 5)
+-- {what, why, whyNow, alternatives}; stored only when the rule applies.
+ALTER TABLE pr_records ADD COLUMN IF NOT EXISTS "Justification" jsonb;
