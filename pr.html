@@ -1390,7 +1390,7 @@ function applyFilters(){
     else if (statusFilter !== 'all' && rkey(r) !== statusFilter) return false;
     if (delivFilter && delivKey(r['Deliv. Status']) !== delivFilter) return false;
     if (q) {
-      const hay = [r['PR No.'], r['PO No.'], r['PR Title'], r['Creator'], r['PR_Vendor'], r['PO_Vendor'], r['Budget code'], r['Item Desc'], r['Section'], r['Status'], r['Quotation No'], r['Purchaser']]
+      const hay = [r['PR No.'], r['PO No.'], r['PR Title'], r['Creator'], r['PR_Vendor'], r['PO_Vendor'], r['Budget code'], r['Item Desc'], r['Section'], r['Status'], STATUS_LABEL[rkey(r)], r['Quotation No'], r['Purchaser']]
         .map(v => String(v || '').toLowerCase()).join(' ');
       if (!q.split(/\s+/).every(t => hay.includes(t))) return false;
     }
@@ -1974,7 +1974,7 @@ function renderApprovalBanner(){
   if (!nA && !nC) { el.classList.add('hidden'); el.innerHTML = ''; return; }
   const parts = [];
   if (nA) parts.push(`<span>${nA} request${nA > 1 ? 's' : ''} waiting for your approval</span><button class="btn btn-primary" onclick="setChip('status','pendapp')">Review</button>`);
-  if (nC) parts.push(`<span>${nC} approved request${nC > 1 ? 's' : ''} need a PR No.</span><button class="btn btn-primary" onclick="setChip('status','clerk')">Open</button>`);
+  if (nC) parts.push(`<span>${nC} approved request${nC > 1 ? 's need' : ' needs'} a PR No.</span><button class="btn btn-primary" onclick="setChip('status','clerk')">Open</button>`);
   el.innerHTML = parts.join('');
   el.classList.remove('hidden');
 }
@@ -1986,7 +1986,8 @@ async function decide(r, patch, okTitle){
     const { data, error } = await supabase.from(PR_COL).update(patch).eq('id', r._id).eq('Approval', 'pending').select('*').single();
     if (error) throw error;
     const { id, ...rest } = data;
-    Object.assign(r, rest);
+    // a realtime reload may have swapped the record objects while the request was in flight: update the live one
+    Object.assign(prRecords.find(x => x._id === r._id) || r, rest);
     saveCache(); applyFilters(); if (openPRId === r._id) openDetail(r._id); setSync('live');
     tx.success(txId, { title: okTitle, sub: r['PR Title'] || '' });
     return true;
