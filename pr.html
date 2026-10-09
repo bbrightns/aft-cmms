@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,610 +9,599 @@
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
-.hbtn [data-lucide] { display: inline-block; width: 15px; height: 15px; vertical-align: -2px; }
+/* Component values below are copied from store.html (computed styles of the Inventory page) so both pages
+   share one material: same search bar, pill chips, tabs, table, cards, modals, confirm dialog and toasts. */
 
-/* pr-specific: sync dot uses accent2 green */
-.sync-dot { background: var(--accent2); }
+/* ===== HEADER (store pattern) ===== */
+.header-back { background: rgba(255,255,255,0.15); border: none; color: #fff; border-radius: 6px; padding: 6px 12px; font-family: var(--sans); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.15s; height: 32px; text-decoration: none; }
+.header-back:hover { background: rgba(255,255,255,0.25); }
+.user-profile-menu { background: rgba(255,255,255,0.12); border-radius: 6px; padding: 5px 10px; color: #fff; font-size: 13px; display: flex; align-items: center; gap: 6px; height: 32px; font-family: var(--sans); white-space: nowrap; max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
 
-/* PAGE LAYOUT */
-.pr-page { display: flex; flex-direction: column; height: calc(100vh - 54px); }
-.pr-page > * { flex-shrink: 0; }
-#tabHistory, #tabCreate { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-#tabCreate { overflow-y: auto; }
+/* Lucide icons inline alignment */
+[data-lucide] { display: inline-block; vertical-align: -2px; width: 16px; height: 16px; stroke-width: 2; }
+.btn-icon [data-lucide] { width: 14px; height: 14px; vertical-align: middle; }
+.hbtn [data-lucide], .header-back [data-lucide] { width: 15px; height: 15px; }
 
-/* STATS BAR */
-.stats-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; gap: 24px; overflow-x: auto; scrollbar-width: none; box-shadow: var(--shadow); }
-.stats-bar::-webkit-scrollbar { display: none; }
-.stat-item { display: flex; flex-direction: column; gap: 2px; white-space: nowrap; }
-.stat-label { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: 1px; text-transform: uppercase; font-weight: 600; }
-.stat-val { font-family: var(--mono); font-size: 18px; font-weight: 700; }
-.stat-val.blue { color: var(--agc-blue); }
-.stat-val.green { color: var(--accent2); }
-.stat-val.danger { color: var(--danger); }
-.stat-val.warn { color: var(--warn); }
+/* ===== PAGE ===== */
+.inv-page { display: flex; flex-direction: column; height: calc(100vh - 54px); height: calc(100dvh - 54px); }
+.inv-page > * { flex-shrink: 0; }
+#tabList, #tabDrafts { flex: 1; min-height: 0; display: flex; flex-direction: column; }
 
-.tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--warn); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 800; line-height: 1; }
-#tabDraft { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.draft-tab-header { padding: 12px 16px; font-size: 12px; color: var(--text3); background: var(--surface); border-bottom: 1px solid var(--border); font-family: var(--mono); letter-spacing: 0.3px; }
-
-/* CONTROLS BAR */
-.controls-bar { background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--shadow); }
-.controls-main { padding: 10px 16px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-.search-wrap { position: relative; flex: 1; min-width: 220px; }
+/* ===== CONTROLS: search ===== */
+.controls-bar { background: var(--surface); border-bottom: 1px solid var(--border); box-shadow: var(--shadow); position: relative; z-index: 10; }
+.controls-main { padding: 10px 16px; display: flex; gap: 8px; align-items: center; }
+.search-wrap { position: relative; flex: 1; min-width: 0; }
 .search-wrap svg.search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); pointer-events: none; }
-.clear-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text3); cursor: pointer; width: 20px; height: 20px; display: none; align-items: center; justify-content: center; border-radius: 50%; font-size: 14px; line-height: 1; }
+.clear-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text3); cursor: pointer; width: 22px; height: 22px; display: none; align-items: center; justify-content: center; border-radius: 50%; }
 .clear-btn.visible { display: flex; }
-input[type=text], input[type=number], input[type=date], select, textarea {
+.clear-btn:hover { background: var(--bg2); color: var(--text); }
+.btn-square { flex-shrink: 0; background: var(--agc-blue); color: #fff; border: 1.5px solid var(--agc-blue); border-radius: 8px; height: 34px; width: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.15s; }
+.btn-square:hover { background: var(--agc-blue2); }
+
+/* ===== FORM CONTROLS (store values) ===== */
+input[type=text], input[type=number], input[type=date], input[type=search], select, textarea {
   width: 100%; background: var(--bg2); border: 1.5px solid var(--border); color: var(--text);
-  border-radius: 8px; padding: 8px 12px; font-family: var(--sans); font-size: 13px;
-  outline: none; transition: border 0.2s;
+  border-radius: 8px; padding: 8px 12px; font-family: var(--sans); font-size: 13px; outline: none; transition: border 0.2s;
 }
-.search-wrap input[type=text] { padding-left: 34px; }
+.search-wrap input[type=text] { padding-left: 34px; padding-right: 34px; }
 input:focus, select:focus, textarea:focus { border-color: var(--agc-blue); }
 select { cursor: pointer; }
+textarea { resize: vertical; min-height: 60px; }
+/* control edges need >=3:1 against the page (WCAG 1.4.11), same as store */
+input[type=text]:not(:focus), input[type=number]:not(:focus), input[type=date]:not(:focus), select:not(:focus), textarea:not(:focus) { border-color: var(--border-strong); }
+input::placeholder, textarea::placeholder { color: #5f5f78; opacity: 1; }
+.input-error { border-color: var(--danger) !important; }
 
-/* FILTER BAR */
-.merged-filter-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px 10px; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; flex-wrap: wrap; }
-.merged-filter-bar::-webkit-scrollbar { display: none; }
+/* ===== FILTER CHIPS (store .merged-filter-chips / .quick-filter-chip) ===== */
+.merged-filter-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 16px 10px; background: var(--surface); }
+.quick-filter-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 6px 11px; border: 1.5px solid var(--border-strong); background: var(--bg2); color: var(--text2); border-radius: 999px; font-family: var(--sans); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
+.quick-filter-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); background: #f0f2fa; }
+.quick-filter-chip.active { border-color: var(--agc-red); color: var(--danger-text); background: #fde8ef; box-shadow: 0 2px 8px rgba(228,0,70,.12); }
+.quick-filter-sep { width: 1px; height: 24px; background: var(--border2); margin: 0 2px; flex: 0 0 auto; }
+.chip-count { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 2px 7px; border-radius: 8px; background: var(--bg2); color: var(--agc-blue); font-family: var(--mono); font-size: 10px; font-weight: 800; line-height: 1; }
+.chip-count-ok { background: #dcf5e8; color: var(--accent2); }
+.chip-count-low { background: #fde8ef; color: var(--danger-text); }
+.chip-count-warn { background: #fef3cd; color: var(--warn); }
+.quick-filter-chip.active .chip-count { background: #fff; }
 
-/* === CHIP — store standard: 6px 12px padding, 28px min-width count === */
-.pr-chip { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; border: 1.5px solid var(--border); background: var(--bg2); color: var(--text2); border-radius: 999px; padding: 6px 12px; min-height: 30px; font-family: var(--sans); font-size: 12px; font-weight: 700; cursor: pointer; transition: all .15s; white-space: nowrap; }
-.pr-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); background: #f0f2fa; }
-.pr-chip.active { border-color: var(--agc-red); color: var(--danger); background: #fde8ef; box-shadow: 0 2px 8px rgba(228,0,70,.12); }
-.pr-chip-count { display: inline-flex; align-items: center; justify-content: center; min-width: 28px; padding: 2px 7px; border-radius: 8px; background: var(--bg2); color: var(--agc-blue); font-family: var(--mono); font-size: 10px; font-weight: 800; line-height: 1; }
-.pr-chip-count.ok { background: #dcf5e8; color: var(--accent2); }
-.pr-chip-count.warn { background: #fef3cd; color: var(--warn); }
-.pr-chip-count.danger { background: #fde8ef; color: var(--danger); }
-.pr-chip-count.blue { background: #e0e4f0; color: var(--agc-blue); }
+/* "Showing X / Y" line */
+.search-result-meta { padding: 0 16px 8px; margin-top: -2px; background: var(--surface); border-bottom: 1px solid var(--border); font-family: var(--mono); font-size: 11px; font-weight: 600; color: var(--text3); display: flex; gap: 6px 14px; flex-wrap: wrap; }
+.search-result-meta strong { color: var(--agc-blue); font-weight: 700; }
 
-.result-count { padding: 6px 16px; font-size: 11px; font-family: var(--mono); color: var(--text3); letter-spacing: 0.5px; background: var(--surface); border-bottom: 1px solid var(--border); }
+/* ===== TABS ===== */
+.tabs { align-items: center; }
+.tab-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 8px; background: #fef3cd; color: var(--warn); font-family: var(--mono); font-size: 10px; font-weight: 800; line-height: 1; }
+.tabs-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
 
-/* TABLE */
-.table-wrap { flex: 1; overflow: auto; min-height: 0; padding: 0 16px 16px; background: var(--bg); }
-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; background: var(--surface); }
+/* ===== TABLE (desktop) ===== */
+.table-wrap { flex: 1; overflow: auto; min-height: 0; padding: 0; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
 th { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border); background: var(--surface2); white-space: nowrap; cursor: pointer; user-select: none; position: sticky; top: 0; z-index: 5; }
-th:hover { color: var(--agc-blue); }
-th.sorted { color: var(--agc-blue); }
-.sort-icon { opacity: 0.4; margin-left: 4px; font-size: 9px; }
+th:hover, th.sorted { color: var(--agc-blue); }
+th.no-sort { cursor: default; }
+th.no-sort:hover { color: var(--text3); }
+.sort-icon { opacity: 0.4; margin-left: 4px; }
 th.sorted .sort-icon { opacity: 1; }
-td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.td-title { max-width: 380px; min-width: 200px; }
-.td-status { max-width: 160px; min-width: 120px; }
-.td-deliv { max-width: 120px; min-width: 90px; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 tr:hover td { background: var(--surface2); }
 .row-clickable { cursor: pointer; }
-.mono { font-family: var(--mono); font-weight: 600; }
-.amount-cell { font-family: var(--mono); font-weight: 700; color: var(--agc-blue); text-align: right; }
+/* sticky first column, like Part ID in store */
+#prTable th:first-child, #prTable td:first-child { position: sticky; left: 0; background: var(--bg); box-shadow: 1px 0 0 var(--border); }
+#prTable th:first-child { z-index: 7; background: var(--surface2); }
+#prTable td:first-child { z-index: 2; font-family: var(--mono); font-weight: 600; color: var(--text); }
+#prTable tr:hover td:first-child { background: var(--surface2); }
+td.td-title { max-width: 360px; min-width: 220px; }
+td.td-amount { text-align: right; font-family: var(--mono); font-weight: 700; color: var(--agc-blue); }
+td.td-mono { font-family: var(--mono); font-size: 12px; color: var(--text2); }
+td.td-muted { color: var(--text2); font-size: 12px; }
+th.th-right { text-align: right; }
+.ccy { font-size: 10px; color: var(--text3); font-weight: 600; margin-left: 3px; }
+.row-actions { display: flex; gap: 4px; justify-content: flex-end; }
 
-/* BADGES */
-.badge-ordered { background: #dcf5e8; color: #005a2b; }
-.badge-approved { background: #e0e4f0; color: var(--agc-blue); }
-.badge-approving { background: #fef3c7; color: #92400e; }
-.badge-unapproved { background: #fde8ef; color: var(--agc-red); }
-.badge-deliv-compl { background: #dcf5e8; color: #005a2b; }
-.badge-undeliv { background: #fef3c7; color: #92400e; }
-.badge-partial { background: #e0e4f0; color: var(--agc-blue); }
+/* ===== BADGES (store palette) ===== */
+.badge-cat { background: #e0e4f0; color: var(--agc-blue); }
 .badge-none { background: var(--bg2); color: var(--text3); }
-.badge-section { background: #e0e4f0; color: var(--agc-blue); }
-.badge-investment { background: #ffe4b8; color: #92400e; }
-.badge-repair { background: #e0e4f0; color: var(--agc-blue); }
+.badge-ok { background: #dcf5e8; color: #005a2b; }
+.badge-warn { background: #fef3c7; color: #92400e; }
+.badge-danger { background: #fde8ef; color: var(--danger-text); }
+.badge-blue { background: #e0e4f0; color: var(--agc-blue); }
+.badge-invest { background: #ffe4b8; color: #92400e; }
 
-/* BUTTONS */
-.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+/* ===== CARD VIEW (mobile, store .inv-card) ===== */
+.card-list { display: none; padding: 12px 14px; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; }
+.inv-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); transition: all 0.15s; cursor: pointer; }
+.inv-card:active { transform: scale(0.99); }
+.inv-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed var(--border); }
+.inv-card-head { flex: 1; min-width: 0; }
+.card-taxonomy { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.part-id { font-family: var(--mono); font-size: 12px; color: var(--text2); font-weight: 600; }
+.inv-card-name { font-weight: 700; font-size: 15px; line-height: 1.35; color: var(--text); margin-top: 6px; overflow-wrap: anywhere; }
+.inv-card-pid { font-family: var(--sans); font-size: 13px; color: var(--text3); font-weight: 500; margin-top: 3px; }
+.inv-card-pid .class-val { color: var(--agc-blue); font-weight: 700; font-family: var(--mono); font-size: 13px; }
+.inv-card-stock-wrap { flex-shrink: 0; text-align: right; }
+.inv-card-stock { font-family: var(--mono); font-size: 16px; font-weight: 700; padding: 4px 10px; border-radius: 10px; display: inline-block; line-height: 1.2; background: #e0e4f0; color: var(--agc-blue); }
+.inv-card-stock-label { font-size: 9px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; font-weight: 600; }
+.card-line { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); margin-top: 4px; min-width: 0; }
+.card-line [data-lucide] { color: var(--text3); width: 13px; height: 13px; flex-shrink: 0; }
+.card-line span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+/* ===== BUTTONS (store values) ===== */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px; border: none; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; white-space: nowrap; text-decoration: none; }
 .btn-primary { background: var(--agc-blue); color: #fff; }
 .btn-primary:hover { background: var(--agc-blue2); }
-.btn-success { background: var(--accent2); color: #fff; }
-.btn-success:hover { background: #00773d; }
-.btn-ghost { background: var(--bg2); color: var(--text2); border: 1.5px solid var(--border); }
+.btn-ghost { background: var(--bg2); color: var(--text2); border: 1.5px solid var(--border-strong); }
 .btn-ghost:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
-/* === btn-danger — store standard: outline style === */
+.btn-danger-solid { background: var(--agc-red); color: #fff; }
+.btn-danger-solid:hover { background: #c0003c; }
 .btn-danger { background: transparent; color: var(--danger); border: 1.5px solid var(--danger); }
 .btn-danger:hover { background: var(--danger); color: #fff; }
 .btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 6px; }
-.btn-icon { width: 30px; height: 30px; padding: 0; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; border: 1.5px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all 0.15s; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn-icon { width: 32px; height: 32px; padding: 0; border-radius: 7px; display: flex; align-items: center; justify-content: center; border: 1.5px solid var(--border-strong); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all 0.15s; flex-shrink: 0; }
 .btn-icon:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
-.btn-icon.del:hover { border-color: var(--danger); color: var(--danger); background: #fde8ef; }
-.btn-icon i { width: 14px; height: 14px; }
+.btn-icon.del:hover { border-color: var(--danger); color: var(--danger-text); background: #fde8ef; }
 
-/* EMPTY STATE */
-.empty-state { padding: 60px 20px; text-align: center; color: var(--text3); }
-.empty-state i { width: 40px; height: 40px; opacity: 0.4; margin-bottom: 12px; }
-.empty-state p { font-size: 14px; margin-bottom: 4px; }
-.empty-state .hint { font-size: 12px; color: var(--text3); }
+/* ===== EMPTY ===== */
+.empty { text-align: center; padding: 60px 20px; color: var(--text3); }
+.empty > [data-lucide] { width: 40px; height: 40px; opacity: 0.5; margin-bottom: 12px; }
+.empty p { font-size: 14px; font-weight: 500; }
+.empty .hint { font-size: 12px; margin-top: 4px; font-weight: 400; }
+.empty .btn { margin-top: 16px; }
 
-/* MOBILE CARD VIEW */
-.card-list { display: none; padding: 12px 14px; flex-direction: column; gap: 10px; flex: 1; overflow-y: auto; min-height: 0; }
-.pr-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; box-shadow: var(--shadow); cursor: pointer; }
-.pr-card-top { display: flex; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); margin-bottom: 10px; }
-.pr-card-title { font-weight: 700; font-size: 14px; line-height: 1.35; flex: 1; }
-.pr-card-pid { font-family: var(--mono); font-size: 11px; color: var(--agc-blue); font-weight: 700; margin-top: 3px; }
-.pr-card-amount { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--agc-blue); white-space: nowrap; }
-.pr-card-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 12px; color: var(--text2); }
-.pr-card-row { width: 100%; display: flex; gap: 6px; align-items: center; margin-top: 4px; }
-
-/* === MODAL — store standard: 16px radius, fadeIn+slideUp, 18px 20px header, 20px title === */
+/* ===== MODALS (store values) ===== */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); animation: fadeIn 0.15s ease; }
 .modal-overlay.show { display: flex; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-.modal { background: var(--surface); border-radius: 16px; max-width: 880px; width: 100%; max-height: 92vh; display: flex; flex-direction: column; box-shadow: var(--shadow-md); overflow: hidden; animation: slideUp 0.2s ease; border: 1px solid var(--border); }
+.modal { background: var(--surface); border-radius: 16px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; animation: slideUp 0.2s ease; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.modal-header { padding: 18px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.modal-title { font-size: 20px; font-weight: 700; color: var(--agc-blue); display: flex; align-items: center; gap: 8px; }
-.modal-close { background: var(--bg2); border: 1px solid var(--border); color: var(--text2); font-size: 16px; cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
-.modal-close:hover { background: var(--border); color: var(--text); }
-.modal-body { padding: 28px; overflow-y: auto; flex: 1; }
-.modal-footer { padding: 14px 20px; background: var(--surface2); border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+.modal.nudge { animation: modalNudge 0.28s ease; }
+@keyframes modalNudge { 0%, 100% { transform: scale(1); } 40% { transform: scale(1.012); } }
+.modal-header { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.modal-title { font-size: 20px; font-weight: 700; color: var(--agc-blue); display: flex; align-items: center; gap: 8px; overflow-wrap: anywhere; }
+.modal-sub { font-size: 12px; color: var(--text2); margin-top: 3px; font-family: var(--mono); font-weight: 600; }
+.modal-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+.modal-footer { position: sticky; bottom: 0; z-index: 5; background: var(--surface); padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; align-items: center; }
+.modal-footer .footer-left { margin-right: auto; }
+.close-btn { background: var(--bg2); border: 1.5px solid var(--border-strong); color: var(--text2); cursor: pointer; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 6px; flex-shrink: 0; }
+.close-btn:hover { background: var(--border); color: var(--text); }
 
-/* FORM */
-.form-section { margin-bottom: 22px; }
-.form-section-title { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; }
-.form-section-title i { width: 13px; height: 13px; color: var(--agc-blue); }
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-.field label { display: block; font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 4px; font-family: var(--mono); }
-.field label .req { color: var(--agc-red); margin-left: 2px; }
-.field .hint-text { font-size: 11px; color: var(--text3); margin-top: 4px; font-family: var(--mono); }
-.field-full { grid-column: 1 / -1; }
-.field-span2 { grid-column: span 2; }
-@media (max-width: 600px) { .field-span2 { grid-column: 1 / -1; } }
+/* Forms (store .form-row / .form-group / .form-section-title) */
+.form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.form-group.full { grid-column: 1 / -1; }
+.form-section-title { font-size: 13px; font-weight: 800; letter-spacing: 0.8px; text-transform: uppercase; color: var(--agc-blue); padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-bottom: -4px; margin-top: 4px; display: flex; align-items: center; gap: 8px; }
+.form-section-title .btn { margin-left: auto; text-transform: none; letter-spacing: 0; }
+label { font-size: 11px; font-weight: 700; color: var(--text2); letter-spacing: 0.5px; text-transform: uppercase; line-height: 14px; min-height: 14px; display: block; }
+label .req { color: var(--agc-red); margin-left: 2px; }
+.field-hint { font-size: 11px; color: var(--text3); font-family: var(--mono); min-height: 14px; overflow-wrap: anywhere; }
+.inline-pair { display: flex; gap: 8px; }
+.inline-pair > :first-child { flex: 1; min-width: 0; }
+.inline-pair > :last-child { width: 96px; flex-shrink: 0; }
 
-/* ITEM TABLE in modal */
-.item-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--surface2); }
-.item-table { width: 100%; border-collapse: collapse; font-size: 12px; background: var(--surface); }
-.item-table th { background: var(--surface2); padding: 8px; text-align: left; font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); border-bottom: 1.5px solid var(--border); text-transform: uppercase; letter-spacing: 0.5px; position: static; cursor: default; }
+/* Item table inside the Create modal */
+.item-table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
+.item-table { min-width: 620px; border-collapse: collapse; font-size: 12px; background: var(--surface); }
+.item-table th { position: static; cursor: default; padding: 8px; font-size: 10px; letter-spacing: 0.5px; border-bottom: 1.5px solid var(--border); }
 .item-table th:hover { color: var(--text3); }
-.item-table td { padding: 6px 8px; border-bottom: 1px solid var(--border); max-width: none; }
-.item-table input, .item-table select { width: 100%; background: transparent; border: 1px solid transparent; padding: 4px 6px; font-size: 12px; border-radius: 4px; }
-.item-table input:focus, .item-table select:focus { border-color: var(--agc-blue); background: var(--surface); }
-.item-table .col-no { width: 36px; text-align: center; font-family: var(--mono); color: var(--text3); font-size: 11px; }
-.item-table .col-qty input, .item-table .col-price input { text-align: right; font-family: var(--mono); }
+.item-table td { padding: 6px; max-width: none; overflow: visible; border-bottom: 1px solid var(--border); }
+.item-table tr:last-child td { border-bottom: none; }
+.item-table tr:hover td { background: transparent; }
+.item-table input { padding: 6px 8px; font-size: 12px; border-radius: 6px; }
+.item-table .col-no { width: 34px; text-align: center; font-family: var(--mono); color: var(--text3); font-size: 11px; }
+.item-table .num { text-align: right; font-family: var(--mono); }
 .item-table .col-amount { font-family: var(--mono); font-weight: 700; text-align: right; color: var(--agc-blue); white-space: nowrap; }
-.item-table .col-actions { width: 38px; text-align: center; }
-.totals-box { margin-top: 14px; padding: 14px 18px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; display: flex; flex-direction: column; gap: 6px; }
-.totals-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text2); }
-.totals-row.grand { padding-top: 8px; margin-top: 4px; border-top: 1.5px solid var(--border); font-size: 16px; font-weight: 700; color: var(--agc-blue); }
-.totals-row .label { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
-.totals-row .amount { font-family: var(--mono); font-weight: 700; }
+.item-table .col-actions { width: 40px; text-align: center; }
+.totals-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.totals-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; color: var(--text2); }
+.totals-row .t-label { font-family: var(--mono); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.totals-row.grand { padding-top: 8px; border-top: 1px solid var(--border2); color: var(--agc-blue); }
+.totals-row.grand .t-val { font-family: var(--mono); font-size: 18px; font-weight: 700; }
+.totals-row input { width: 90px; text-align: right; font-family: var(--mono); padding: 6px 10px; }
 
-/* DETAIL VIEW */
-.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.detail-item { padding: 14px 20px; border-bottom: 1px solid var(--border); }
-.detail-item:nth-child(odd):not(.detail-full-row) { border-right: 1px solid var(--border); }
-.detail-item:nth-last-child(1):nth-child(odd):not(.detail-full-row), .detail-item:nth-last-child(2):not(.detail-full-row) { border-bottom: none; }
-.detail-item:nth-last-child(1) { border-bottom: none; }
-.detail-item .detail-label { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1.8px; margin-bottom: 5px; opacity: 0.75; display: flex; align-items: center; gap: 5px; }
-.detail-item .detail-label [data-lucide] { width: 11px; height: 11px; }
-.detail-item .detail-value { font-size: 14px; color: var(--agc-blue); font-weight: 600; word-break: break-word; }
-.detail-item .detail-value.mono { font-family: var(--mono); font-weight: 700; color: var(--agc-blue); }
-.detail-item .detail-value.plain { color: var(--text); font-weight: 500; }
-.detail-item .detail-value.muted { color: var(--text3); font-weight: 500; }
-.detail-full-row { grid-column: 1 / -1; border-right: none !important; }
-/* DETAIL MODAL HEADER */
-.detail-modal-header { background: var(--agc-blue); padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.detail-icon-badge { width: 42px; height: 42px; border-radius: 10px; background: rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; color: #fff; flex-shrink: 0; }
-.detail-icon-badge [data-lucide] { width: 20px; height: 20px; }
-.detail-modal-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 2px; color: rgba(255,255,255,0.6); text-transform: uppercase; margin-bottom: 2px; }
-.detail-modal-prno { font-family: var(--mono); font-size: 20px; font-weight: 700; color: #fff; }
-.detail-modal-close { background: rgba(255,255,255,0.15); border: none; color: #fff; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; flex-shrink: 0; }
-.detail-modal-close:hover { background: rgba(255,255,255,0.28); }
-.detail-modal-close [data-lucide] { width: 16px; height: 16px; }
-/* DETAIL STATUS BAR */
-.detail-status-bar { padding: 10px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.detail-post-date { font-size: 12px; color: var(--text3); font-family: var(--mono); }
-/* DETAIL PERSON + AVATAR */
-.detail-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--agc-blue); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.detail-person { display: flex; align-items: center; gap: 8px; }
-/* DETAIL AMOUNT */
-.detail-amount { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--agc-blue); display: flex; align-items: baseline; gap: 5px; }
-.detail-amount-unit { font-family: var(--mono); font-size: 12px; color: var(--text3); font-weight: 700; }
+/* Detail (store .detail-grid) */
+.detail-status { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.detail-status .posted { font-family: var(--mono); font-size: 11px; color: var(--text3); font-weight: 600; margin-left: auto; }
+.detail-amounts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.amount-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; }
+.amount-box .detail-label { margin-bottom: 4px; }
+.amount-box .amount-val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--agc-blue); line-height: 1.2; }
+.amount-box .amount-val.muted { color: var(--text3); font-size: 14px; }
+.amount-box .ccy { font-size: 11px; }
+.detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.detail-item { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.detail-item.full { grid-column: 1 / -1; }
+.detail-label { font-size: 10px; color: var(--text3); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; font-weight: 700; }
+.detail-val { font-size: 14px; font-weight: 500; color: var(--text); overflow-wrap: anywhere; }
+.detail-val.mono { font-family: var(--mono); }
+.detail-val.muted { color: var(--text3); }
+.budget-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.detail-items { border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
+.detail-items table { font-size: 12px; }
+.detail-items th { position: static; cursor: default; padding: 8px 10px; }
+.detail-items th:hover { color: var(--text3); }
+.detail-items td { padding: 8px 10px; max-width: none; white-space: normal; }
+.detail-items tr:last-child td { border-bottom: none; }
+.detail-items tr:hover td { background: transparent; }
 
-/* === TOAST — store standard: container pattern, bottom-right, slideInR === */
+/* Import */
+.upload-zone { border: 2px dashed var(--border2); border-radius: 12px; padding: 22px; text-align: center; cursor: pointer; background: var(--surface2); transition: all 0.15s; }
+.upload-zone:hover { border-color: var(--agc-blue); background: #f0f2fa; }
+.upload-zone [data-lucide] { width: 30px; height: 30px; color: var(--agc-blue); }
+.upload-zone p { font-size: 13px; color: var(--text2); margin-top: 6px; }
+.upload-zone .file-name { font-family: var(--mono); font-size: 12px; color: var(--agc-blue); font-weight: 700; }
+.mode-options { display: flex; flex-direction: column; gap: 8px; }
+.mode-option { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1.5px solid var(--border-strong); border-radius: 10px; cursor: pointer; text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.4; background: var(--surface); }
+.mode-option:has(input:checked) { border-color: var(--agc-blue); background: #f0f2fa; }
+.mode-option input { width: 16px; height: 16px; margin-top: 2px; accent-color: var(--agc-blue); flex-shrink: 0; }
+.mode-option small { display: block; font-weight: 400; color: var(--text2); font-size: 12px; }
+.replace-confirm { display: none; flex-direction: column; gap: 5px; }
+.replace-confirm.show { display: flex; }
+.note { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.note code { font-family: var(--mono); font-size: 11px; background: var(--bg2); padding: 1px 5px; border-radius: 4px; }
+
+/* ===== CONFIRM DIALOG (store) ===== */
+.dlg-overlay { position: fixed; inset: 0; z-index: 650; background: rgba(17,24,39,0.62); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
+.dlg-overlay[hidden] { display: none; }
+.dlg-card { --dlg: var(--warn); position: relative; width: 100%; max-width: 400px; max-height: calc(100dvh - 40px); overflow-y: auto; background: var(--surface); border: 1.5px solid var(--border2); border-radius: 16px; padding: 28px 22px 20px; box-shadow: var(--shadow-md); outline: none; animation: txPop 0.22s cubic-bezier(.2,1.3,.4,1); }
+@keyframes txPop { from { transform: scale(0.88); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.dlg-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: var(--dlg); }
+.dlg-card[data-tone="danger"] { --dlg: var(--agc-red); }
+.dlg-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--dlg); color: #fff; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; }
+.dlg-icon [data-lucide], .dlg-icon svg { width: 24px; height: 24px; }
+.dlg-title { font-size: 18px; font-weight: 800; line-height: 1.3; color: var(--text); }
+.dlg-msg { margin-top: 8px; font-size: 14px; line-height: 1.5; color: var(--text2); white-space: pre-line; word-break: break-word; }
+.dlg-actions { display: flex; gap: 10px; margin-top: 20px; }
+.dlg-actions .btn { flex: 1; justify-content: center; min-height: 48px; font-size: 14px; }
+@media (max-width: 420px) { .dlg-actions { flex-direction: column-reverse; } }
+
+/* ===== TOAST (store) ===== */
 .toast-container { position: fixed; bottom: 24px; right: 20px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
 .toast { background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 13px; font-weight: 500; min-width: 200px; animation: slideInR 0.3s ease; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); }
 @keyframes slideInR { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 .toast.success { border-left: 4px solid var(--accent2); }
 .toast.error { border-left: 4px solid var(--danger); }
 .toast.warn { border-left: 4px solid var(--warn); }
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-/* FILE INPUT */
-.file-input-row { display: flex; align-items: center; gap: 8px; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 8px; padding: 5px 10px; transition: border 0.2s; }
-.file-input-row:focus-within { border-color: var(--agc-blue); }
-.file-label { flex: 1; font-size: 11px; color: var(--text3); font-family: var(--mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.file-btn { padding: 4px 10px !important; font-size: 11px !important; cursor: pointer; flex-shrink: 0; }
-
-/* UPLOAD */
-.upload-zone { border: 2px dashed var(--border2); border-radius: 12px; padding: 22px; text-align: center; cursor: pointer; background: var(--surface2); transition: all 0.15s; }
-.upload-zone:hover { border-color: var(--agc-blue); background: #f0f2fa; }
-.upload-zone p { font-size: 13px; color: var(--text2); margin-top: 4px; }
-
-/* RESPONSIVE */
-@media (max-width: 768px) {
-  html, body { overflow-x: hidden; }
-  .sync-status { display: none; }
-  .hbtn { padding: 6px 8px; font-size: 12px; white-space: nowrap; }
-  .table-wrap { display: none; }
-  .card-list { display: flex; }
-  .controls-main { flex-direction: column; align-items: stretch; }
-  .search-wrap { min-width: auto; }
-  .modal { max-height: 100vh; border-radius: 0; }
-  .modal-body { padding: 14px; }
-  .form-grid { grid-template-columns: 1fr; }
-  .item-table { font-size: 11px; }
-  .item-table th, .item-table td { padding: 5px 4px; }
-}
-@media (min-width: 769px) {
-  .card-list { display: none !important; }
-  .table-wrap { display: block; }
-}
+/* Guest / signed-out gate */
+.gate { max-width: 440px; margin: 64px auto; padding: 0 20px; text-align: center; }
+.gate-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 28px 22px 22px; }
+.gate-icon { width: 48px; height: 48px; border-radius: 14px; background: #eff6ff; color: var(--agc-blue); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+.gate h2 { font-size: 20px; font-weight: 800; color: var(--agc-blue); }
+.gate p { font-size: 14px; color: var(--text2); line-height: 1.5; margin-top: 8px; }
+.gate-actions { display: flex; gap: 10px; margin-top: 20px; }
+.gate-actions .btn { flex: 1; justify-content: center; min-height: 44px; }
 
 .hidden { display: none !important; }
+
+/* ===== RESPONSIVE (store breakpoints) ===== */
+@media (min-width: 768px) { .card-list { display: none !important; } }
+@media (max-width: 767px) {
+  .table-wrap { display: none; }
+  .card-list { display: flex; }
+  .hbtn .lbl, .header-back .lbl { display: none; }
+  .hbtn, .header-back { padding: 6px 9px; white-space: nowrap; }
+  #userProfileMenu, .header-divider { display: none !important; }
+  /* single-row chips with a 44px tap target (pill stays 34px) */
+  .merged-filter-chips { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; padding: 8px 12px 10px; scrollbar-width: none; }
+  .merged-filter-chips::-webkit-scrollbar { display: none; }
+  .quick-filter-chip { position: relative; min-height: 34px; padding: 6px 13px; font-size: 13px; }
+  .quick-filter-chip::before { content: ''; position: absolute; left: 0; right: 0; top: -8px; bottom: -8px; }
+  .chip-count { min-width: 24px; padding: 2px 6px; }
+  .search-result-meta { padding: 0 12px 8px; font-size: 10.5px; }
+  #searchInput { min-height: 44px; font-size: 16px; }
+  .btn-square { width: 44px; height: 44px; }
+  .tabs { padding: 0 8px; }
+  .tabs.mobile-hidden { display: none; }
+  .tab { min-height: 44px; }
+  .btn, .modal-footer .btn { min-height: 44px; }
+  .close-btn { width: 44px; height: 44px; }
+  /* full-screen modal with a fixed action bar */
+  .modal-overlay { padding: 0; align-items: stretch; }
+  .modal { max-width: 100% !important; width: 100%; border-radius: 0; max-height: 100vh; height: 100vh; height: 100dvh; display: flex; flex-direction: column; }
+  .modal-body { flex: 1; overflow-y: auto; padding-bottom: calc(110px + env(safe-area-inset-bottom)); }
+  .modal-footer { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); z-index: 250; box-shadow: 0 -4px 16px rgba(0,0,0,0.08); }
+  .modal-footer .btn { flex: 1; justify-content: center; padding: 12px 8px; font-size: 14px; min-width: 0; }
+  .modal-footer .footer-left { margin-right: 0; }
+  .modal-footer .hide-mobile { display: none; }
+  .modal input:not([type=checkbox]):not([type=radio]):not([type=file]), .modal select, .modal textarea { min-height: 44px; font-size: 16px; }
+  .item-table input { min-height: 40px !important; font-size: 15px !important; }
+  .detail-amounts { grid-template-columns: 1fr 1fr; }
+  .toast-container { left: 12px; right: 12px; bottom: 16px; }
+}
+@media (max-width: 480px) {
+  .form-row { grid-template-columns: 1fr; }
+  .detail-grid { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
 
-<div class="offline-banner" id="offlineBanner"><i data-lucide="alert-triangle" style="width:14px;height:14px"></i> ไม่มีสัญญาณอินเทอร์เน็ต — ข้อมูลอาจไม่อัปเดต</div>
+<div class="offline-banner" id="offlineBanner"><i data-lucide="alert-triangle" style="width:14px;height:14px"></i> Offline — data may be out of date</div>
 
 <header class="header">
   <div class="header-nav">
     <img src="logo.png" alt="AGC" class="logo-img">
-    <a href="store.html" class="nav-home">AFT-CMMS</a>
-    <span class="nav-sep">/</span>
-    <a href="pr.html" class="nav-mod">Purchase Request</a>
+    <span class="nav-home">AFT-CMMS</span>
+    <span class="nav-sep" aria-hidden="true">–</span>
+    <span class="nav-mod">Purchase Request</span>
   </div>
   <div class="header-right">
+    <a class="header-back" href="store.html" title="Back to Store"><i data-lucide="home"></i><span class="lbl"> Store</span></a>
+    <button class="hbtn" id="hdrNew" onclick="openCreateModal()"><i data-lucide="plus"></i><span>New PR</span></button>
+    <button class="hbtn" id="hdrImport" onclick="openImportModal()" title="Import CSV"><i data-lucide="upload"></i><span class="lbl">Import</span></button>
+    <button class="hbtn" id="hdrExport" onclick="exportCSV()" title="Export CSV"><i data-lucide="download"></i><span class="lbl">Export</span></button>
+    <div class="header-divider"></div>
+    <div class="user-profile-menu" id="userProfileMenu" style="display:none"><i data-lucide="user" style="width:14px;height:14px"></i><span id="userDisplayNameText"></span></div>
     <div class="sync-status" id="syncStatus"><div class="sync-dot" id="syncDot"></div><span id="syncText">Live</span></div>
-    <button class="hbtn" onclick="openCreateModal()"><i data-lucide="plus"></i> สร้าง PR</button>
-    <button class="hbtn" onclick="openImportModal()"><i data-lucide="upload"></i> Import CSV</button>
-    <button class="hbtn" onclick="window.exportCSV()"><i data-lucide="download"></i> Export CSV</button>
   </div>
 </header>
 
 <div class="loading-overlay" id="loadingOverlay">
   <div class="spinner"></div>
-  <div class="loading-text" id="loadingText">กำลังโหลดข้อมูล PR...</div>
+  <div class="loading-text">Loading purchase requests…</div>
 </div>
 
-<div class="pr-page" id="prPage" style="display:none">
+<!-- Shown instead of the page for Guest mode (no Supabase session): PR data is limited to signed-in accounts -->
+<div class="gate hidden" id="guestGate">
+  <div class="gate-card">
+    <div class="gate-icon"><i data-lucide="lock"></i></div>
+    <h2>Sign-in required</h2>
+    <p>Purchase Requests hold prices and vendor details, so they are only available to signed-in accounts. Guest mode can still use the Store.</p>
+    <div class="gate-actions">
+      <a class="btn btn-ghost" href="store.html"><i data-lucide="home"></i> Back to Store</a>
+      <button class="btn btn-primary" onclick="signInFromGuest()"><i data-lucide="log-in"></i> Sign in</button>
+    </div>
+  </div>
+</div>
 
-  <div class="tabs">
-    <button class="tab active" data-tab="history" onclick="switchTab('history')">PR Lists</button>
-    <button class="tab" data-tab="draft" id="draftTabBtn" style="display:none" onclick="switchTab('draft')">
-      Drafts <span class="tab-badge" id="draftBadge">0</span>
-    </button>
-    <button class="tab" data-tab="create" onclick="switchTab('create')">Create PR</button>
+<div class="inv-page hidden" id="prPage">
+  <div class="controls-bar">
+    <div class="controls-main">
+      <div class="search-wrap">
+        <svg class="search-icon" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="searchInput" placeholder="Search PR No., PO No., title, vendor, budget code…" oninput="onSearchInput()" autocomplete="off">
+        <button class="clear-btn" id="clearBtn" onclick="clearSearch()" aria-label="Clear search"><i data-lucide="x" style="width:14px;height:14px"></i></button>
+      </div>
+      <button class="btn-square" onclick="openCreateModal()" title="New PR" aria-label="New PR"><i data-lucide="plus" style="width:18px;height:18px"></i></button>
+    </div>
+  </div>
+  <div class="merged-filter-chips" id="quickFilterChips"></div>
+  <div class="search-result-meta" id="searchResultMeta">—</div>
+
+  <div class="tabs" id="tabsBar">
+    <button class="tab active" data-tab="list" onclick="switchTab('list')">PR List</button>
+    <button class="tab" data-tab="drafts" id="draftTabBtn" onclick="switchTab('drafts')">Drafts <span class="tab-badge" id="draftBadge">0</span></button>
   </div>
 
-  <div id="tabHistory">
-    <div class="merged-filter-bar" id="statusChips"></div>
-    <div class="controls-bar">
-      <div class="controls-main">
-        <div class="search-wrap">
-          <svg class="search-icon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="searchInput" placeholder="ค้นหา PR No, Title, Creator, Vendor, Budget code..." oninput="onSearchInput()">
-          <button class="clear-btn" id="clearBtn" onclick="clearSearch()">×</button>
-        </div>
-      </div>
-    </div>
-    <div class="result-count" id="resultCount">—</div>
+  <div id="tabList">
     <div class="table-wrap">
       <table id="prTable">
         <thead>
           <tr>
-            <th onclick="sortBy('PR No.')">PR No <span class="sort-icon">↕</span></th>
-            <th onclick="sortBy('PO No.')">PO No</th>
-            <th onclick="sortBy('PR Title')">Title</th>
-            <th onclick="sortBy('Section')">Section</th>
-            <th onclick="sortBy('Work Class')">Class</th>
-            <th onclick="sortBy('Status')">Status</th>
-            <th onclick="sortBy('Deliv. Status')">Delivery</th>
-            <th onclick="sortBy('PR Amount')" style="text-align:right">Amount</th>
-            <th onclick="sortBy('Creator')">Creator</th>
-            <th onclick="sortBy('Post Date')">Post Date</th>
-            <th style="text-align:center">View</th>
+            <th data-sort="PR No." onclick="sortBy('PR No.')">PR No. <span class="sort-icon">↕</span></th>
+            <th data-sort="PO No." onclick="sortBy('PO No.')">PO No. <span class="sort-icon">↕</span></th>
+            <th data-sort="PR Title" onclick="sortBy('PR Title')">Title <span class="sort-icon">↕</span></th>
+            <th data-sort="Section" onclick="sortBy('Section')">Section <span class="sort-icon">↕</span></th>
+            <th data-sort="Work Class" onclick="sortBy('Work Class')">Class <span class="sort-icon">↕</span></th>
+            <th data-sort="Status" onclick="sortBy('Status')">Status <span class="sort-icon">↕</span></th>
+            <th data-sort="Deliv. Status" onclick="sortBy('Deliv. Status')">Delivery <span class="sort-icon">↕</span></th>
+            <th data-sort="PR Amount" class="th-right" onclick="sortBy('PR Amount')">Amount <span class="sort-icon">↕</span></th>
+            <th data-sort="PR_Vendor" onclick="sortBy('PR_Vendor')">Vendor <span class="sort-icon">↕</span></th>
+            <th data-sort="Creator" onclick="sortBy('Creator')">Creator <span class="sort-icon">↕</span></th>
+            <th data-sort="Post Date" onclick="sortBy('Post Date')">Posted <span class="sort-icon">↕</span></th>
+            <th class="no-sort"><span class="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody id="prTbody"></tbody>
       </table>
-      <div id="emptyState" class="empty-state hidden">
-        <i data-lucide="inbox"></i>
-        <p>ยังไม่มี PR ในระบบ</p>
-        <p class="hint">กด "สร้าง PR" ที่ header หรือ Import CSV เพื่อเริ่มต้น</p>
-      </div>
+      <div id="listEmpty" class="empty hidden"></div>
     </div>
     <div class="card-list" id="prCardList"></div>
   </div>
 
-  <div id="tabDraft" style="display:none">
-    <div class="draft-tab-header">Saved Drafts — คลิกที่รายการเพื่อแก้ไขและส่ง PR</div>
-    <div class="table-wrap" style="flex:1;overflow:auto;padding:0 16px 16px">
-      <table style="width:100%;border-collapse:separate;border-spacing:0;font-size:13px;background:var(--surface)">
+  <div id="tabDrafts" class="hidden">
+    <div class="table-wrap">
+      <table id="draftTable">
         <thead><tr>
-          <th>PR Title</th><th>Section</th><th>Creator</th><th>Saved</th>
-          <th style="width:50px;text-align:center"></th>
+          <th class="no-sort">Title</th><th class="no-sort">Section</th><th class="no-sort">Creator</th>
+          <th class="no-sort th-right">Est. Amount</th><th class="no-sort">Saved</th><th class="no-sort"><span class="sr-only">Actions</span></th>
         </tr></thead>
         <tbody id="draftTbody"></tbody>
       </table>
     </div>
+    <div class="card-list" id="draftCardList"></div>
   </div>
-
-  <div id="tabCreate" style="display:none">
-    <div style="padding:20px;max-width:1100px;margin:0 auto;width:100%">
-      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">
-        <i data-lucide="info" style="width:13px;height:13px;vertical-align:middle"></i>
-        การสร้าง PR ทำผ่าน Modal — กดปุ่มด้านล่างเพื่อเปิดฟอร์ม
-      </p>
-      <button class="btn btn-primary" onclick="openCreateModal()"><i data-lucide="plus"></i> เปิดฟอร์มสร้าง PR</button>
-    </div>
-  </div>
-
 </div>
 
-<datalist id="unit-opts">
-  <option value="EA"><option value="SET"><option value="LOT"><option value="Meter"><option value="Kg">
-</datalist>
-<datalist id="ccy-opts">
-  <option value="THB"><option value="USD"><option value="EUR"><option value="CHF"><option value="CNY">
-</datalist>
+<datalist id="unit-opts"><option value="EA"><option value="SET"><option value="LOT"><option value="PCS"><option value="M"><option value="KG"></datalist>
+<datalist id="ccy-opts"><option value="THB"><option value="USD"><option value="EUR"><option value="JPY"><option value="CHF"><option value="CNY"></datalist>
 
-<!-- CREATE PR MODAL -->
-<div class="modal-overlay" id="createModal">
-  <div class="modal" style="max-width:980px">
+<!-- ===== CREATE PR ===== -->
+<div class="modal-overlay" id="createModal" data-form="1">
+  <div class="modal" style="max-width:760px" role="dialog" aria-modal="true" aria-labelledby="createTitle">
     <div class="modal-header">
-      <div class="modal-title"><i data-lucide="file-plus"></i> Create Purchase Request</div>
-      <button class="modal-close" onclick="closeCreateModal()">×</button>
+      <div><div class="modal-title" id="createTitle">New Purchase Request</div><div class="modal-sub" id="createSub">PR No. is assigned on submit</div></div>
+      <button class="close-btn" onclick="closeCreateModal()" aria-label="Close"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
-      <div class="form-section">
-        <div class="form-section-title"><i data-lucide="info"></i> General Information</div>
-        <div class="form-grid">
-          <div class="field field-full">
-            <label>PR Title / Job Name <span class="req">*</span></label>
-            <input type="text" id="f_title" placeholder="เช่น UT-REPAIR A/C EP 90KW">
-          </div>
-          <div class="field">
-            <label>Section <span class="req">*</span></label>
-            <select id="f_section">
-              <option value="">— เลือก —</option>
-              <option>Electrical</option><option>Mechanical</option><option>Power</option>
-              <option>RawMat</option><option>Melting</option><option>Drawing</option>
-              <option>ORC</option><option>Cutting</option><option>Delivery</option>
-              <option>Mirror</option><option>RFG</option><option>QA</option>
-              <option>Admin</option><option>MECH</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Vendor / Supplier</label>
-            <input type="text" id="f_prVendor" placeholder="ชื่อผู้ขาย">
-          </div>
-          <div class="field">
-            <label>Request Type</label>
-            <select id="f_requestType" onchange="window.toggleScopeDoc()">
-              <option value="Purchase">Purchase</option>
-              <option value="Project">Project</option>
-            </select>
-          </div>
-          <div class="field" id="scopeDocRow" style="display:none">
-            <label>Scope Document</label>
-            <div class="file-input-row">
-              <span class="file-label" id="scopeDocLabel">ยังไม่ได้เลือกไฟล์</span>
-              <label class="btn btn-sm btn-ghost file-btn">
-                <i data-lucide="upload" style="width:12px;height:12px"></i> เลือกไฟล์
-                <input type="file" id="f_scopeDoc" style="display:none" accept=".pdf,.doc,.docx" onchange="window.updateFileLabel('f_scopeDoc','scopeDocLabel')">
-              </label>
-            </div>
-          </div>
-          <div class="field">
-            <label>Quotation Number</label>
-            <input type="text" id="f_quotation" placeholder="QTN-2026-001">
-          </div>
-          <div class="field">
-            <label>Quotation File</label>
-            <div class="file-input-row">
-              <span class="file-label" id="quotFileLabel">ยังไม่ได้เลือกไฟล์</span>
-              <label class="btn btn-sm btn-ghost file-btn">
-                <i data-lucide="upload" style="width:12px;height:12px"></i> เลือกไฟล์
-                <input type="file" id="f_quotFile" style="display:none" accept=".pdf,.jpg,.png" onchange="window.updateFileLabel('f_quotFile','quotFileLabel')">
-              </label>
-            </div>
-          </div>
-          <div class="field">
-            <label>Budget Code</label>
-            <div id="budgetRepairUI">
-              <div style="display:flex;gap:8px">
-                <select id="f_budgetSection" onchange="window.onBudgetSectionChange()" style="flex:1">
-                  <option value="">Select Type</option>
-                  <option>Hot</option><option>Cold</option><option>Electrical</option>
-                  <option>Mechanical</option><option>Logistic</option><option>QA</option>
-                  <option>Admin</option><option>Mirror</option><option>RFG</option>
-                </select>
-                <select id="f_budgetSuffix" onchange="window.onBudgetSuffixChange()" style="width:90px;flex-shrink:0">
-                  <option value="">—</option>
-                </select>
-              </div>
-              <div id="budgetPreview" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-top:6px;min-height:14px;letter-spacing:0.3px"></div>
-            </div>
-            <input type="text" id="f_budgetFree" placeholder="Budget Code" style="font-family:var(--mono);display:none" oninput="$('f_budgetCode').value=this.value.trim()">
-            <input type="hidden" id="f_budgetCode">
-          </div>
-          <div class="field">
-            <label>Required Delivery Date</label>
-            <input type="date" id="f_deliveryDate">
-          </div>
+      <div class="form-section-title">General</div>
+      <div class="form-row">
+        <div class="form-group full">
+          <label for="f_title">PR Title / Job Name <span class="req">*</span></label>
+          <input type="text" id="f_title" placeholder="e.g. UT-REPAIR A/C EP 90KW">
+        </div>
+        <div class="form-group">
+          <label for="f_section">Section <span class="req">*</span></label>
+          <select id="f_section">
+            <option value="">—</option>
+            <option>Electrical</option><option>Mechanical</option><option>Power</option>
+            <option>RawMat</option><option>Melting</option><option>Drawing</option>
+            <option>ORC</option><option>Cutting</option><option>Delivery</option>
+            <option>Mirror</option><option>RFG</option><option>QA</option>
+            <option>Admin</option><option>MECH</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="f_requestType">Request Type</label>
+          <select id="f_requestType"><option>Purchase</option><option>Project</option></select>
+        </div>
+        <div class="form-group">
+          <label for="f_prVendor">Vendor / Supplier</label>
+          <input type="text" id="f_prVendor" placeholder="Vendor name">
+        </div>
+        <div class="form-group">
+          <label for="f_quotation">Quotation No.</label>
+          <input type="text" id="f_quotation" placeholder="e.g. SM260067">
+        </div>
+        <div class="form-group">
+          <label for="f_deliveryDate">Required Delivery Date</label>
+          <input type="date" id="f_deliveryDate">
+        </div>
+        <div class="form-group">
+          <label for="f_creator">Requested By <span class="req">*</span></label>
+          <select id="f_creator">
+            <option value="">—</option>
+            <option>Ruangyote P.</option><option>Apinya C.</option><option>Natchapol S.</option>
+            <option>Songrit C.</option><option>Praween P.</option><option>Jaruwat B.</option>
+            <option>Wisawakorn N.</option><option>Worapol B.</option><option>Jaras S.</option>
+          </select>
         </div>
       </div>
-      <div class="form-section">
-        <div class="form-section-title"><i data-lucide="layout-grid"></i> Request Classification</div>
-        <div class="form-grid">
-          <div class="field">
-            <label>Category</label>
-            <select id="f_category" onchange="window.toggleBudgetMode()"><option value="">—</option><option>Repairing</option><option>Investment</option></select>
-          </div>
-          <div class="field">
-            <label>Plan Type</label>
-            <select id="f_planType"><option value="">—</option><option>In plan list</option><option>Out of list</option></select>
-          </div>
-          <div class="field">
-            <label>Work Class</label>
-            <select id="f_workClass" style="color: var(--agc-blue);">
-              <option value="">—</option>
-              <option>Repair A</option><option>Repair B</option><option>Repair C</option>
-              <option>Improve</option><option>Safety</option>
+
+      <div class="form-section-title">Classification</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="f_category">Category</label>
+          <select id="f_category" onchange="toggleBudgetMode()"><option value="">—</option><option>Repairing</option><option>Investment</option></select>
+        </div>
+        <div class="form-group">
+          <label for="f_workClass">Work Class</label>
+          <select id="f_workClass"><option value="">—</option><option>Repair A</option><option>Repair B</option><option>Repair C</option><option>Improve</option><option>Safety</option></select>
+        </div>
+        <div class="form-group">
+          <label for="f_planType">Plan Type</label>
+          <select id="f_planType"><option value="">—</option><option>In plan list</option><option>Out of list</option></select>
+        </div>
+        <div class="form-group">
+          <label for="f_purchaser">Purchaser</label>
+          <select id="f_purchaser">
+            <option value="">—</option>
+            <option>Ploypailin</option><option>Narumol</option><option>Piyaros</option><option>Ittipat</option>
+            <option>Bunjerd</option><option>Sudarat</option><option>Piyakorn</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label for="f_budgetSection" id="budgetLabel">Budget Code</label>
+          <div id="budgetRepairUI" class="inline-pair">
+            <select id="f_budgetSection" onchange="onBudgetSectionChange()" aria-label="Budget area">
+              <option value="">Budget area</option>
+              <option>Hot</option><option>Cold</option><option>Electrical</option><option>Mechanical</option>
+              <option>Logistic</option><option>QA</option><option>Admin</option><option>Mirror</option><option>RFG</option>
             </select>
+            <select id="f_budgetSuffix" onchange="updateBudgetPreview()" aria-label="Budget account"><option value="">—</option></select>
           </div>
-          <div class="field">
-            <label>Purchaser</label>
-            <select id="f_purchaser">
-              <option value="">— เลือก —</option>
-              <option>Ploypailin</option><option>Narumol</option><option>Piyaros</option>
-              <option>Ittipat</option><option>Bunjerd</option><option>Sudarat</option><option>Piyakorn</option>
-            </select>
-          </div>
+          <input type="text" id="f_budgetFree" class="hidden" placeholder="Investment budget code" style="font-family:var(--mono)" oninput="document.getElementById('f_budgetCode').value=this.value.trim()">
+          <input type="hidden" id="f_budgetCode">
+          <div class="field-hint" id="budgetPreview"></div>
         </div>
       </div>
-      <div class="form-section">
-        <div class="form-section-title">
-          <i data-lucide="clipboard-list"></i> Item List
-          <button class="btn btn-sm btn-ghost" onclick="addItemRow()" style="margin-left:auto"><i data-lucide="plus" style="width:12px;height:12px"></i> Add Row</button>
+
+      <div class="form-section-title">Items <button class="btn btn-ghost btn-sm" onclick="addItemRow()"><i data-lucide="plus" style="width:13px;height:13px"></i> Add row</button></div>
+      <div class="item-table-wrap">
+        <table class="item-table">
+          <thead><tr>
+            <th class="col-no">#</th><th>Description</th><th style="width:70px">Qty</th><th style="width:76px">Unit</th>
+            <th style="width:110px;text-align:right">Unit Price</th><th style="width:72px">Ccy</th>
+            <th style="width:110px;text-align:right">Amount</th><th class="col-actions"></th>
+          </tr></thead>
+          <tbody id="itemTbody"></tbody>
+        </table>
+      </div>
+      <div class="totals-box">
+        <div class="totals-row"><span class="t-label">Subtotal</span><span class="mono" id="t_sub" style="font-family:var(--mono);font-weight:600">0</span></div>
+        <div class="totals-row">
+          <label class="t-label" for="f_discount" style="min-height:0">Discount %</label>
+          <input type="number" id="f_discount" min="0" max="100" step="0.1" value="0" oninput="updateTotals()">
         </div>
-        <div class="item-table-wrap">
-          <table class="item-table" id="itemTable">
-            <thead><tr>
-              <th class="col-no">#</th>
-              <th>Description</th>
-              <th style="width:62px">Qty</th>
-              <th style="width:75px">Unit</th>
-              <th style="width:110px;text-align:right">Unit Price</th>
-              <th style="width:65px">Currency</th>
-              <th style="width:110px;text-align:right">Amount</th>
-              <th class="col-actions"></th>
-            </tr></thead>
-            <tbody id="itemTbody"></tbody>
-          </table>
-        </div>
-        <div class="totals-box">
-          <div class="totals-row">
-            <span class="label">Discount</span>
-            <span style="display:flex;align-items:center;gap:6px">
-              <input type="number" id="f_discount" min="0" max="100" step="0.1" value="0"
-                style="width:72px;text-align:right;font-family:var(--mono);font-size:13px;padding:4px 8px;background:var(--bg2);border:1.5px solid var(--border);border-radius:6px;outline:none"
-                oninput="updateTotals()">
-              <span style="font-family:var(--mono);font-size:12px;color:var(--text3);font-weight:700">%</span>
-            </span>
-          </div>
-          <div class="totals-row grand"><span class="label">Grand Total</span><span class="amount" id="t_grand">0.00</span></div>
-          <div class="totals-row" style="padding-top:10px;margin-top:4px;border-top:1px solid var(--border);align-items:center">
-            <span class="label">Creator / Requested By <span class="req">*</span></span>
-            <select id="f_creator" style="width:220px;padding:6px 10px;font-size:13px;background:var(--bg2);border:1.5px solid var(--border);border-radius:8px;outline:none;font-family:var(--sans);cursor:pointer">
-              <option value="">— เลือก —</option>
-              <option>Ruangyote P.</option>
-              <option>Apinya C.</option>
-              <option>Natchapol S.</option>
-              <option>Songrit C.</option>
-              <option>Praween P.</option>
-              <option>Jaruwat B.</option>
-              <option>Wisawakorn N.</option>
-              <option>Worapol B.</option>
-              <option>Jaras S.</option>
-            </select>
-          </div>
-        </div>
+        <div class="totals-row grand"><span class="t-label">Grand Total</span><span class="t-val"><span id="t_grand">0</span><span class="ccy" id="t_ccy">THB</span></span></div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="saveDraft()"><i data-lucide="save"></i> Save Draft</button>
-      <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
-      <button class="btn btn-primary" id="submitPRBtn" onclick="submitPR()"><i data-lucide="send"></i> Submit &amp; Send Email</button>
+      <button class="btn btn-ghost hide-mobile" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn btn-ghost" onclick="saveDraft()"><i data-lucide="save"></i> Save draft</button>
+      <button class="btn btn-primary" id="submitPRBtn" onclick="submitPR()"><i data-lucide="send"></i> Submit PR</button>
     </div>
   </div>
 </div>
 
-<!-- DETAIL MODAL -->
+<!-- ===== DETAIL ===== -->
 <div class="modal-overlay" id="detailModal">
-  <div class="modal" style="max-width:780px">
-    <div class="detail-modal-header">
-      <div style="display:flex;align-items:center;gap:14px">
-        <div class="detail-icon-badge"><i data-lucide="file-text"></i></div>
-        <div>
-          <div class="detail-modal-label">Purchase Request</div>
-          <div class="detail-modal-prno mono" id="d_prNo"></div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <button class="hbtn" style="background:var(--agc-red);color:#fff;height:32px" onclick="window._prOpenFullView()">
-          <i data-lucide="maximize-2"></i> ดูแบบเต็ม
-        </button>
-        <button class="detail-modal-close" onclick="closeDetailModal()"><i data-lucide="x"></i></button>
-      </div>
-    </div>
-    <div class="detail-status-bar" id="d_statusBar"></div>
-    <div class="modal-body" style="padding:20px" id="detailBody"></div>
-    <div class="modal-footer">
-      <button class="btn btn-danger" id="deletePRBtn" onclick="deletePR()"><i data-lucide="trash-2"></i> Delete PR</button>
-      <button class="btn btn-ghost" onclick="closeDetailModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- FULLVIEW MODAL -->
-<div class="modal-overlay" id="fullviewModal">
-  <div class="modal" style="max-width:900px">
-    <div class="detail-modal-header">
-      <div style="display:flex;align-items:center;gap:14px">
-        <div class="detail-icon-badge"><i data-lucide="file-text"></i></div>
-        <div>
-          <div class="detail-modal-label">Full View — Purchase Request</div>
-          <div class="detail-modal-prno mono" id="fv_prNo"></div>
-        </div>
-      </div>
-      <button class="detail-modal-close" onclick="closeFullviewModal()"><i data-lucide="x"></i></button>
-    </div>
-    <div class="modal-body" id="fullviewBody" style="padding:24px;overflow-y:auto;flex:1;min-height:0"></div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeFullviewModal()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- IMPORT CSV MODAL -->
-<div class="modal-overlay" id="importModal">
-  <div class="modal" style="max-width:540px">
+  <div class="modal" style="max-width:640px" role="dialog" aria-modal="true" aria-labelledby="detailTitle">
     <div class="modal-header">
-      <div class="modal-title"><i data-lucide="upload-cloud"></i> Import PR CSV</div>
-      <button class="modal-close" onclick="closeImportModal()">×</button>
+      <div style="min-width:0"><div class="modal-title" id="detailTitle"></div><div class="modal-sub" id="detailSub"></div></div>
+      <button class="close-btn" onclick="closeDetailModal()" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body" id="detailBody"></div>
+    <div class="modal-footer">
+      <button class="btn btn-danger footer-left" id="deletePRBtn" onclick="deletePR()"><i data-lucide="trash-2"></i> Delete</button>
+      <button class="btn btn-ghost" onclick="duplicatePR()"><i data-lucide="copy"></i> Duplicate</button>
+      <button class="btn btn-primary hide-mobile" onclick="closeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== IMPORT CSV ===== -->
+<div class="modal-overlay" id="importModal" data-form="1">
+  <div class="modal" style="max-width:520px" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+    <div class="modal-header">
+      <div><div class="modal-title" id="importTitle">Import CSV</div><div class="modal-sub">pr_records only — Store data is not touched</div></div>
+      <button class="close-btn" onclick="closeImportModal()" aria-label="Close"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:var(--text2);margin-bottom:14px">
-        Import จากไฟล์ CSV (โครงสร้างจาก <code style="font-family:var(--mono);font-size:12px">PR_database.csv</code>)
-        — Import นี้จะกระทบเฉพาะ collection <code style="font-family:var(--mono);font-size:12px">pr_records</code> เท่านั้น
-      </p>
       <div class="upload-zone" onclick="document.getElementById('csvInput').click()">
-        <i data-lucide="upload-cloud" style="width:32px;height:32px;color:var(--agc-blue)"></i>
-        <p><strong>คลิกเพื่อเลือกไฟล์ CSV</strong></p>
-        <p style="font-size:11px;color:var(--text3);margin-top:4px">รองรับ .csv (UTF-8)</p>
+        <i data-lucide="upload-cloud"></i>
+        <p><strong>Choose a CSV file</strong></p>
+        <p class="file-name" id="csvFileName">UTF-8 · same columns as Export</p>
         <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="onCSVPicked(event)">
       </div>
-      <div id="importPreview" style="margin-top:14px;display:none">
-        <p style="font-size:12px;color:var(--text2);margin-bottom:8px">
-          พบ <strong id="previewCount"></strong> รายการ — โหมดการนำเข้า:
-        </p>
-        <div style="display:flex;gap:8px">
-          <label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer"><input type="radio" name="importMode" value="merge" checked> Merge (รวมกับข้อมูลเดิม, ใช้ PR No เป็น key)</label>
+      <div id="importPreview" class="hidden" style="display:flex;flex-direction:column;gap:10px">
+        <div class="note"><strong id="previewCount"></strong> rows found. Choose how to import:</div>
+        <div class="mode-options">
+          <label class="mode-option"><input type="radio" name="importMode" value="merge" checked onchange="onImportModeChange()">
+            <span>Merge <small>Update rows with the same PR No., add the rest.</small></span></label>
+          <label class="mode-option"><input type="radio" name="importMode" value="replace" onchange="onImportModeChange()">
+            <span>Replace <small>Delete all existing PRs, then import this file.</small></span></label>
         </div>
-        <div style="display:flex;gap:8px;margin-top:6px">
-          <label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer"><input type="radio" name="importMode" value="replace"> Replace (ลบข้อมูลเดิมทั้งหมด)</label>
+        <div class="replace-confirm" id="replaceConfirm">
+          <label for="replaceConfirmInput">Type REPLACE to confirm</label>
+          <input type="text" id="replaceConfirmInput" autocomplete="off" oninput="onImportModeChange()" style="font-family:var(--mono)">
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeImportModal()">ยกเลิก</button>
-      <button class="btn btn-primary" id="importConfirmBtn" onclick="confirmImport()" disabled><i data-lucide="check"></i> ยืนยัน Import</button>
+      <button class="btn btn-ghost hide-mobile" onclick="closeImportModal()">Cancel</button>
+      <button class="btn btn-primary" id="importConfirmBtn" onclick="confirmImport()" disabled><i data-lucide="check"></i> Import</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST CONTAINER — store pattern -->
-<div class="toast-container" id="toastContainer"></div>
+<!-- ===== CONFIRM DIALOG (store) ===== -->
+<div class="dlg-overlay" id="dlgOverlay" hidden>
+  <div class="dlg-card" id="dlgCard" role="alertdialog" aria-modal="true" aria-labelledby="dlgTitle" aria-describedby="dlgMsg" tabindex="-1" data-tone="warn">
+    <div class="dlg-icon" aria-hidden="true"><i data-lucide="alert-triangle"></i></div>
+    <div class="dlg-title" id="dlgTitle"></div>
+    <div class="dlg-msg" id="dlgMsg"></div>
+    <div class="dlg-actions">
+      <button type="button" class="btn btn-ghost" id="dlgCancel"></button>
+      <button type="button" class="btn btn-primary" id="dlgOk"></button>
+    </div>
+  </div>
+</div>
 
-<!-- JS: PR MODULE (Supabase) -->
+<div class="toast-container" id="toastContainer" role="region" aria-label="Notifications"></div>
+
 <script type="module">
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
@@ -624,6 +613,8 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const PR_COL = 'pr_records';
 const PR_LOG_COL = 'pr_import_logs';
 const LS_CACHE = 'aft_pr_cache_sb';
+const LS_FILTERS = 'aft_pr_filters_v2';
+const LS_DRAFT = 'aft_pr_draft';
 const PR_TEXT_COLS = ['PR No.','PO No.','Creator','PR Title','Section','Item Desc','Category','Work Class','Plan Type','Status','Deliv. Status','PR_Vendor','PO_Vendor','Currency Key','Budget code','Post Date','Purchaser','Entry by','Request Type','Delivery Date','Quotation No','device'];
 const PR_NUM_COLS = ['PR Amount','PO Amount','Discount'];
 const PR_TS_COLS = ['createdAt','importedAt'];
@@ -636,59 +627,87 @@ function toRow(rec){
   if (rec['Items'] !== undefined) row['Items'] = rec['Items'];
   return row;
 }
-const LS_FILTERS = 'aft_pr_filters';
-const LS_DRAFT = 'aft_pr_draft';
 
 let prRecords = [];
-let currentSession = null;
 let filteredRecords = [];
 let currentItems = [];
-let editingPRId = null;
+let openPRId = null;
 let csvParsed = null;
 let sortCol = 'Post Date';
 let sortAsc = false;
-let activeStatusFilter = 'all';
+let statusFilter = 'all';
+let delivFilter = '';
+let activeTab = 'list';
+let userName = '';
 const DEVICE_ID = 'pr_dev_' + Math.random().toString(36).slice(2,8);
 
 const $ = id => document.getElementById(id);
-function refreshIcons(){ if(window.lucide) lucide.createIcons(); }
+function refreshIcons(){ if (window.lucide) lucide.createIcons(); }
 function setSync(state){
   const dot = $('syncDot'), txt = $('syncText');
   dot.className = 'sync-dot' + (state==='syncing' ? ' syncing' : state==='error' ? ' error' : '');
-  txt.textContent = state==='syncing' ? 'Saving...' : state==='error' ? 'Error' : 'Live';
+  txt.textContent = state==='syncing' ? 'Saving…' : state==='error' ? 'Error' : 'Live';
 }
 
-/* === TOAST — store pattern === */
+/* ===== TOAST (store) ===== */
 window.toast = (msg, type='success') => {
   const el = document.createElement('div');
-  el.className = 'toast ' + type;
+  el.className = `toast ${type}`;
+  el.setAttribute('role', type==='error' ? 'alert' : 'status');
   const icon = document.createElement('span');
+  icon.setAttribute('aria-hidden', 'true');
   icon.textContent = type==='success' ? '✓' : type==='error' ? '✗' : '⚠';
   el.appendChild(icon);
   el.appendChild(document.createTextNode(' ' + msg));
   $('toastContainer').appendChild(el);
-  setTimeout(() => el.remove(), 4000);
+  setTimeout(() => el.remove(), type==='error' ? 7000 : 4000);
 };
 
+/* ===== CONFIRM DIALOG (store) ===== */
+let _dlgPending = null;
+function confirmDialog({ title, message = '', okText = 'OK', cancelText = 'Cancel', tone = 'warn' } = {}){
+  return new Promise(resolve => {
+    if (_dlgPending) _dlgPending(false);
+    const ov = $('dlgOverlay'), card = $('dlgCard'), ok = $('dlgOk'), cancel = $('dlgCancel');
+    const prev = document.activeElement;
+    $('dlgTitle').textContent = title || '';
+    $('dlgMsg').textContent = message;
+    ok.textContent = okText; cancel.textContent = cancelText;
+    ok.className = 'btn ' + (tone === 'danger' ? 'btn-danger-solid' : 'btn-primary');
+    card.dataset.tone = tone;
+    const onKey = e => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); }
+      else if (e.key === 'Tab') {
+        e.preventDefault();
+        const order = [cancel, ok], i = Math.max(0, order.indexOf(document.activeElement));
+        order[(i + 1) % order.length].focus();
+      }
+    };
+    const done = v => {
+      if (_dlgPending === done) _dlgPending = null;
+      ov.hidden = true;
+      ov.removeEventListener('keydown', onKey);
+      ok.onclick = cancel.onclick = ov.onclick = null;
+      if (prev && prev.focus) { try { prev.focus(); } catch (e) {} }
+      resolve(v);
+    };
+    _dlgPending = done;
+    ok.onclick = () => done(true);
+    cancel.onclick = () => done(false);
+    ov.onclick = e => { if (e.target === ov) done(false); };
+    ov.addEventListener('keydown', onKey);
+    ov.hidden = false;
+    refreshIcons();
+    cancel.focus();
+  });
+}
+
+/* ===== FORMAT ===== */
 function escapeHtml(s){
   if (s == null) return '';
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
-function fmtDate(v){
-  if (v == null || v === '') return '—';
-  const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const n = Number(v);
-  if (!isNaN(n) && n > 40000) {
-    const d = new Date(Math.round((n - 25569) * 86400000));
-    return ('0'+d.getDate()).slice(-2)+'-'+MON[d.getMonth()]+'-'+String(d.getFullYear()).slice(2);
-  }
-  const parts = String(v).split(/[-/]/);
-  if (parts.length === 3 && parts[0].length <= 2) {
-    const m = parseInt(parts[1], 10);
-    if (m >= 1 && m <= 12) return parts[0]+'-'+MON[m-1]+'-'+parts[2];
-  }
-  return String(v);
-}
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function parseDateToMs(v){
   if (v == null || v === '') return 0;
   const n = Number(v);
@@ -696,6 +715,7 @@ function parseDateToMs(v){
   const MONTHS = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
   const parts = String(v).split(/[-/]/);
   if (parts.length === 3) {
+    if (parts[0].length === 4) { const d = new Date(+parts[0], +parts[1] - 1, +parts[2]); return isNaN(d) ? 0 : d.getTime(); }
     const day = Number(parts[0]);
     const monRaw = parts[1];
     const monNum = Number(monRaw);
@@ -708,19 +728,26 @@ function parseDateToMs(v){
   const d = new Date(v);
   return isNaN(d) ? 0 : d.getTime();
 }
+function fmtDate(v){
+  const ms = parseDateToMs(v);
+  if (!ms) return v ? String(v) : '—';
+  const d = new Date(ms);
+  return ('0' + d.getDate()).slice(-2) + ' ' + MON[d.getMonth()] + ' ' + String(d.getFullYear()).slice(2);
+}
+function todayPostDate(){
+  const d = new Date();
+  return ('0' + d.getDate()).slice(-2) + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + String(d.getFullYear()).slice(2);
+}
 function fmtAmount(n){
-  if (n == null || isNaN(n)) return '—';
+  if (n == null || n === '' || isNaN(n)) return '—';
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
-function fmtExcelDate(serial){
-  if (!serial || isNaN(serial)) return serial || '—';
-  const d = new Date((Number(serial) - 25569) * 86400 * 1000);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
+const hasPO = r => r['PO No.'] != null && String(r['PO No.']).trim() !== '' && String(r['PO No.']).trim() !== '0';
 
 window.addEventListener('online', () => $('offlineBanner').classList.remove('show'));
 window.addEventListener('offline', () => $('offlineBanner').classList.add('show'));
 
+/* ===== DATA ===== */
 function loadCache(){
   try { const raw = localStorage.getItem(LS_CACHE); if (raw) { prRecords = JSON.parse(raw); return true; } } catch(e){}
   return false;
@@ -739,409 +766,200 @@ async function loadFromSupabase(){
     }
     prRecords = all.map(({ id, ...rest }) => ({ _id: id, ...rest }));
     saveCache(); setSync('live'); return true;
-  } catch(e){ console.error('Load PR failed', e); setSync('error'); toast('โหลดข้อมูล PR ไม่สำเร็จ — ใช้ cache แทน', 'error'); return false; }
+  } catch(e){ console.error('Load PR failed', e); setSync('error'); toast('Could not load PRs — showing cached data', 'error'); return false; }
 }
 
-function renderStatusChips(){
-  const counts = { all: prRecords.length, ordered: 0, approving: 0, approved: 0, unapproved: 0, undeliv: 0 };
+// Realtime: another device created, imported or deleted a PR -> reload (debounced; one import fires many events)
+let _reloadTimer = null;
+function startRealtime(){
+  try {
+    supabase.channel('pr-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: PR_COL }, () => {
+        clearTimeout(_reloadTimer);
+        _reloadTimer = setTimeout(async () => { await loadFromSupabase(); applyFilters(); }, 800);
+      })
+      .subscribe();
+  } catch(e){ console.warn('realtime off', e); }
+}
+
+/* ===== STATUS ===== */
+function statusKey(s){
+  s = String(s || '').toLowerCase();
+  if (s.includes('unapproved') || s.includes('reject')) return 'unapproved';
+  if (s.includes('order')) return 'ordered';
+  if (s.includes('approving')) return 'approving';
+  if (s.includes('approved')) return 'approved';
+  return s ? 'other' : 'none';
+}
+function delivKey(s){
+  s = String(s || '').toLowerCase();
+  if (s.includes('partial')) return 'partial';
+  if (s.includes('undeliv')) return 'undelivered';
+  if (s.includes('compl') || s.includes('delivered')) return 'delivered';
+  return s ? 'other' : 'none';
+}
+const STATUS_BADGE = { ordered: 'badge-ok', approved: 'badge-blue', approving: 'badge-warn', unapproved: 'badge-danger', other: 'badge-none' };
+const DELIV_BADGE = { delivered: 'badge-ok', partial: 'badge-blue', undelivered: 'badge-warn', other: 'badge-none' };
+function statusBadge(s){
+  const k = statusKey(s);
+  return k === 'none' ? '<span class="badge badge-none">—</span>' : `<span class="badge ${STATUS_BADGE[k]}">${escapeHtml(String(s).trim())}</span>`;
+}
+function delivBadge(s){
+  const k = delivKey(s);
+  return k === 'none' ? '<span class="badge badge-none">—</span>' : `<span class="badge ${DELIV_BADGE[k]}">${escapeHtml(String(s).trim())}</span>`;
+}
+const textBadge = (v, cls = 'badge-cat') => v ? `<span class="badge ${cls}">${escapeHtml(v)}</span>` : '<span class="badge badge-none">—</span>';
+
+/* ===== FILTER CHIPS ===== */
+function renderChips(){
+  const sc = { all: prRecords.length, approving: 0, approved: 0, ordered: 0, unapproved: 0 };
+  const dc = { undelivered: 0, partial: 0, delivered: 0 };
   prRecords.forEach(r => {
-    const s = (r['Status']||'').toLowerCase();
-    if (s.includes('ordered')) counts.ordered++;
-    else if (s.includes('approving')) counts.approving++;
-    else if (s.includes('unapproved')) counts.unapproved++;
-    else if (s.includes('approved')) counts.approved++;
-    if (/undeliv|partial/i.test(r['Deliv. Status']||'')) counts.undeliv++;
+    const k = statusKey(r['Status']); if (k in sc) sc[k]++;
+    const d = delivKey(r['Deliv. Status']); if (d in dc) dc[d]++;
   });
-  const chips = [
-    {key:'all',        label:'ทั้งหมด',     count: counts.all,        color:'blue'},
-    {key:'ordered',    label:'Ordered',     count: counts.ordered,    color:'ok'},
-    {key:'approving',  label:'Approving',   count: counts.approving,  color:'warn'},
-    {key:'approved',   label:'Approved',    count: counts.approved,   color:'ok'},
-    {key:'unapproved', label:'Unapproved',  count: counts.unapproved, color:'danger'},
-    {key:'undeliv',    label:'Undelivered', count: counts.undeliv,    color:'danger'},
-  ];
-  $('statusChips').innerHTML = chips.map(c => `
-    <button class="pr-chip ${activeStatusFilter===c.key ? 'active' : ''}" onclick="window._prSetStatus('${c.key}')">
-      <span>${escapeHtml(c.label)}</span>
-      <span class="pr-chip-count ${c.color}">${c.count.toLocaleString()}</span>
-    </button>
-  `).join('');
-  refreshIcons();
+  const chip = (group, key, label, count, tone) => {
+    const active = group === 'status' ? statusFilter === key : delivFilter === key;
+    return `<button class="quick-filter-chip${active ? ' active' : ''}" aria-pressed="${active}" onclick="setChip('${group}','${key}')">${label}<span class="chip-count ${tone}">${count.toLocaleString()}</span></button>`;
+  };
+  $('quickFilterChips').innerHTML =
+    chip('status', 'all', 'All', sc.all, '') +
+    chip('status', 'approving', 'Approving', sc.approving, 'chip-count-warn') +
+    chip('status', 'approved', 'Approved', sc.approved, '') +
+    chip('status', 'ordered', 'Ordered', sc.ordered, 'chip-count-ok') +
+    (sc.unapproved ? chip('status', 'unapproved', 'Unapproved', sc.unapproved, 'chip-count-low') : '') +
+    '<span class="quick-filter-sep" aria-hidden="true"></span>' +
+    chip('deliv', 'undelivered', 'Undelivered', dc.undelivered, 'chip-count-warn') +
+    chip('deliv', 'partial', 'Partial', dc.partial, '') +
+    chip('deliv', 'delivered', 'Delivered', dc.delivered, 'chip-count-ok');
 }
-window._prSetStatus = (k) => { activeStatusFilter = k; applyFilters(); };
+window.setChip = (group, key) => {
+  if (group === 'status') statusFilter = key;
+  else delivFilter = delivFilter === key ? '' : key;   // delivery chips toggle, like Dept chips in Store
+  if (activeTab !== 'list') switchTab('list');
+  applyFilters();
+};
 
+/* ===== FILTER + SORT ===== */
+function cmp(a, b){
+  if (sortCol === 'PR Amount') return (Number(a || 0) - Number(b || 0));
+  if (sortCol === 'Post Date') return parseDateToMs(a) - parseDateToMs(b);
+  if (sortCol === 'PR No.' || sortCol === 'PO No.') {
+    const na = Number(a), nb = Number(b);
+    if (a !== '' && b !== '' && a != null && b != null && !isNaN(na) && !isNaN(nb)) return na - nb;
+  }
+  return String(a || '').localeCompare(String(b || ''), 'en', { numeric: true });
+}
 function applyFilters(){
-  const q = ($('searchInput').value||'').trim().toLowerCase();
+  const q = ($('searchInput').value || '').trim().toLowerCase();
   filteredRecords = prRecords.filter(r => {
-    if (activeStatusFilter !== 'all') {
-      const s = (r['Status']||'').toLowerCase();
-      if (activeStatusFilter === 'ordered' && !s.includes('ordered')) return false;
-      if (activeStatusFilter === 'approving' && !s.includes('approving')) return false;
-      if (activeStatusFilter === 'unapproved' && !s.includes('unapproved')) return false;
-      if (activeStatusFilter === 'approved' && !(s.includes('approved') && !s.includes('un'))) return false;
-      if (activeStatusFilter === 'undeliv' && !/undeliv|partial/i.test(r['Deliv. Status']||'')) return false;
-    }
+    if (statusFilter !== 'all' && statusKey(r['Status']) !== statusFilter) return false;
+    if (delivFilter && delivKey(r['Deliv. Status']) !== delivFilter) return false;
     if (q) {
-      const hay = [r['PR No.'], r['PO No.'], r['PR Title'], r['Creator'], r['PR_Vendor'], r['PO_Vendor'], r['Budget code'], r['Item Desc'], r['Section'], r['Status']]
-        .map(v => String(v||'').toLowerCase()).join(' ');
-      if (!hay.includes(q)) return false;
+      const hay = [r['PR No.'], r['PO No.'], r['PR Title'], r['Creator'], r['PR_Vendor'], r['PO_Vendor'], r['Budget code'], r['Item Desc'], r['Section'], r['Status'], r['Quotation No'], r['Purchaser']]
+        .map(v => String(v || '').toLowerCase()).join(' ');
+      if (!q.split(/\s+/).every(t => hay.includes(t))) return false;
     }
     return true;
   });
-  filteredRecords.sort((a,b) => {
-    const av = a[sortCol], bv = b[sortCol];
-    if (sortCol === 'PR Amount' || sortCol === 'PR No.' || sortCol === 'PO No.')
-      return (Number(av||0) - Number(bv||0)) * (sortAsc ? 1 : -1);
-    if (sortCol === 'Post Date')
-      return (parseDateToMs(av) - parseDateToMs(bv)) * (sortAsc ? 1 : -1);
-    return String(av||'').localeCompare(String(bv||'')) * (sortAsc ? 1 : -1);
+  const dir = sortAsc ? 1 : -1;
+  filteredRecords.sort((a, b) => cmp(a[sortCol], b[sortCol]) * dir);
+  document.querySelectorAll('#prTable th[data-sort]').forEach(th => {
+    const on = th.dataset.sort === sortCol;
+    th.classList.toggle('sorted', on);
+    th.querySelector('.sort-icon').textContent = on ? (sortAsc ? '↑' : '↓') : '↕';
   });
-  renderTable(); renderCards();
-  $('resultCount').textContent = `แสดง ${filteredRecords.length.toLocaleString()} / ${prRecords.length.toLocaleString()} รายการ`;
-  renderStatusChips();
-  try { localStorage.setItem(LS_FILTERS, JSON.stringify({ q, status: activeStatusFilter, sortCol, sortAsc })); } catch(e){}
+  renderTable(); renderCards(); renderChips(); renderMeta();
+  try { localStorage.setItem(LS_FILTERS, JSON.stringify({ q, statusFilter, delivFilter, sortCol, sortAsc })); } catch(e){}
 }
-
+function renderMeta(){
+  let thb = 0, other = 0;
+  filteredRecords.forEach(r => {
+    const ccy = String(r['Currency Key'] || 'THB').toUpperCase();
+    if (ccy === 'THB') thb += Number(r['PR Amount']) || 0; else other++;
+  });
+  $('searchResultMeta').innerHTML =
+    `<span>Showing ${filteredRecords.length.toLocaleString()} / ${prRecords.length.toLocaleString()} PRs</span>` +
+    `<span>PR total <strong>${fmtAmount(thb)}</strong> THB${other ? ` + ${other} in other currencies` : ''}</span>`;
+}
 function restoreFilters(){
   try {
-    const raw = localStorage.getItem(LS_FILTERS); if (!raw) return;
-    const f = JSON.parse(raw);
+    const f = JSON.parse(localStorage.getItem(LS_FILTERS) || 'null'); if (!f) return;
     if (f.q) $('searchInput').value = f.q;
-    if (f.status) activeStatusFilter = f.status;
+    if (f.statusFilter) statusFilter = f.statusFilter;
+    if (f.delivFilter) delivFilter = f.delivFilter;
     if (f.sortCol) sortCol = f.sortCol;
     if (typeof f.sortAsc === 'boolean') sortAsc = f.sortAsc;
-    $('clearBtn').classList.toggle('visible', !!($('searchInput').value));
+    $('clearBtn').classList.toggle('visible', !!$('searchInput').value);
   } catch(e){}
 }
-
-window.sortBy = (col) => { if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; } applyFilters(); };
+window.sortBy = (col) => { if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = col !== 'Post Date' && col !== 'PR Amount'; } applyFilters(); };
 window.onSearchInput = () => { $('clearBtn').classList.toggle('visible', !!$('searchInput').value); applyFilters(); };
-window.clearSearch = () => { $('searchInput').value = ''; $('clearBtn').classList.remove('visible'); applyFilters(); };
+window.clearSearch = () => { $('searchInput').value = ''; $('clearBtn').classList.remove('visible'); applyFilters(); $('searchInput').focus(); };
 
-function statusBadge(s){
-  s = (s||'').trim(); if (!s) return `<span class="badge badge-none">—</span>`;
-  const low = s.toLowerCase(); let cls = 'badge-none';
-  if (low.includes('ordered')) cls = 'badge-ordered';
-  else if (low.includes('unapproved')) cls = 'badge-unapproved';
-  else if (low.includes('approving')) cls = 'badge-approving';
-  else if (low.includes('approved')) cls = 'badge-approved';
-  return `<span class="badge ${cls}">${escapeHtml(s)}</span>`;
+/* ===== LIST ===== */
+function emptyHtml(){
+  if (!prRecords.length) return `<i data-lucide="inbox"></i><p>No purchase requests yet</p><p class="hint">Create one or import a CSV to get started.</p>
+    <button class="btn btn-primary" onclick="openCreateModal()"><i data-lucide="plus"></i> New PR</button>`;
+  return `<i data-lucide="search-x"></i><p>No PR matches these filters</p><p class="hint">Try another search or clear the chips.</p>
+    <button class="btn btn-ghost" onclick="resetFilters()"><i data-lucide="rotate-ccw"></i> Reset filters</button>`;
 }
-function delivBadge(s){
-  s = (s||'').trim(); if (!s) return `<span class="badge badge-none">—</span>`;
-  const low = s.toLowerCase(); let cls = 'badge-none';
-  if (low.includes('compl')) cls = 'badge-deliv-compl';
-  else if (low.includes('partial')) cls = 'badge-partial';
-  else if (low.includes('undeliv')) cls = 'badge-undeliv';
-  return `<span class="badge ${cls}">${escapeHtml(s)}</span>`;
-}
+window.resetFilters = () => { statusFilter = 'all'; delivFilter = ''; $('searchInput').value = ''; $('clearBtn').classList.remove('visible'); applyFilters(); };
 
 function renderTable(){
-  const tb = $('prTbody');
-  if (!filteredRecords.length) {
-    tb.innerHTML = '';
-    $('emptyState').classList.toggle('hidden', prRecords.length > 0);
-    if (prRecords.length > 0) { tb.innerHTML = `<tr><td colspan="11" class="empty-state" style="padding:30px"><i data-lucide="search-x"></i><p>ไม่พบ PR ที่ตรงกับเงื่อนไข</p></td></tr>`; refreshIcons(); }
-    return;
-  }
-  $('emptyState').classList.add('hidden');
+  const tb = $('prTbody'), empty = $('listEmpty');
+  if (!filteredRecords.length) { tb.innerHTML = ''; empty.innerHTML = emptyHtml(); empty.classList.remove('hidden'); refreshIcons(); return; }
+  empty.classList.add('hidden');
   tb.innerHTML = filteredRecords.map(r => `
-    <tr class="row-clickable" onclick="window._prOpenDetail('${r._id}')">
-      <td class="mono" style="color:var(--text2);font-size:12px">${escapeHtml(r['PR No.']||'—')}</td>
-      <td class="mono" style="color:var(--text2);font-size:12px">${escapeHtml(r['PO No.']||'—')}</td>
-      <td class="td-title" title="${escapeHtml(r['PR Title']||'')}">${escapeHtml(r['PR Title']||'—')}</td>
-      <td><span class="badge badge-section">${escapeHtml(r['Section']||'—')}</span></td>
-      <td>${r['Work Class'] ? `<span class="badge badge-repair">${escapeHtml(r['Work Class'])}</span>` : '—'}</td>
-      <td class="td-status">${statusBadge(r['Status'])}</td>
-      <td class="td-deliv">${delivBadge(r['Deliv. Status'])}</td>
-      <td class="amount-cell">${fmtAmount(r['PR Amount'])}</td>
-      <td style="font-size:12px;color:var(--text2)">${escapeHtml(r['Creator']||'—')}</td>
-      <td class="mono" style="font-size:11px;color:var(--text2)">${fmtDate(r['Post Date'])}</td>
-      <td style="text-align:center"><button class="btn-icon" onclick="event.stopPropagation();window._prOpenDetail('${r._id}')"><i data-lucide="eye"></i></button></td>
-    </tr>
-  `).join('');
+    <tr class="row-clickable" onclick="openDetail('${r._id}')">
+      <td>${escapeHtml(r['PR No.'] || '—')}</td>
+      <td class="td-mono">${hasPO(r) ? escapeHtml(r['PO No.']) : '—'}</td>
+      <td class="td-title" title="${escapeHtml(r['PR Title'] || '')}">${escapeHtml(r['PR Title'] || '—')}</td>
+      <td>${textBadge(r['Section'])}</td>
+      <td>${textBadge(r['Work Class'], 'badge-none')}</td>
+      <td>${statusBadge(r['Status'])}</td>
+      <td>${delivBadge(r['Deliv. Status'])}</td>
+      <td class="td-amount">${fmtAmount(r['PR Amount'])}${String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB' ? `<span class="ccy">${escapeHtml(r['Currency Key'])}</span>` : ''}</td>
+      <td class="td-muted" title="${escapeHtml(r['PR_Vendor'] || '')}">${escapeHtml(r['PR_Vendor'] || '—')}</td>
+      <td class="td-muted">${escapeHtml(r['Creator'] || '—')}</td>
+      <td class="td-mono">${fmtDate(r['Post Date'])}</td>
+      <td><div class="row-actions"><button class="btn-icon" onclick="event.stopPropagation();openDetail('${r._id}')" title="View" aria-label="View PR ${escapeHtml(r['PR No.'] || '')}"><i data-lucide="eye"></i></button></div></td>
+    </tr>`).join('');
   refreshIcons();
 }
 
 function renderCards(){
   const cl = $('prCardList');
-  if (!filteredRecords.length) { cl.innerHTML = `<div class="empty-state"><i data-lucide="search-x"></i><p>ไม่พบ PR</p></div>`; refreshIcons(); return; }
+  if (!filteredRecords.length) { cl.innerHTML = `<div class="empty">${emptyHtml()}</div>`; refreshIcons(); return; }
   cl.innerHTML = filteredRecords.map(r => `
-    <div class="pr-card" onclick="window._prOpenDetail('${r._id}')">
-      <div class="pr-card-top">
-        <div>
-          <div class="pr-card-title">${escapeHtml(r['PR Title']||'—')}</div>
-          <div class="pr-card-pid">${escapeHtml(r['PR No.']||'—')}${r['PO No.'] ? ' · PO ' + escapeHtml(r['PO No.']) : ''}</div>
+    <div class="inv-card" role="button" tabindex="0" onclick="openDetail('${r._id}')" onkeydown="if(event.key==='Enter')openDetail('${r._id}')">
+      <div class="inv-card-top">
+        <div class="inv-card-head">
+          <div class="card-taxonomy">${r['Section'] ? textBadge(r['Section']) : ''}<span class="part-id">${escapeHtml(r['PR No.'] || '—')}</span></div>
+          <div class="inv-card-name">${escapeHtml(r['PR Title'] || '—')}</div>
+          <div class="inv-card-pid">${hasPO(r) ? `PO <span class="class-val">${escapeHtml(r['PO No.'])}</span>` : 'No PO yet'}</div>
         </div>
-        <div class="pr-card-amount">${fmtAmount(r['PR Amount'])}<div style="font-size:9px;color:var(--text3);font-family:var(--mono);text-align:right;font-weight:600">${escapeHtml(r['Currency Key']||'THB')}</div></div>
+        <div class="inv-card-stock-wrap">
+          <div class="inv-card-stock">${fmtAmount(r['PR Amount'])}</div>
+          <div class="inv-card-stock-label">${escapeHtml(r['Currency Key'] || 'THB')}</div>
+        </div>
       </div>
-      <div class="pr-card-meta">
-        <span class="badge badge-section">${escapeHtml(r['Section']||'—')}</span>
-        ${statusBadge(r['Status'])} ${delivBadge(r['Deliv. Status'])}
-      </div>
-      <div class="pr-card-row" style="font-size:11px;color:var(--text3);font-family:var(--mono)">
-        <i data-lucide="user" style="width:11px;height:11px"></i> ${escapeHtml(r['Creator']||'—')}
-        <span style="margin-left:auto">${escapeHtml(r['Post Date']||'—')}</span>
-      </div>
-    </div>
-  `).join('');
+      ${r['PR_Vendor'] ? `<div class="card-line"><i data-lucide="building-2"></i><span>${escapeHtml(r['PR_Vendor'])}</span></div>` : ''}
+      <div class="card-line"><i data-lucide="user"></i><span>${escapeHtml(r['Creator'] || '—')}</span><i data-lucide="calendar" style="margin-left:8px"></i><span>${fmtDate(r['Post Date'])}</span></div>
+      <div class="card-badges">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}${r['Work Class'] ? textBadge(r['Work Class'], 'badge-none') : ''}</div>
+    </div>`).join('');
   refreshIcons();
 }
 
-window._prOpenDetail = (id) => {
-  const r = prRecords.find(x => x._id === id); if (!r) return;
-  editingPRId = id;
-
-  $('d_prNo').textContent = r['PR No.'] || '—';
-
-  const postedDate = r['Post Date'] ? fmtExcelDate(r['Post Date']) : '';
-  $('d_statusBar').innerHTML =
-    statusBadge(r['Status']) +
-    (r['Deliv. Status'] ? ' ' + delivBadge(r['Deliv. Status']) : '') +
-    (postedDate ? `<span class="detail-post-date">Posted ${postedDate}</span>` : '');
-
-  const currency = r['Currency Key'] || 'THB';
-  const poNo = r['PO No.'] && String(r['PO No.']).trim() !== '0' && r['PO No.'] !== '' ? r['PO No.'] : null;
-
-  function initials(name) {
-    if (!name) return '?';
-    return String(name).trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-  }
-  function person(val) {
-    return `<div class="detail-person"><div class="detail-avatar">${initials(val)}</div><span class="detail-value plain">${escapeHtml(String(val))}</span></div>`;
-  }
-  function amount(val) {
-    return `<div class="detail-amount">${fmtAmount(Number(val)||0)}<span class="detail-amount-unit">${escapeHtml(currency)}</span></div>`;
-  }
-  function cell(val, type) {
-    if (!val && val !== 0) return `<span class="detail-value muted">—</span>`;
-    if (type === 'mono')   return `<span class="detail-value mono">${escapeHtml(String(val))}</span>`;
-    if (type === 'muted')  return `<span class="detail-value muted">${escapeHtml(String(val))}</span>`;
-    if (type === 'person') return person(val);
-    if (type === 'amount') return amount(val);
-    return `<span class="detail-value plain">${escapeHtml(String(val))}</span>`;
-  }
-  function row(l1, v1, t1, l2, v2, t2) {
-    return `<div class="detail-item"><div class="detail-label">${l1}</div><div>${cell(v1,t1)}</div></div>` +
-           `<div class="detail-item"><div class="detail-label">${l2}</div><div>${cell(v2,t2)}</div></div>`;
-  }
-
-  const mainGrid =
-    row('PR No.',            r['PR No.'],      'mono',   'PO No.',    poNo || '— Not Issued', poNo ? 'mono' : 'muted') +
-    row('PR Title',          r['PR Title'],    'plain',  'Section',   r['Section'],            'plain') +
-    row('Item Description',  r['Item Desc'],   'mono',   'PR Vendor', r['PR_Vendor'],          'plain') +
-    row('Creator',           r['Creator'],     'person', 'Entry By',  r['Entry by'],           'person') +
-    row('PR Amount',         r['PR Amount'],   'amount', 'PO Amount', r['PO Amount'],          'amount');
-
-  function _getBudgetType(code, cat) {
-    if (cat === 'Investment') return 'INVEST';
-    if (code) for (const m of Object.values(BUDGET_MAP)) if (Object.values(m).includes(code)) return 'REPAIR';
-    return null;
-  }
-  const budgetType = _getBudgetType(r['Budget code'], r['Category']);
-  const budgetTypeBadge = budgetType
-    ? `<span class="badge ${budgetType === 'REPAIR' ? 'badge-repair' : 'badge-investment'}" style="font-size:11px;padding:4px 12px;flex-shrink:0">${budgetType}</span>`
-    : '';
-  const budgetRow = r['Budget code'] ? `
-    <div class="detail-item detail-full-row" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <div>
-        <div class="detail-label"><i data-lucide="tag"></i> Budget Code</div>
-        <div><span class="detail-value mono" style="font-size:13px;letter-spacing:0.5px">${escapeHtml(r['Budget code'])}</span></div>
-      </div>
-      ${budgetTypeBadge}
-    </div>` : '';
-
-  const extras = [
-    ['Work Class', r['Work Class']], ['Category', r['Category']],
-    ['Plan Type',  r['Plan Type']],  ['PO Vendor', r['PO_Vendor']],
-    ['Purchaser',  r['Purchaser']],
-  ].filter(([, v]) => v != null && v !== '');
-  const extraPairs = [];
-  for (let i = 0; i < extras.length; i += 2) {
-    const [l1, v1] = extras[i];
-    const [l2, v2] = extras[i + 1] || ['', null];
-    extraPairs.push(row(l1, v1, 'plain', l2, v2, 'plain'));
-  }
-
-  $('detailBody').innerHTML = `<div class="detail-grid">${mainGrid}${budgetRow}${extraPairs.join('')}</div>`;
-  $('detailModal').classList.add('show'); refreshIcons();
-};
-window.closeDetailModal = () => { $('detailModal').classList.remove('show'); editingPRId = null; };
-window.closeFullviewModal = () => $('fullviewModal').classList.remove('show');
-
-window.exportCSV = () => {
-  const records = (filteredRecords && filteredRecords.length ? filteredRecords : prRecords);
-  if (!records.length) { toast('ไม่มีข้อมูลสำหรับ Export', 'error'); return; }
-  const fields = [
-    'PR No.','PO No.','PR Title','Section','Creator','PR_Vendor','PO_Vendor',
-    'Status','Deliv. Status','PR Amount','PO Amount','Currency Key',
-    'Budget code','Post Date','Category','Work Class','Plan Type',
-    'Purchaser','Entry by','Item Desc','Quotation No','Request Type',
-    'Delivery Date','Discount'
-  ];
-  function esc(v) {
-    const s = String(v == null ? '' : v);
-    return (s.includes(',') || s.includes('"') || s.includes('\n'))
-      ? '"' + s.replace(/"/g, '""') + '"' : s;
-  }
-  const header = fields.map(esc).join(',');
-  const rows = records.map(r => fields.map(f => esc(r[f] ?? '')).join(','));
-  const csv = '﻿' + [header, ...rows].join('\r\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `PR_export_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click();
-  document.body.removeChild(a); URL.revokeObjectURL(url);
-  toast(`Export ${records.length} รายการ สำเร็จ`);
+/* ===== TABS ===== */
+window.switchTab = (which) => {
+  activeTab = which;
+  document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
+  $('tabList').classList.toggle('hidden', which !== 'list');
+  $('tabDrafts').classList.toggle('hidden', which !== 'drafts');
 };
 
-window._prOpenFullView = () => {
-  const r = prRecords.find(x => x._id === editingPRId); if (!r) return;
-  $('fv_prNo').textContent = r['PR No.'] || '—';
-
-  const items = Array.isArray(r['Items']) ? r['Items'].filter(it => it.description) : [];
-  const poNo = r['PO No.'] && String(r['PO No.']).trim() !== '0' ? r['PO No.'] : null;
-
-  function fv(label, html, full) {
-    return `<div class="field${full ? ' field-full' : ''}">
-      <label>${label}</label>
-      <div style="padding-top:4px;font-size:14px">${html}</div>
-    </div>`;
-  }
-  function fvText(v) { return `<span style="color:var(--text)">${escapeHtml(String(v||'—'))}</span>`; }
-  function fvMono(v) { return `<span style="font-family:var(--mono);color:var(--agc-blue);font-weight:700">${escapeHtml(String(v||'—'))}</span>`; }
-
-  function _getBT(code, cat) {
-    if (cat === 'Investment') return 'INVEST';
-    if (code) for (const m of Object.values(BUDGET_MAP)) if (Object.values(m).includes(code)) return 'REPAIR';
-    return null;
-  }
-  const bt = _getBT(r['Budget code'], r['Category']);
-  const btBadge = bt ? `<span class="badge ${bt === 'REPAIR' ? 'badge-repair' : 'badge-investment'}" style="font-size:11px;padding:4px 12px">${bt}</span>` : '';
-
-  const itemsTable = items.length ? `
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:var(--bg2)">
-          <th style="padding:8px 14px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">#</th>
-          <th style="padding:8px 14px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">Description</th>
-          <th style="padding:8px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">Qty</th>
-          <th style="padding:8px 14px;text-align:center;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">Unit</th>
-          <th style="padding:8px 14px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">Unit Price</th>
-          <th style="padding:8px 14px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">Total</th>
-        </tr></thead>
-        <tbody>
-          ${items.map((it, i) => `<tr style="border-top:1px solid var(--border)">
-            <td style="padding:10px 14px;color:var(--text3);font-family:var(--mono);font-size:11px">${i+1}</td>
-            <td style="padding:10px 14px">${escapeHtml(it.description||'')}</td>
-            <td style="padding:10px 14px;text-align:center;font-family:var(--mono)">${it.qty||0}</td>
-            <td style="padding:10px 14px;text-align:center;font-family:var(--mono)">${escapeHtml(it.unit||'')}</td>
-            <td style="padding:10px 14px;text-align:right;font-family:var(--mono)">${fmtAmount(Number(it.unitPrice)||0)}</td>
-            <td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--agc-blue)">${fmtAmount((Number(it.qty)||0)*(Number(it.unitPrice)||0))}</td>
-          </tr>`).join('')}
-        </tbody>
-      </table>
-    </div>` :
-    r['Item Desc'] ? `
-    <div style="border:1px solid var(--border);border-radius:10px;overflow:hidden">
-      <table style="width:100%;border-collapse:collapse;font-size:13px">
-        <thead><tr style="background:var(--bg2)">
-          <th style="padding:8px 14px;text-align:left;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">Item Description</th>
-          <th style="padding:8px 14px;text-align:right;font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;font-weight:700">PR Amount</th>
-        </tr></thead>
-        <tbody><tr style="border-top:1px solid var(--border)">
-          <td style="padding:10px 14px;font-family:var(--mono);font-size:12px">${escapeHtml(r['Item Desc'])}</td>
-          <td style="padding:10px 14px;text-align:right;font-family:var(--mono);font-weight:700;color:var(--agc-blue)">${fmtAmount(Number(r['PR Amount'])||0)} ${escapeHtml(r['Currency Key']||'THB')}</td>
-        </tr></tbody>
-      </table>
-    </div>` :
-    `<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)">
-      ไม่มีข้อมูล Item
-    </div>`;
-
-  $('fullviewBody').innerHTML = `
-    <div class="form-section">
-      <div class="form-section-title"><i data-lucide="info"></i> General Information</div>
-      <div class="form-grid">
-        ${fv('PR Title / Job Name', fvText(r['PR Title']), true)}
-        ${fv('PR No.', fvMono(r['PR No.']))}
-        ${fv('PO No.', poNo ? fvMono(poNo) : `<span style="color:var(--text3)">— Not Issued</span>`)}
-        ${fv('Section', fvText(r['Section']))}
-        ${fv('Vendor / Supplier', fvText(r['PR_Vendor']))}
-        ${fv('Request Type', fvText(r['Request Type']||r['requestType']))}
-        ${fv('Quotation No.', fvText(r['Quotation No']||r['Quotation No.']||r['QTN No']||r['QTN No.']||r['Quotation']||r['quotation']))}
-        ${fv('Required Delivery Date', fvText(r['Delivery Date']||r['deliveryDate']))}
-        ${fv('Post Date', fvText(fmtExcelDate(r['Post Date'])))}
-        ${fv('Status', statusBadge(r['Status']))}
-        ${r['Deliv. Status'] ? fv('Delivery Status', delivBadge(r['Deliv. Status'])) : ''}
-      </div>
-    </div>
-    <div class="form-section">
-      <div class="form-section-title"><i data-lucide="tag"></i> Budget</div>
-      <div class="form-grid">
-        <div class="field field-full" style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px">
-          <div>
-            <label>Budget Code</label>
-            <div style="padding-top:4px;font-family:var(--mono);font-size:15px;color:var(--agc-blue);font-weight:700;letter-spacing:0.5px">${escapeHtml(r['Budget code']||'—')}</div>
-          </div>
-          ${btBadge}
-        </div>
-      </div>
-    </div>
-    <div class="form-section">
-      <div class="form-section-title"><i data-lucide="layout-grid"></i> Request Classification</div>
-      <div class="form-grid">
-        ${fv('Category', fvText(r['Category']))}
-        ${fv('Work Class', fvText(r['Work Class']))}
-        ${fv('Plan Type', fvText(r['Plan Type']||r['planType']))}
-        ${fv('Purchaser', fvText(r['Purchaser']||r['purchaser']))}
-        ${fv('Creator', fvText(r['Creator']))}
-        ${fv('Entry By', fvText(r['Entry by']))}
-      </div>
-    </div>
-    <div class="form-section" style="margin-bottom:0">
-      <div class="form-section-title"><i data-lucide="clipboard-list"></i> Item List</div>
-      ${itemsTable}
-    </div>
-  `;
-  $('fullviewModal').classList.add('show'); refreshIcons();
-};
-
-window.deletePR = async () => {
-  if (!editingPRId) return;
-  if (!confirm('ต้องการลบ PR นี้ใช่หรือไม่? (ไม่สามารถย้อนกลับได้)')) return;
-  const btn = document.getElementById('deletePRBtn');
-  btn.classList.add('btn-loading');
-  setSync('syncing');
-  try {
-    const { error } = await supabase.from(PR_COL).delete().eq('id', editingPRId);
-    if (error) throw error;
-    prRecords = prRecords.filter(r => r._id !== editingPRId);
-    saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast('ลบ PR สำเร็จ');
-  } catch(e){ console.error(e); setSync('error'); toast('ลบไม่สำเร็จ: ' + e.message, 'error'); }
-  finally { btn.classList.remove('btn-loading'); }
-};
-
-window.openCreateModal = () => { window._activeDraftId = null; resetForm(); $('createModal').classList.add('show'); refreshIcons(); };
-window.closeCreateModal = () => $('createModal').classList.remove('show');
-
-function makeBlankItem(){ return { description: '', qty: 1, unit: 'EA', unitPrice: 0, currency: 'THB' }; }
-
-function resetForm(){
-  ['f_title','f_creator','f_prVendor','f_quotation','f_budgetCode','f_deliveryDate'].forEach(id => $(id).value = '');
-  $('f_requestType').value = 'Purchase'; $('f_section').value = ''; $('f_workClass').value = '';
-  $('f_category').value = ''; $('f_planType').value = ''; $('f_purchaser').value = ''; $('f_discount').value = 0;
-  $('scopeDocLabel').textContent = 'ยังไม่ได้เลือกไฟล์'; $('quotFileLabel').textContent = 'ยังไม่ได้เลือกไฟล์';
-  $('f_budgetSection').value = ''; $('f_budgetSuffix').innerHTML = '<option value="">—</option>';
-  $('budgetPreview').textContent = ''; $('f_budgetFree').value = '';
-  window.toggleScopeDoc(); window.toggleBudgetMode();
-  currentItems = [makeBlankItem(), makeBlankItem(), makeBlankItem()]; renderItemRows();
-}
-
-window.toggleScopeDoc = () => { $('scopeDocRow').style.display = $('f_requestType').value === 'Project' ? '' : 'none'; refreshIcons(); };
-
+/* ===== DETAIL ===== */
 const BUDGET_MAP = {
   Hot:        { 302: 'A01TH704026A111170302', 303: 'A01TH704026A111170303' },
   Cold:       { 302: 'A01TH704026A111470302', 303: 'A01TH704026A111470303' },
@@ -1153,77 +971,226 @@ const BUDGET_MAP = {
   Mirror:     { 302: 'A01TH704026A210070302', 303: 'A01TH704026A210070303' },
   RFG:        { 302: 'A01TH704026A500070302', 303: 'A01TH704026A500070303' },
 };
+function budgetType(code, cat){
+  if (cat === 'Investment') return 'INVEST';
+  if (code) for (const m of Object.values(BUDGET_MAP)) if (Object.values(m).includes(code)) return 'REPAIR';
+  return null;
+}
 
-function _updateBudgetPreview() {
+window.openDetail = (id) => {
+  const r = prRecords.find(x => x._id === id); if (!r) return;
+  openPRId = id;
+  const ccy = escapeHtml(r['Currency Key'] || 'THB');
+  $('detailTitle').textContent = r['PR Title'] || '(untitled)';
+  $('detailSub').textContent = 'PR ' + (r['PR No.'] || '—') + (hasPO(r) ? '  ·  PO ' + r['PO No.'] : '');
+  const item = (label, val, opts = {}) => {
+    const empty = val == null || String(val).trim() === '';
+    return `<div class="detail-item${opts.full ? ' full' : ''}"><div class="detail-label">${label}</div>` +
+      `<div class="detail-val${opts.mono ? ' mono' : ''}${empty ? ' muted' : ''}">${empty ? '—' : (opts.html ? val : escapeHtml(val))}</div></div>`;
+  };
+  const bt = budgetType(r['Budget code'], r['Category']);
+  const budget = r['Budget code']
+    ? `<span class="budget-line"><span style="font-family:var(--mono)">${escapeHtml(r['Budget code'])}</span>${bt ? `<span class="badge ${bt === 'INVEST' ? 'badge-invest' : 'badge-blue'}">${bt}</span>` : ''}</span>`
+    : '';
+  const items = Array.isArray(r['Items']) ? r['Items'].filter(it => it && it.description) : [];
+  const itemsHtml = items.length ? `
+    <div class="form-section-title">Items (${items.length})</div>
+    <div class="detail-items"><table>
+      <thead><tr><th>#</th><th>Description</th><th style="text-align:right">Qty</th><th>Unit</th><th style="text-align:right">Unit Price</th><th style="text-align:right">Amount</th></tr></thead>
+      <tbody>${items.map((it, i) => `<tr>
+        <td style="font-family:var(--mono);color:var(--text3)">${i + 1}</td>
+        <td>${escapeHtml(it.description)}</td>
+        <td style="text-align:right;font-family:var(--mono)">${fmtAmount(it.qty)}</td>
+        <td style="font-family:var(--mono)">${escapeHtml(it.unit || '')}</td>
+        <td style="text-align:right;font-family:var(--mono)">${fmtAmount(it.unitPrice)}</td>
+        <td style="text-align:right;font-family:var(--mono);font-weight:700;color:var(--agc-blue)">${fmtAmount((Number(it.qty) || 0) * (Number(it.unitPrice) || 0))}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>` : '';
+  $('detailBody').innerHTML = `
+    <div class="detail-status">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}<span class="posted">Posted ${fmtDate(r['Post Date'])}</span></div>
+    <div class="detail-amounts">
+      <div class="amount-box"><div class="detail-label">PR Amount</div><div class="amount-val">${fmtAmount(r['PR Amount'])}<span class="ccy">${ccy}</span></div></div>
+      <div class="amount-box"><div class="detail-label">PO Amount</div>${r['PO Amount'] != null && r['PO Amount'] !== '' ? `<div class="amount-val">${fmtAmount(r['PO Amount'])}<span class="ccy">${ccy}</span></div>` : '<div class="amount-val muted">—</div>'}</div>
+    </div>
+    <div class="detail-grid">
+      ${item('PR No.', r['PR No.'], { mono: true })}
+      ${item('PO No.', hasPO(r) ? r['PO No.'] : '', { mono: true })}
+      ${item('Section', r['Section'])}
+      ${item('Request Type', r['Request Type'])}
+      ${item('Category', r['Category'])}
+      ${item('Work Class', r['Work Class'])}
+      ${item('Plan Type', r['Plan Type'])}
+      ${item('Discount', r['Discount'] ? r['Discount'] + ' %' : '', { mono: true })}
+      ${item('Budget Code', budget, { full: true, html: true })}
+      ${item('PR Vendor', r['PR_Vendor'])}
+      ${item('PO Vendor', r['PO_Vendor'])}
+      ${item('Quotation No.', r['Quotation No'], { mono: true })}
+      ${item('Required Delivery', r['Delivery Date'] ? fmtDate(r['Delivery Date']) : '', { mono: true })}
+      ${item('Requested By', r['Creator'])}
+      ${item('Entry By', r['Entry by'])}
+      ${item('Purchaser', r['Purchaser'])}
+      ${item('Post Date', r['Post Date'] ? fmtDate(r['Post Date']) : '', { mono: true })}
+      ${items.length ? '' : item('Item Description', r['Item Desc'], { full: true })}
+    </div>
+    ${itemsHtml}`;
+  showModal('detailModal');
+};
+window.closeDetailModal = () => { hideModal('detailModal'); openPRId = null; };
+
+window.deletePR = async () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r) return;
+  const ok = await confirmDialog({ title: `Delete PR ${r['PR No.'] || ''}?`, message: `${r['PR Title'] || ''}\n\nThis removes it for everyone and cannot be undone.`, okText: 'Delete', tone: 'danger' });
+  if (!ok) return;
+  const btn = $('deletePRBtn');
+  btn.classList.add('btn-loading'); setSync('syncing');
+  try {
+    const { error } = await supabase.from(PR_COL).delete().eq('id', r._id);
+    if (error) throw error;
+    prRecords = prRecords.filter(x => x._id !== r._id);
+    saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast(`Deleted PR ${r['PR No.'] || ''}`);
+  } catch(e){ console.error(e); setSync('error'); toast('Delete failed: ' + e.message, 'error'); }
+  finally { btn.classList.remove('btn-loading'); }
+};
+
+// Start a new PR pre-filled from the open one (same vendor, budget, items) — common for repeat orders
+window.duplicatePR = () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r) return;
+  closeDetailModal();
+  openCreateModal();
+  fillForm({
+    title: r['PR Title'] || '', requestType: r['Request Type'] || 'Purchase', section: r['Section'] || '',
+    workClass: r['Work Class'] || '', category: r['Category'] || '', planType: r['Plan Type'] || '',
+    creator: '', deliveryDate: '', prVendor: r['PR_Vendor'] || '', quotation: '',
+    purchaser: r['Purchaser'] || '', discount: Number(r['Discount']) || 0, budgetCode: r['Budget code'] || '',
+    items: Array.isArray(r['Items']) && r['Items'].length ? r['Items'] : [{ ...makeBlankItem(), description: r['Item Desc'] || '', unitPrice: Number(r['PR Amount']) || 0 }]
+  });
+  prefillCreator();
+  $('createSub').textContent = 'Duplicated from PR ' + (r['PR No.'] || '');
+};
+
+/* ===== MODAL HELPERS (store behaviour: form modals ignore backdrop taps, Esc closes view modals) ===== */
+function showModal(id){ $(id).classList.add('show'); refreshIcons(); }
+function hideModal(id){ $(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(ov => {
+  ov.addEventListener('click', e => {
+    if (e.target !== ov) return;
+    if (ov.dataset.form) { const m = ov.querySelector('.modal'); m.classList.remove('nudge'); void m.offsetWidth; m.classList.add('nudge'); return; }
+    if (ov.id === 'detailModal') closeDetailModal(); else hideModal(ov.id);
+  });
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || !$('dlgOverlay').hidden) return;
+  if ($('detailModal').classList.contains('show')) closeDetailModal();
+  else if ($('importModal').classList.contains('show')) closeImportModal();
+});
+
+/* ===== EXPORT ===== */
+window.exportCSV = () => {
+  const records = filteredRecords.length ? filteredRecords : prRecords;
+  if (!records.length) { toast('Nothing to export', 'warn'); return; }
+  const fields = ['PR No.','PO No.','PR Title','Section','Creator','PR_Vendor','PO_Vendor','Status','Deliv. Status','PR Amount','PO Amount','Currency Key',
+    'Budget code','Post Date','Category','Work Class','Plan Type','Purchaser','Entry by','Item Desc','Quotation No','Request Type','Delivery Date','Discount'];
+  const esc = v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const csv = '﻿' + [fields.map(esc).join(','), ...records.map(r => fields.map(f => esc(r[f])).join(','))].join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `PR_export_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  toast(`Exported ${records.length} PRs`);
+};
+
+/* ===== CREATE ===== */
+function makeBlankItem(){ return { description: '', qty: 1, unit: 'EA', unitPrice: 0, currency: 'THB' }; }
+
+function prefillCreator(){
+  if (!userName) return;
+  const first = userName.replace(/\(guest\)/i, '').trim().split(/\s+/)[0].toLowerCase();
+  const opt = [...$('f_creator').options].find(o => o.value && o.value.toLowerCase().split(/\s+/)[0] === first);
+  if (opt && !$('f_creator').value) $('f_creator').value = opt.value;
+}
+window.openCreateModal = () => {
+  window._activeDraftId = null; resetForm();
+  $('createTitle').textContent = 'New Purchase Request';
+  $('createSub').textContent = 'PR No. is assigned on submit';
+  prefillCreator();
+  showModal('createModal');
+  setTimeout(() => { if (window.innerWidth > 767) $('f_title').focus(); }, 50);
+};
+window.closeCreateModal = () => hideModal('createModal');
+
+function resetForm(){
+  ['f_title','f_prVendor','f_quotation','f_budgetCode','f_deliveryDate','f_budgetFree'].forEach(id => $(id).value = '');
+  ['f_section','f_workClass','f_category','f_planType','f_purchaser','f_creator','f_budgetSection'].forEach(id => $(id).value = '');
+  $('f_requestType').value = 'Purchase'; $('f_discount').value = 0;
+  $('f_budgetSuffix').innerHTML = '<option value="">—</option>';
+  document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
+  toggleBudgetMode();
+  currentItems = [makeBlankItem(), makeBlankItem(), makeBlankItem()]; renderItemRows();
+}
+
+window.updateBudgetPreview = () => {
   const sec = $('f_budgetSection').value, suf = $('f_budgetSuffix').value;
   const code = sec && suf ? (BUDGET_MAP[sec]?.[suf] || '') : '';
-  $('budgetPreview').textContent = code;
+  $('budgetPreview').textContent = code || (sec ? 'Pick the account' : 'Repairing: pick area + account');
   $('f_budgetCode').value = code;
-}
+};
 window.onBudgetSectionChange = () => {
   const sec = $('f_budgetSection').value, sfx = $('f_budgetSuffix');
-  sfx.innerHTML = '<option value="">—</option>';
-  if (sec && BUDGET_MAP[sec]) Object.keys(BUDGET_MAP[sec]).forEach(k => { sfx.innerHTML += `<option value="${k}">${k}</option>`; });
-  _updateBudgetPreview();
+  sfx.innerHTML = '<option value="">—</option>' + (sec && BUDGET_MAP[sec] ? Object.keys(BUDGET_MAP[sec]).map(k => `<option value="${k}">${k}</option>`).join('') : '');
+  updateBudgetPreview();
 };
-window.onBudgetSuffixChange = () => { _updateBudgetPreview(); };
 window.toggleBudgetMode = () => {
   const isInv = $('f_category').value === 'Investment';
-  $('budgetRepairUI').style.display = isInv ? 'none' : '';
-  $('f_budgetFree').style.display = isInv ? '' : 'none';
-  if (isInv) $('f_budgetCode').value = $('f_budgetFree').value.trim();
-  else _updateBudgetPreview();
+  $('budgetRepairUI').classList.toggle('hidden', isInv);
+  $('f_budgetFree').classList.toggle('hidden', !isInv);
+  $('budgetLabel').htmlFor = isInv ? 'f_budgetFree' : 'f_budgetSection';
+  if (isInv) { $('f_budgetCode').value = $('f_budgetFree').value.trim(); $('budgetPreview').textContent = 'Investment: type the full code'; }
+  else updateBudgetPreview();
 };
-function _loadBudgetCode(code, isInvestment) {
-  if (isInvestment) {
-    $('f_budgetFree').value = code;
-    $('f_budgetCode').value = code;
-  } else {
-    let foundSec = '', foundSuf = '';
-    outer: for (const [sec, map] of Object.entries(BUDGET_MAP)) {
-      for (const [suf, full] of Object.entries(map)) {
-        if (full === code) { foundSec = sec; foundSuf = suf; break outer; }
-      }
-    }
-    $('f_budgetSection').value = foundSec;
-    window.onBudgetSectionChange();
-    $('f_budgetSuffix').value = foundSuf;
-    _updateBudgetPreview();
-  }
+function loadBudgetCode(code, isInvestment){
+  if (isInvestment) { $('f_budgetFree').value = code; $('f_budgetCode').value = code; return; }
+  let sec = '', suf = '';
+  for (const [s, map] of Object.entries(BUDGET_MAP)) for (const [k, full] of Object.entries(map)) if (full === code) { sec = s; suf = k; }
+  $('f_budgetSection').value = sec; onBudgetSectionChange(); $('f_budgetSuffix').value = suf; updateBudgetPreview();
 }
-window.updateFileLabel = (inputId, labelId) => { const f = $(inputId).files[0]; $(labelId).textContent = f ? f.name : 'ยังไม่ได้เลือกไฟล์'; };
 
 function renderItemRows(){
-  const tb = $('itemTbody');
-  tb.innerHTML = currentItems.map((it, idx) => `
+  $('itemTbody').innerHTML = currentItems.map((it, idx) => `
     <tr>
-      <td class="col-no">${String(idx+1).padStart(2,'0')}</td>
-      <td><input type="text" value="${escapeHtml(it.description)}" oninput="window._prSetItem(${idx},'description',this.value)" placeholder="รายการ..."></td>
-      <td class="col-qty"><input type="number" min="0" step="any" value="${it.qty}" oninput="window._prSetItem(${idx},'qty',this.value)"></td>
-      <td><input list="unit-opts" value="${escapeHtml(it.unit||'EA')}" oninput="window._prSetItem(${idx},'unit',this.value)" style="font-family:var(--mono)"></td>
-      <td class="col-price"><input type="number" min="0" step="any" value="${it.unitPrice}" oninput="window._prSetItem(${idx},'unitPrice',this.value)"></td>
-      <td><input list="ccy-opts" value="${escapeHtml(it.currency||'THB')}" oninput="window._prSetItem(${idx},'currency',this.value)" style="font-family:var(--mono)"></td>
-      <td class="col-amount">${fmtAmount(Number(it.qty||0) * Number(it.unitPrice||0))}</td>
-      <td class="col-actions"><button class="btn-icon del" onclick="window._prRemoveItem(${idx})" title="ลบ"><i data-lucide="trash-2"></i></button></td>
-    </tr>
-  `).join('');
+      <td class="col-no">${idx + 1}</td>
+      <td><input type="text" value="${escapeHtml(it.description)}" oninput="setItem(${idx},'description',this.value)" placeholder="Part / service" aria-label="Item ${idx + 1} description"></td>
+      <td><input type="number" class="num" min="0" step="any" value="${it.qty}" oninput="setItem(${idx},'qty',this.value)" aria-label="Qty"></td>
+      <td><input type="text" list="unit-opts" value="${escapeHtml(it.unit || 'EA')}" oninput="setItem(${idx},'unit',this.value)" style="font-family:var(--mono)" aria-label="Unit"></td>
+      <td><input type="number" class="num" min="0" step="any" value="${it.unitPrice}" oninput="setItem(${idx},'unitPrice',this.value)" aria-label="Unit price"></td>
+      <td><input type="text" list="ccy-opts" value="${escapeHtml(it.currency || 'THB')}" oninput="setItem(${idx},'currency',this.value.toUpperCase())" style="font-family:var(--mono)" aria-label="Currency"></td>
+      <td class="col-amount">${fmtAmount((Number(it.qty) || 0) * (Number(it.unitPrice) || 0))}</td>
+      <td class="col-actions"><button class="btn-icon del" onclick="removeItem(${idx})" title="Remove row" aria-label="Remove row ${idx + 1}"><i data-lucide="trash-2"></i></button></td>
+    </tr>`).join('');
   updateTotals(); refreshIcons();
 }
-window._prSetItem = (idx, key, val) => {
+window.setItem = (idx, key, val) => {
   if (key === 'qty' || key === 'unitPrice') val = Number(val) || 0;
   currentItems[idx][key] = val;
   const tr = $('itemTbody').children[idx];
-  if (tr) { const ac = tr.querySelector('.col-amount'); if (ac) ac.textContent = fmtAmount(Number(currentItems[idx].qty||0) * Number(currentItems[idx].unitPrice||0)); }
+  if (tr) tr.querySelector('.col-amount').textContent = fmtAmount((Number(currentItems[idx].qty) || 0) * (Number(currentItems[idx].unitPrice) || 0));
   updateTotals();
 };
-window._prRemoveItem = (idx) => { currentItems.splice(idx, 1); renderItemRows(); };
-window.addItemRow = () => { currentItems.push(makeBlankItem()); renderItemRows(); };
-
-function updateTotals(){
-  const subtotal = currentItems.reduce((s,it) => s + (Number(it.qty||0) * Number(it.unitPrice||0)), 0);
-  const disc = Math.min(Math.max(Number($('f_discount') ? $('f_discount').value : 0), 0), 100);
-  $('t_grand').textContent = fmtAmount(subtotal * (1 - disc / 100));
+window.removeItem = (idx) => { currentItems.splice(idx, 1); if (!currentItems.length) currentItems.push(makeBlankItem()); renderItemRows(); };
+window.addItemRow = () => {
+  currentItems.push(makeBlankItem()); renderItemRows();
+  const rows = $('itemTbody').children; rows[rows.length - 1].querySelector('input').focus();
+};
+function calcTotals(items, discount){
+  const sub = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unitPrice) || 0), 0);
+  const disc = Math.min(Math.max(Number(discount) || 0, 0), 100);
+  return { sub, grand: sub * (1 - disc / 100) };
 }
+window.updateTotals = () => {
+  const { sub, grand } = calcTotals(currentItems, $('f_discount').value);
+  $('t_sub').textContent = fmtAmount(sub);
+  $('t_grand').textContent = fmtAmount(grand);
+  $('t_ccy').textContent = (currentItems.find(it => it.description)?.currency || currentItems[0]?.currency || 'THB').toUpperCase();
+};
 
 function readForm(){
   return {
@@ -1233,116 +1200,82 @@ function readForm(){
     creator: $('f_creator').value.trim(), deliveryDate: $('f_deliveryDate').value,
     prVendor: $('f_prVendor').value.trim(), quotation: $('f_quotation').value.trim(),
     budgetCode: $('f_budgetCode').value.trim(), purchaser: $('f_purchaser').value,
-    discount: Number($('f_discount').value||0), items: currentItems.slice()
+    discount: Number($('f_discount').value || 0), items: currentItems.map(it => ({ ...it }))
   };
 }
+function fillForm(d){
+  resetForm();
+  $('f_title').value = d.title || ''; $('f_requestType').value = d.requestType || 'Purchase';
+  $('f_section').value = d.section || ''; $('f_workClass').value = d.workClass || '';
+  $('f_category').value = d.category || ''; $('f_planType').value = d.planType || '';
+  $('f_creator').value = d.creator || ''; $('f_deliveryDate').value = d.deliveryDate || '';
+  $('f_prVendor').value = d.prVendor || ''; $('f_quotation').value = d.quotation || '';
+  $('f_purchaser').value = d.purchaser || ''; $('f_discount').value = d.discount || 0;
+  toggleBudgetMode();
+  loadBudgetCode(d.budgetCode || '', d.category === 'Investment');
+  currentItems = (d.items || []).length ? d.items.map(it => ({ ...makeBlankItem(), ...it })) : [makeBlankItem(), makeBlankItem(), makeBlankItem()];
+  renderItemRows();
+}
 
+/* ===== DRAFTS (this browser only) ===== */
 function loadDrafts(){ try { return JSON.parse(localStorage.getItem(LS_DRAFT) || '[]'); } catch(e){ return []; } }
 function saveDrafts(arr){ try { localStorage.setItem(LS_DRAFT, JSON.stringify(arr)); } catch(e){} }
 
 window.saveDraft = () => {
-  try {
-    const f = readForm();
-    if (!f.title && !f.creator) { toast('กรุณากรอก PR Title หรือ Creator ก่อน Save Draft', 'error'); return; }
-    const drafts = loadDrafts();
-    drafts.unshift({ draftId: 'dr_' + Date.now(), savedAt: new Date().toISOString(), ...f });
-    saveDrafts(drafts); updateDraftTab(); toast('บันทึก Draft แล้ว');
-  } catch(e){ toast('Save draft ไม่สำเร็จ', 'error'); }
+  const f = readForm();
+  if (!f.title && !f.items.some(it => it.description)) { toast('Add a title or an item before saving a draft', 'warn'); return; }
+  const drafts = loadDrafts().filter(d => d.draftId !== window._activeDraftId);
+  const draftId = window._activeDraftId || ('dr_' + Date.now());
+  drafts.unshift({ draftId, savedAt: new Date().toISOString(), ...f });
+  saveDrafts(drafts); window._activeDraftId = draftId;
+  updateDrafts(); closeCreateModal(); toast('Draft saved on this device');
 };
+function clearDraftById(id){ saveDrafts(loadDrafts().filter(d => d.draftId !== id)); updateDrafts(); }
 
-function clearDraftById(id){ saveDrafts(loadDrafts().filter(d => d.draftId !== id)); updateDraftTab(); }
-
-function updateDraftTab(){
+function updateDrafts(){
   const drafts = loadDrafts();
-  const btn = $('draftTabBtn'); if (!btn) return;
-  btn.style.display = drafts.length ? '' : 'none';
+  $('draftTabBtn').classList.toggle('hidden', !drafts.length);
   $('draftBadge').textContent = drafts.length;
-  renderDraftTable(drafts);
-}
-
-function renderDraftTable(drafts){
-  const tb = $('draftTbody'); if (!tb) return;
-  if (!drafts.length) { tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text3);font-size:13px">ไม่มี Draft</td></tr>`; return; }
-  tb.innerHTML = drafts.map(d => {
-    const saved = fmtDate(new Date(d.savedAt).toLocaleDateString('en-GB').replace(/\//g,'-').slice(0,8));
-    return `<tr class="row-clickable" onclick="window._prOpenDraft('${d.draftId}')">
-      <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">${escapeHtml(d.title||'(ไม่มีชื่อ)')}</td>
-      <td>${escapeHtml(d.section||'—')}</td>
-      <td style="font-size:12px;color:var(--text2)">${escapeHtml(d.creator||'—')}</td>
-      <td class="mono" style="font-size:11px;color:var(--text3)">${saved}</td>
-      <td style="text-align:center"><button class="btn-icon del" onclick="event.stopPropagation();window._prDeleteDraft('${d.draftId}')" title="ลบ Draft"><i data-lucide="trash-2"></i></button></td>
-    </tr>`;
-  }).join('');
+  $('tabsBar').classList.toggle('mobile-hidden', !drafts.length);
+  if (!drafts.length && activeTab === 'drafts') switchTab('list');
+  const fmtSaved = iso => { const d = new Date(iso); return isNaN(d) ? '—' : ('0' + d.getDate()).slice(-2) + ' ' + MON[d.getMonth()] + ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); };
+  $('draftTbody').innerHTML = drafts.map(d => `
+    <tr class="row-clickable" onclick="openDraft('${d.draftId}')">
+      <td class="td-title" style="font-family:var(--sans);font-weight:600">${escapeHtml(d.title || '(untitled)')}</td>
+      <td>${textBadge(d.section)}</td>
+      <td class="td-muted">${escapeHtml(d.creator || '—')}</td>
+      <td class="td-amount">${fmtAmount(calcTotals(d.items || [], d.discount).grand)}</td>
+      <td class="td-mono">${fmtSaved(d.savedAt)}</td>
+      <td><div class="row-actions"><button class="btn-icon del" onclick="event.stopPropagation();deleteDraft('${d.draftId}')" title="Delete draft" aria-label="Delete draft"><i data-lucide="trash-2"></i></button></div></td>
+    </tr>`).join('');
+  $('draftCardList').innerHTML = drafts.map(d => `
+    <div class="inv-card" role="button" tabindex="0" onclick="openDraft('${d.draftId}')">
+      <div class="inv-card-top" style="margin-bottom:0;padding-bottom:0;border-bottom:none">
+        <div class="inv-card-head">
+          <div class="card-taxonomy">${d.section ? textBadge(d.section) : ''}<span class="badge badge-warn">Draft</span></div>
+          <div class="inv-card-name">${escapeHtml(d.title || '(untitled)')}</div>
+          <div class="inv-card-pid">Saved ${fmtSaved(d.savedAt)}</div>
+        </div>
+        <div class="inv-card-stock-wrap">
+          <div class="inv-card-stock">${fmtAmount(calcTotals(d.items || [], d.discount).grand)}</div>
+          <button class="btn-icon del" style="margin:8px 0 0 auto" onclick="event.stopPropagation();deleteDraft('${d.draftId}')" aria-label="Delete draft"><i data-lucide="trash-2"></i></button>
+        </div>
+      </div>
+    </div>`).join('');
   refreshIcons();
 }
-
-window._prOpenDraft = (id) => {
-  const draft = loadDrafts().find(d => d.draftId === id); if (!draft) return;
-  fillFormFromDraft(draft); draft._draftId = id; window._activeDraftId = id;
-  $('createModal').classList.add('show'); refreshIcons();
+window.openDraft = (id) => {
+  const d = loadDrafts().find(x => x.draftId === id); if (!d) return;
+  openCreateModal(); fillForm(d); window._activeDraftId = id;
+  $('createTitle').textContent = 'Draft: ' + (d.title || '(untitled)');
+  $('createSub').textContent = 'Saved on this device — submit to create the PR';
 };
-window._prDeleteDraft = (id) => {
-  if (!confirm('ลบ Draft นี้?')) return;
-  clearDraftById(id); if (!loadDrafts().length) switchTab('history');
-};
-
-function fillFormFromDraft(d){
-  $('f_title').value = d.title||''; $('f_requestType').value = d.requestType||'Purchase';
-  $('f_section').value = d.section||''; $('f_workClass').value = d.workClass||'';
-  $('f_category').value = d.category||''; $('f_planType').value = d.planType||'';
-  $('f_creator').value = d.creator||''; $('f_deliveryDate').value = d.deliveryDate||'';
-  $('f_prVendor').value = d.prVendor||''; $('f_quotation').value = d.quotation||'';
-  $('f_purchaser').value = d.purchaser||''; $('f_discount').value = d.discount||0;
-  window.toggleScopeDoc(); window.toggleBudgetMode();
-  _loadBudgetCode(d.budgetCode||'', d.category === 'Investment');
-  currentItems = (d.items||[]).length ? d.items.map(it => ({...makeBlankItem(), ...it})) : [makeBlankItem(), makeBlankItem(), makeBlankItem()];
-  renderItemRows();
-}
-
-window.submitPR = async () => {
-  const f = readForm();
-  if (!f.title) { toast('กรุณากรอก PR Title', 'error'); return; }
-  if (!f.section) { toast('กรุณาเลือก Section', 'error'); return; }
-  if (!f.creator) { toast('กรุณากรอก Creator', 'error'); return; }
-  const validItems = f.items.filter(it => it.description && Number(it.qty) > 0);
-  if (!validItems.length) { toast('กรุณาเพิ่ม Item อย่างน้อย 1 รายการ', 'error'); return; }
-  const subtotal = validItems.reduce((s,it) => s + (Number(it.qty||0) * Number(it.unitPrice||0)), 0);
-  const disc = Math.min(Math.max(f.discount||0, 0), 100);
-  const grand = subtotal * (1 - disc / 100);
-  const prNo = generatePRNo();
-  const record = {
-    'PR No.': prNo, 'PO No.': '', 'Creator': f.creator, 'PR Title': f.title,
-    'Section': f.section, 'Item Desc': validItems.map(it => `${it.description} (${it.qty} ${it.unit})`).join('; '),
-    'Category': f.category || '', 'Work Class': f.workClass || '', 'Plan Type': f.planType || '',
-    'Status': 'Requisition approving', 'Deliv. Status': '', 'PR_Vendor': f.prVendor, 'PO_Vendor': '',
-    'PR Amount': grand, 'PO Amount': '', 'Currency Key': validItems[0]?.currency || 'THB',
-    'Budget code': f.budgetCode, 'Post Date': new Date().toLocaleDateString('en-GB').replace(/\//g,'-').slice(0,8),
-    'Purchaser': f.purchaser || '', 'Entry by': f.creator, 'Request Type': f.requestType,
-    'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
-    'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID
-  };
-  const btn = document.getElementById('submitPRBtn');
-  btn.classList.add('btn-loading');
-  setSync('syncing');
-  try {
-    // PR No. is UNIQUE: if another user took the number first, reload and take the next one
-    let ins, error;
-    for (let attempt = 0; attempt < 4; attempt++) {
-      ({ data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single());
-      if (!error || error.code !== '23505') break;
-      await loadFromSupabase();
-      record['PR No.'] = generatePRNo();
-    }
-    if (error) throw error;
-    const prNo = record['PR No.'];
-    prRecords.unshift({ _id: ins.id, ...record }); saveCache(); applyFilters();
-    if (window._activeDraftId) clearDraftById(window._activeDraftId);
-    window._activeDraftId = null; updateDraftTab(); closeCreateModal(); setSync('live');
-    toast(`สร้าง PR ${prNo} สำเร็จ`);
-  } catch(e){ console.error(e); setSync('error'); toast('Submit ไม่สำเร็จ: ' + e.message, 'error'); }
-  finally { btn.classList.remove('btn-loading'); }
+window.deleteDraft = async (id) => {
+  if (!await confirmDialog({ title: 'Delete this draft?', message: 'Drafts are stored only on this device.', okText: 'Delete', tone: 'danger' })) return;
+  clearDraftById(id); toast('Draft deleted');
 };
 
+/* ===== SUBMIT ===== */
 function generatePRNo(){
   const d = new Date();
   const ymd = d.getFullYear().toString().slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
@@ -1355,24 +1288,81 @@ function generatePRNo(){
   return prefix + String(maxSeq + 1).padStart(3, '0');
 }
 
-window.openImportModal = () => {
-  csvParsed = null; $('importPreview').style.display = 'none';
-  $('importConfirmBtn').disabled = true; $('csvInput').value = '';
-  $('importModal').classList.add('show'); refreshIcons();
+window.submitPR = async () => {
+  const f = readForm();
+  document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
+  const missing = [];
+  if (!f.title) missing.push(['f_title', 'PR Title']);
+  if (!f.section) missing.push(['f_section', 'Section']);
+  if (!f.creator) missing.push(['f_creator', 'Requested By']);
+  const validItems = f.items.filter(it => it.description && Number(it.qty) > 0);
+  if (missing.length) {
+    missing.forEach(([id]) => $(id).classList.add('input-error'));
+    $(missing[0][0]).focus();
+    toast('Required: ' + missing.map(m => m[1]).join(', '), 'error'); return;
+  }
+  if (!validItems.length) { toast('Add at least one item with a description and qty', 'error'); return; }
+  const { grand } = calcTotals(validItems, f.discount);
+  const record = {
+    'PR No.': generatePRNo(), 'PO No.': '', 'Creator': f.creator, 'PR Title': f.title,
+    'Section': f.section, 'Item Desc': validItems.map(it => `${it.description} (${it.qty} ${it.unit})`).join('; '),
+    'Category': f.category || '', 'Work Class': f.workClass || '', 'Plan Type': f.planType || '',
+    'Status': 'Requisition approving', 'Deliv. Status': '', 'PR_Vendor': f.prVendor, 'PO_Vendor': '',
+    'PR Amount': grand, 'PO Amount': '', 'Currency Key': (validItems[0]?.currency || 'THB').toUpperCase(),
+    'Budget code': f.budgetCode, 'Post Date': todayPostDate(),
+    'Purchaser': f.purchaser || '', 'Entry by': userName || f.creator, 'Request Type': f.requestType,
+    'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
+    'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID
+  };
+  const btn = $('submitPRBtn');
+  btn.classList.add('btn-loading'); setSync('syncing');
+  try {
+    // PR No. is UNIQUE: if another user took the number first, reload and take the next one
+    let ins, error;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      ({ data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single());
+      if (!error || error.code !== '23505') break;
+      await loadFromSupabase();
+      record['PR No.'] = generatePRNo();
+    }
+    if (error) throw error;
+    prRecords.unshift({ _id: ins.id, ...record }); saveCache();
+    if (window._activeDraftId) clearDraftById(window._activeDraftId);
+    window._activeDraftId = null;
+    closeCreateModal(); setSync('live');
+    statusFilter = 'all'; delivFilter = ''; switchTab('list'); applyFilters();
+    toast(`Created PR ${record['PR No.']}`);
+  } catch(e){ console.error(e); setSync('error'); toast('Submit failed: ' + e.message, 'error'); }
+  finally { btn.classList.remove('btn-loading'); }
 };
-window.closeImportModal = () => $('importModal').classList.remove('show');
 
+/* ===== IMPORT ===== */
+window.openImportModal = () => {
+  csvParsed = null; $('importPreview').classList.add('hidden');
+  $('importConfirmBtn').disabled = true; $('csvInput').value = '';
+  $('csvFileName').textContent = 'UTF-8 · same columns as Export';
+  $('replaceConfirmInput').value = '';
+  document.querySelector('input[name=importMode][value=merge]').checked = true;
+  onImportModeChange();
+  showModal('importModal');
+};
+window.closeImportModal = () => hideModal('importModal');
+window.onImportModeChange = () => {
+  const mode = document.querySelector('input[name=importMode]:checked').value;
+  $('replaceConfirm').classList.toggle('show', mode === 'replace');
+  $('importConfirmBtn').disabled = !csvParsed || !csvParsed.length || (mode === 'replace' && $('replaceConfirmInput').value.trim() !== 'REPLACE');
+};
 window.onCSVPicked = (ev) => {
   const f = ev.target.files[0]; if (!f) return;
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const text = e.target.result; csvParsed = parseCSV(text);
+      csvParsed = parseCSV(e.target.result);
+      $('csvFileName').textContent = f.name;
       $('previewCount').textContent = csvParsed.length.toLocaleString();
-      $('importPreview').style.display = '';
-      $('importConfirmBtn').disabled = csvParsed.length === 0;
-      toast(`อ่าน CSV ได้ ${csvParsed.length} รายการ — ตรวจสอบและกดยืนยัน`);
-    } catch(err){ toast('Parse CSV ไม่สำเร็จ: ' + err.message, 'error'); }
+      $('importPreview').classList.remove('hidden');
+      onImportModeChange();
+    } catch(err){ toast('Could not read CSV: ' + err.message, 'error'); }
   };
   reader.readAsText(f, 'utf-8');
 };
@@ -1385,27 +1375,27 @@ function parseCSV(text){
     if (inQ) { if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQ = false; } else field += c; }
     else { if (c === '"') inQ = true; else if (c === ',') { cur.push(field); field = ''; } else if (c === '\n') { cur.push(field); rows.push(cur); cur = []; field = ''; } else if (c === '\r') {} else field += c; }
   }
-  if (field.length || cur.length) { cur.push(field); rows.push(cur); }
+  if (field || cur.length) { cur.push(field); rows.push(cur); }
   if (!rows.length) return [];
   const headers = rows[0].map(h => h.trim());
-  return rows.slice(1).filter(r => r.some(v => (v||'').trim())).map(r => {
+  return rows.slice(1).filter(r => r.some(v => v.trim() !== '')).map(r => {
     const o = {};
-    headers.forEach((h, idx) => {
-      let v = (r[idx] != null ? r[idx] : '').trim();
-      if (['PR No.','PO No.','PR Amount','PO Amount','No.'].includes(h)) { const n = Number(v.replace(/,/g,'')); o[h] = isNaN(n) ? v : n; }
+    headers.forEach((h, i) => {
+      const v = (r[i] || '').trim();
+      if (['PR Amount','PO Amount'].includes(h)) { const n = Number(v.replace(/,/g,'')); o[h] = v === '' ? '' : (isNaN(n) ? v : n); }
       else o[h] = v;
     });
     return o;
   });
 }
 
+function chunkBatch(arr, size){ const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i+size)); return out; }
+
 window.confirmImport = async () => {
   if (!csvParsed || !csvParsed.length) return;
   const mode = document.querySelector('input[name=importMode]:checked').value;
-  if (mode === 'replace' && !confirm(`โหมด REPLACE จะลบข้อมูล PR เดิมทั้งหมด (${prRecords.length} รายการ) แล้วใส่ใหม่ ${csvParsed.length} รายการ\n\nยืนยันหรือไม่?`)) return;
   const btn = $('importConfirmBtn');
-  btn.classList.add('btn-loading');
-  setSync('syncing'); btn.disabled = true;
+  btn.classList.add('btn-loading'); btn.disabled = true; setSync('syncing');
   try {
     const now = new Date().toISOString();
     const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
@@ -1420,9 +1410,7 @@ window.confirmImport = async () => {
       // merge: upsert by PR No. (last row wins inside one CSV); rows without a PR No. are always inserted
       const byNo = new Map(); const noKey = [];
       rows.forEach(r => { if (r['PR No.']) byNo.set(r['PR No.'], r); else noKey.push(r); });
-      const keys = new Set(); rows.forEach(r => Object.keys(r).forEach(k => keys.add(k)));
-      const fill = r => { const o = {}; keys.forEach(k => { if (r[k] !== undefined) o[k] = r[k]; }); return o; };
-      for (const chunk of chunkBatch([...byNo.values()].map(fill), 400)) {
+      for (const chunk of chunkBatch([...byNo.values()], 400)) {
         const { error } = await supabase.from(PR_COL).upsert(chunk, { onConflict: 'PR No.' });
         if (error) throw error;
       }
@@ -1433,33 +1421,41 @@ window.confirmImport = async () => {
     }
     await supabase.from(PR_LOG_COL).insert([{ mode, count: csvParsed.length, device: DEVICE_ID }]);
     await loadFromSupabase(); closeImportModal(); applyFilters(); setSync('live');
-    toast(`Import สำเร็จ ${csvParsed.length} รายการ (${mode})`);
-  } catch(e){ console.error(e); setSync('error'); toast('Import ไม่สำเร็จ: ' + e.message, 'error'); }
-  finally { btn.disabled = false; btn.classList.remove('btn-loading'); }
+    toast(`Imported ${csvParsed.length} rows (${mode})`);
+  } catch(e){ console.error(e); setSync('error'); toast('Import failed: ' + e.message, 'error'); }
+  finally { btn.classList.remove('btn-loading'); onImportModeChange(); }
 };
 
-function chunkBatch(arr, size){ const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i+size)); return out; }
-
-window.switchTab = (which) => {
-  document.querySelectorAll('.tab[data-tab]').forEach(t => t.classList.toggle('active', t.dataset.tab === which));
-  $('tabHistory').style.display = which === 'history' ? '' : 'none';
-  $('tabDraft').style.display   = which === 'draft'   ? '' : 'none';
-  $('tabCreate').style.display  = which === 'create'  ? '' : 'none';
-  if (which === 'create') openCreateModal();
+/* ===== AUTH GATE ===== */
+window.signInFromGuest = () => {
+  try { localStorage.removeItem('isGuest'); } catch(e){}
+  window.location.href = 'login.html';
 };
 
 async function init(){
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) { window.location.replace('login.html'); return; }
-  currentSession = session;
-  const hasCache = loadCache();
-  if (hasCache) {
-    $('loadingOverlay').style.display = 'none'; $('prPage').style.display = '';
-    restoreFilters(); applyFilters(); updateDraftTab(); refreshIcons();
+  if (!session) {
+    // Guest mode has no Supabase session (store keeps only a local flag), and pr_records is limited to
+    // signed-in users by RLS. Redirecting to login.html would bounce a guest straight back to the store.
+    if (localStorage.getItem('isGuest') === 'true') {
+      $('loadingOverlay').style.display = 'none';
+      document.querySelectorAll('#hdrNew, #hdrImport, #hdrExport, .header-divider, #syncStatus').forEach(el => el.classList.add('hidden'));
+      $('guestGate').classList.remove('hidden'); refreshIcons();
+      return;
+    }
+    window.location.replace('login.html'); return;
   }
+  const meta = session.user.user_metadata || {};
+  userName = meta.display_name || meta.full_name || meta.name || session.user.email || '';
+  if (userName) { $('userDisplayNameText').textContent = userName; $('userProfileMenu').style.display = 'flex'; }
+
+  restoreFilters();
+  if (loadCache()) { $('loadingOverlay').style.display = 'none'; $('prPage').classList.remove('hidden'); applyFilters(); }
+  updateDrafts(); refreshIcons();
   await loadFromSupabase();
-  $('loadingOverlay').style.display = 'none'; $('prPage').style.display = '';
-  restoreFilters(); applyFilters(); updateDraftTab(); refreshIcons();
+  $('loadingOverlay').style.display = 'none'; $('prPage').classList.remove('hidden');
+  applyFilters(); refreshIcons();
+  startRealtime();
 }
 
 init();
