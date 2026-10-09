@@ -641,7 +641,6 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
 </div>
 
 <datalist id="unit-opts"><option value="EA"><option value="SET"><option value="LOT"><option value="PCS"><option value="M"><option value="KG"></datalist>
-<datalist id="ccy-opts"><option value="THB"><option value="USD"><option value="EUR"><option value="JPY"><option value="CHF"><option value="CNY"></datalist>
 
 <!-- ===== CREATE PR ===== -->
 <div class="modal-overlay" id="createModal" data-form="1">
@@ -748,19 +747,24 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
         <table class="item-table">
           <thead><tr>
             <th class="col-no">#</th><th>Description</th><th style="width:70px">Qty</th><th style="width:76px">Unit</th>
-            <th style="width:110px;text-align:right">Unit Price</th><th style="width:72px">Ccy</th>
+            <th style="width:110px;text-align:right">Unit Price</th>
             <th style="width:110px;text-align:right">Amount</th><th class="col-actions"></th>
           </tr></thead>
           <tbody id="itemTbody"></tbody>
         </table>
       </div>
       <div class="totals-box">
+        <div class="totals-row">
+          <label class="t-label" for="f_currency" style="min-height:0">Currency</label>
+          <select id="f_currency" style="width:200px" onchange="updateTotals()"></select>
+        </div>
         <div class="totals-row"><span class="t-label">Subtotal</span><span class="mono" id="t_sub" style="font-family:var(--mono);font-weight:600">0</span></div>
         <div class="totals-row">
           <label class="t-label" for="f_discount" style="min-height:0">Discount %</label>
           <input type="number" id="f_discount" min="0" max="100" step="0.1" value="0" oninput="updateTotals()">
         </div>
         <div class="totals-row grand"><span class="t-label">Grand Total<button type="button" class="badge badge-warn hidden" id="justifyChip" onclick="document.getElementById('justifyBox').scrollIntoView({behavior:'smooth',block:'center'})">Justification needed ↓</button></span><span class="t-val"><span id="t_grand">0</span><span class="ccy" id="t_ccy">THB</span></span></div>
+        <div class="field-hint hidden" id="fxHint" style="text-align:right"></div>
       </div>
 
       <div class="justify hidden" id="justifyBox" role="group" aria-labelledby="justifyTitle">
@@ -1338,14 +1342,16 @@ function applyFilters(){
   try { localStorage.setItem(LS_FILTERS, JSON.stringify({ q, statusFilter, delivFilter, sortCol, sortAsc })); } catch(e){}
 }
 function renderMeta(){
-  let thb = 0, other = 0;
+  let thb = 0, conv = 0, skip = 0;
   filteredRecords.forEach(r => {
-    const ccy = String(r['Currency Key'] || 'THB').toUpperCase();
-    if (ccy === 'THB') thb += Number(r['PR Amount']) || 0; else other++;
+    const v = toTHB(r['PR Amount'], r['Currency Key']);
+    if (v == null) { skip++; return; }
+    thb += v;
+    if (String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB') conv++;
   });
   $('searchResultMeta').innerHTML =
     `<span>Showing ${filteredRecords.length.toLocaleString()} / ${prRecords.length.toLocaleString()} PRs</span>` +
-    `<span>PR total <strong>${fmtAmount(thb)}</strong> THB${other ? ` + ${other} in other currencies` : ''}</span>`;
+    `<span>PR total <strong>${fmtAmount(Math.round(thb))}</strong> THB${conv ? ` (${conv} converted at fixed rates)` : ''}${skip ? ` + ${skip} in other currencies` : ''}</span>`;
 }
 function restoreFilters(){
   try {
@@ -1480,16 +1486,16 @@ document.addEventListener('scroll', e => { const t = e.target; if ($('colPicker'
 /* ===== DASHBOARD ===== */
 const DASH_DEFAULT = { period: 'ytd', section: '', person: '', status: 'valid', measure: 'pr' };
 let dash = (() => { try { return { ...DASH_DEFAULT, ...JSON.parse(localStorage.getItem('aft_pr_dash') || '{}') }; } catch(e){ return { ...DASH_DEFAULT }; } })();
-const isTHB = r => String(r['Currency Key'] || 'THB').toUpperCase() === 'THB';
+const hasRate = r => fxRate(r['Currency Key']) != null;
 const fmtCompact = n => {
   const a = Math.abs(n);
   if (a >= 1e6) return (n / 1e6).toFixed(a >= 1e7 ? 1 : 2).replace(/\.?0+$/, '') + 'M';
   if (a >= 1e3) return (n / 1e3).toFixed(a >= 1e4 ? 0 : 1).replace(/\.0$/, '') + 'k';
   return String(Math.round(n));
 };
-function amountOf(r){
+function amountOf(r){   // in THB: other currencies are converted at the fixed rates
   const v = dash.measure === 'po' ? r['PO Amount'] : r['PR Amount'];
-  const n = Number(v); return isNaN(n) ? 0 : n;
+  const n = Number(v); return isNaN(n) ? 0 : n * (fxRate(r['Currency Key']) ?? 0);
 }
 function periodRange(p){
   const now = new Date(), y = now.getFullYear();
@@ -1609,12 +1615,14 @@ function renderDashboard(){
   $('dMeasurePR').setAttribute('aria-pressed', dash.measure === 'pr'); $('dMeasurePO').setAttribute('aria-pressed', dash.measure === 'po');
 
   const all = dashRecords();
-  const rows = all.filter(isTHB);
-  const nonTHB = all.length - rows.length;
+  const rows = all.filter(hasRate);
+  const noRate = all.length - rows.length;
+  const converted = rows.filter(r => String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB').length;
   const undated = dash.period === 'all' ? 0 : prRecords.filter(r => !parseDateToMs(r['Post Date'])).length;
   $('dashNote').textContent = [
     `${rows.length.toLocaleString()} PRs in view`,
-    nonTHB ? `${nonTHB} non-THB PRs left out of the totals` : '',
+    converted ? `${converted} non-THB PRs converted at fixed rates` : '',
+    noRate ? `${noRate} PRs in a currency without a fixed rate are left out` : '',
     undated ? `${undated} PRs without a readable Post Date are outside every period` : '',
     `Post Date read as ${dateMDY ? 'mm-dd-yy' : 'dd-mm-yy'}`
   ].filter(Boolean).join('  ·  ');
@@ -1745,7 +1753,7 @@ window.openDetail = (id) => {
     ${itemsHtml}
     ${attHtml}
     <div class="detail-grid">
-      ${item('PR Amount', r['PR Amount'] != null && r['PR Amount'] !== '' ? fmtAmount(r['PR Amount']) + ' ' + ccy : '', { mono: true, html: true })}
+      ${item('PR Amount', r['PR Amount'] != null && r['PR Amount'] !== '' ? fmtAmount(r['PR Amount']) + ' ' + ccy + (String(r['Currency Key'] || 'THB').toUpperCase() !== 'THB' && fxRate(r['Currency Key']) != null ? ` <span style="color:var(--text3);font-size:12px">≈ ${fmtAmount(Math.round(toTHB(r['PR Amount'], r['Currency Key'])))} THB</span>` : '') : '', { mono: true, html: true })}
       ${item('PO Amount', r['PO Amount'] != null && r['PO Amount'] !== '' ? fmtAmount(r['PO Amount']) + ' ' + ccy : '', { mono: true, html: true })}
       ${item('Section', r['Section'])}
       ${item('Request Type', r['Request Type'])}
@@ -1793,7 +1801,7 @@ window.duplicatePR = () => {
     title: r['PR Title'] || '', requestType: r['Request Type'] || 'Purchase', section: r['Section'] || '',
     workClass: r['Work Class'] || '', category: r['Category'] || '', planType: r['Plan Type'] || '',
     creator: '', deliveryDate: '', prVendor: r['PR_Vendor'] || '', quotation: '',
-    purchaser: r['Purchaser'] || '', discount: Number(r['Discount']) || 0, budgetCode: r['Budget code'] || '',
+    purchaser: r['Purchaser'] || '', discount: Number(r['Discount']) || 0, budgetCode: r['Budget code'] || '', currency: r['Currency Key'] || 'THB',
     items: Array.isArray(r['Items']) && r['Items'].length ? r['Items'] : [{ ...makeBlankItem(), description: r['Item Desc'] || '', unitPrice: Number(r['PR Amount']) || 0 }],
     justify: (r['Justification'] && typeof r['Justification'] === 'object') ? r['Justification'] : {}
   });
@@ -1950,7 +1958,7 @@ window.closeCreateModal = () => hideModal('createModal');
 function resetForm(){
   ['f_title','f_prVendor','f_quotation','f_budgetCode','f_deliveryDate','f_budgetFree'].forEach(id => $(id).value = '');
   ['f_section','f_workClass','f_category','f_planType','f_purchaser','f_creator','f_budgetSection','j_what','j_why','j_whyNow','j_alt'].forEach(id => $(id).value = '');
-  $('f_requestType').value = 'Purchase'; $('f_discount').value = 0;
+  $('f_requestType').value = 'Purchase'; $('f_discount').value = 0; setCcy('THB');
   $('f_budgetSuffix').innerHTML = '<option value="">—</option>';
   clearFormErrors();
   pendingFiles = []; renderQuotFiles();
@@ -1992,7 +2000,6 @@ function renderItemRows(){
       <td><input type="number" class="num" min="0" step="any" value="${it.qty}" oninput="setItem(${idx},'qty',this.value)" aria-label="Qty"></td>
       <td><input type="text" list="unit-opts" value="${escapeHtml(it.unit || 'EA')}" oninput="setItem(${idx},'unit',this.value)" style="font-family:var(--mono)" aria-label="Unit"></td>
       <td><input type="number" class="num" min="0" step="any" value="${it.unitPrice}" oninput="setItem(${idx},'unitPrice',this.value)" aria-label="Unit price"></td>
-      <td><input type="text" list="ccy-opts" value="${escapeHtml(it.currency || 'THB')}" oninput="setItem(${idx},'currency',this.value.toUpperCase())" style="font-family:var(--mono)" aria-label="Currency"></td>
       <td class="col-amount">${fmtAmount((Number(it.qty) || 0) * (Number(it.unitPrice) || 0))}</td>
       <td class="col-actions"><button class="btn-icon del" onclick="removeItem(${idx})" title="Remove row" aria-label="Remove row ${idx + 1}"><i data-lucide="trash-2"></i></button></td>
     </tr>`).join('');
@@ -2015,12 +2022,25 @@ function calcTotals(items, discount){
   const disc = Math.min(Math.max(Number(discount) || 0, 0), 100);
   return { sub, grand: sub * (1 - disc / 100) };
 }
+// Fixed rates to THB (approximate, one place to edit when finance publishes the budget rates).
+// Used behind the scenes for the justification rule and for the dashboard / list totals.
+const FX_TO_THB = { THB: 1, USD: 35, EUR: 38, JPY: 0.23, CNY: 4.9, MYR: 7.8, IDR: 0.0022, KRW: 0.026 };
+const CURRENCIES = [['THB', 'Thai baht'], ['USD', 'US dollar'], ['EUR', 'Euro'], ['JPY', 'Japanese yen'], ['CNY', 'Chinese yuan'], ['MYR', 'Malaysian ringgit'], ['IDR', 'Indonesian rupiah'], ['KRW', 'South Korean won']];
+const fxRate = c => FX_TO_THB[String(c || 'THB').toUpperCase()] ?? null;
+const toTHB = (amount, c) => { const r = fxRate(c); return r == null ? null : (Number(amount) || 0) * r; };
+$('f_currency').innerHTML = CURRENCIES.map(([c, n]) => `<option value="${c}">${c} · ${n}</option>`).join('');
+const currentCcy = () => $('f_currency').value || 'THB';
+function setCcy(c){
+  c = String(c || 'THB').toUpperCase();
+  const sel = $('f_currency');
+  if (![...sel.options].some(o => o.value === c)) sel.add(new Option(c, c));   // e.g. a currency that only exists in an imported PR
+  sel.value = c;
+}
 const JUSTIFY_MIN = 50000;   // THB, strictly above
 function needsJustification(){
   if ($('f_planType').value !== 'Out of list') return false;
-  const ccy = (currentItems.find(it => it.description)?.currency || currentItems[0]?.currency || 'THB').toUpperCase();
-  if (ccy !== 'THB') return false;   // no exchange rate here, so only THB totals are checked
-  return calcTotals(currentItems, $('f_discount').value).grand > JUSTIFY_MIN;
+  const thb = toTHB(calcTotals(currentItems, $('f_discount').value).grand, currentCcy());
+  return thb != null && thb > JUSTIFY_MIN;   // a currency without a fixed rate is never converted, so it cannot trigger
 }
 /* ===== MISSING-FIELD FEEDBACK ===== */
 function clearFieldError(el){
@@ -2067,13 +2087,21 @@ window.syncJustify = () => {
   box.classList.toggle('hidden', !on);
   $('justifyChip').classList.toggle('hidden', !on);
   if (!on) ['j_what', 'j_why', 'j_whyNow'].forEach(id => clearFieldError($(id)));
+  if (on) {
+    const ccy = currentCcy(), thb = toTHB(calcTotals(currentItems, $('f_discount').value).grand, ccy);
+    $('justifySub').textContent = `Out of plan list and over 50,000 THB${ccy !== 'THB' ? ` (about ${fmtAmount(Math.round(thb))} THB at the fixed rate)` : ''}. Fill in What, Why and Why now to continue.`;
+  }
   if (on && !was) refreshIcons();
 };
 window.updateTotals = () => {
   const { sub, grand } = calcTotals(currentItems, $('f_discount').value);
   $('t_sub').textContent = fmtAmount(sub);
   $('t_grand').textContent = fmtAmount(grand);
-  $('t_ccy').textContent = (currentItems.find(it => it.description)?.currency || currentItems[0]?.currency || 'THB').toUpperCase();
+  const ccy = currentCcy();
+  $('t_ccy').textContent = ccy;
+  const hint = $('fxHint');
+  if (ccy !== 'THB' && fxRate(ccy) != null) { hint.textContent = `≈ ${fmtAmount(Math.round(grand * fxRate(ccy)))} THB at the fixed rate 1 ${ccy} = ${fxRate(ccy)} THB`; hint.classList.remove('hidden'); }
+  else hint.classList.add('hidden');
   syncJustify();
 };
 
@@ -2085,7 +2113,7 @@ function readForm(){
     creator: $('f_creator').value.trim(), deliveryDate: $('f_deliveryDate').value,
     prVendor: $('f_prVendor').value.trim(), quotation: $('f_quotation').value.trim(),
     budgetCode: $('f_budgetCode').value.trim(), purchaser: $('f_purchaser').value,
-    discount: Number($('f_discount').value || 0), items: currentItems.map(it => ({ ...it })),
+    discount: Number($('f_discount').value || 0), currency: currentCcy(), items: currentItems.map(it => ({ ...it })),
     justify: { what: $('j_what').value.trim(), why: $('j_why').value.trim(), whyNow: $('j_whyNow').value.trim(), alternatives: $('j_alt').value.trim() }
   };
 }
@@ -2097,6 +2125,7 @@ function fillForm(d){
   $('f_creator').value = d.creator || ''; $('f_deliveryDate').value = d.deliveryDate || '';
   $('f_prVendor').value = d.prVendor || ''; $('f_quotation').value = d.quotation || '';
   $('f_purchaser').value = d.purchaser || ''; $('f_discount').value = d.discount || 0;
+  setCcy(d.currency || (d.items || []).find(it => it.currency)?.currency);
   const jd = d.justify || {};
   $('j_what').value = jd.what || ''; $('j_why').value = jd.why || ''; $('j_whyNow').value = jd.whyNow || ''; $('j_alt').value = jd.alternatives || '';
   toggleBudgetMode();
@@ -2200,11 +2229,11 @@ window.submitPR = async () => {
     'Section': f.section, 'Item Desc': validItems.map(it => `${it.description} (${it.qty} ${it.unit})`).join('; '),
     'Category': f.category || '', 'Work Class': f.workClass || '', 'Plan Type': f.planType || '',
     'Status': 'Requisition approving', 'Deliv. Status': '', 'PR_Vendor': f.prVendor, 'PO_Vendor': '',
-    'PR Amount': grand, 'PO Amount': '', 'Currency Key': (validItems[0]?.currency || 'THB').toUpperCase(),
+    'PR Amount': grand, 'PO Amount': '', 'Currency Key': f.currency,
     'Budget code': f.budgetCode, 'Post Date': todayPostDate(),
     'Purchaser': f.purchaser || '', 'Entry by': userName || f.creator, 'Request Type': f.requestType,
     'Delivery Date': f.deliveryDate, 'Quotation No': f.quotation, 'Discount': f.discount || 0,
-    'Items': validItems, 'createdAt': new Date().toISOString(), 'device': DEVICE_ID,
+    'Items': validItems.map(it => ({ ...it, currency: f.currency })), 'createdAt': new Date().toISOString(), 'device': DEVICE_ID,
     'Justification': needJ ? f.justify : null
   };
   const n = pendingFiles.length;
