@@ -126,6 +126,11 @@ td[data-col="budget"] { max-width: 220px; }
 .badge-warn { background: #fef3c7; color: #92400e; }
 .badge-danger { background: #fde8ef; color: var(--danger-text); }
 .badge-blue { background: #e0e4f0; color: var(--agc-blue); }
+/* request status: a progression toward done. amber (waiting) -> green tint (approved) -> solid green (ordered); solid red = rejected. Own classes so the delivery badges can't be confused with them */
+.badge-st-pending { background: #fef3c7; color: #92400e; }
+.badge-st-approved { background: #cdeedb; color: #005a2b; }
+.badge-st-ordered { background: var(--accent2); color: #fff; }
+.badge-st-rejected { background: var(--danger); color: #fff; }
 .badge-invest { background: #ffe4b8; color: #92400e; }
 
 /* ===== CARD VIEW (mobile, store .inv-card) ===== */
@@ -1302,7 +1307,7 @@ function delivKey(s){
   if (s.includes('compl') || s.includes('delivered')) return 'delivered';
   return s ? 'other' : 'none';
 }
-const STATUS_BADGE = { ordered: 'badge-ok', approved: 'badge-blue', approving: 'badge-warn', unapproved: 'badge-danger', other: 'badge-none' };
+const STATUS_BADGE = { ordered: 'badge-st-ordered', approved: 'badge-st-approved', approving: 'badge-st-pending', unapproved: 'badge-st-rejected', other: 'badge-none' };
 const DELIV_BADGE = { delivered: 'badge-ok', partial: 'badge-blue', undelivered: 'badge-warn', other: 'badge-none' };
 function delivBadge(s){
   const k = delivKey(s);
