@@ -261,6 +261,22 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 .note { font-size: 12px; color: var(--text2); line-height: 1.5; }
 .note code { font-family: var(--mono); font-size: 11px; background: var(--bg2); padding: 1px 5px; border-radius: 4px; }
 
+/* Empty selects read as a placeholder (muted), so "—" can't be mistaken for a chosen value */
+select:has(option[value=""]:checked) { color: var(--text3); }
+select option { color: var(--text); }
+
+/* Attachments */
+.file-drop { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.file-list { display: flex; flex-direction: column; gap: 6px; }
+.file-chip { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); font-family: var(--sans); font-size: 13px; font-weight: 600; color: var(--text); text-align: left; width: 100%; min-width: 0; }
+button.file-chip { cursor: pointer; }
+button.file-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+.file-chip .fname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-chip .fsize { font-family: var(--mono); font-size: 11px; color: var(--text3); font-weight: 600; flex-shrink: 0; }
+.file-chip [data-lucide] { width: 15px; height: 15px; color: var(--text3); flex-shrink: 0; }
+.file-chip .x { border: none; background: none; cursor: pointer; padding: 3px; border-radius: 6px; display: flex; color: var(--text3); }
+.file-chip .x:hover { background: #fde8ef; color: var(--danger-text); }
+
 /* ===== CONFIRM DIALOG (store) ===== */
 .dlg-overlay { position: fixed; inset: 0; z-index: 650; background: rgba(17,24,39,0.62); display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.15s ease; }
 .dlg-overlay[hidden] { display: none; }
@@ -547,7 +563,7 @@ label .req { color: var(--agc-red); margin-left: 2px; }
 <div class="modal-overlay" id="createModal" data-form="1">
   <div class="modal" style="max-width:760px" role="dialog" aria-modal="true" aria-labelledby="createTitle">
     <div class="modal-header">
-      <div><div class="modal-title" id="createTitle">New Purchase Request</div><div class="modal-sub" id="createSub">PR No. is assigned on submit</div></div>
+      <div><div class="modal-title" id="createTitle">New Purchase Request</div><div class="modal-sub" id="createSub">PR No. is assigned by the clerk after submit</div></div>
       <button class="close-btn" onclick="closeCreateModal()" aria-label="Close"><i data-lucide="x"></i></button>
     </div>
     <div class="modal-body">
@@ -579,6 +595,15 @@ label .req { color: var(--agc-red); margin-left: 2px; }
         <div class="form-group">
           <label for="f_quotation">Quotation No.</label>
           <input type="text" id="f_quotation" placeholder="e.g. SM260067">
+        </div>
+        <div class="form-group full">
+          <label for="f_quotFiles">Quotation files</label>
+          <div class="file-drop">
+            <button type="button" class="btn btn-ghost btn-sm" onclick="document.getElementById('f_quotFiles').click()"><i data-lucide="paperclip" style="width:13px;height:13px"></i> Attach file</button>
+            <input type="file" id="f_quotFiles" class="hidden" multiple accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" onchange="onQuotFiles(event)">
+            <span class="field-hint">PDF, JPG or PNG · max 10 MB each · up to 5 files</span>
+          </div>
+          <div class="file-list" id="quotFileList"></div>
         </div>
         <div class="form-group">
           <label for="f_deliveryDate">Required Delivery Date</label>
@@ -618,10 +643,10 @@ label .req { color: var(--agc-red); margin-left: 2px; }
           </select>
         </div>
         <div class="form-group full">
-          <label for="f_budgetSection" id="budgetLabel">Budget Code</label>
+          <label for="f_budgetSection" id="budgetLabel">Budget Code <span class="req">*</span></label>
           <div id="budgetRepairUI" class="inline-pair">
             <select id="f_budgetSection" onchange="onBudgetSectionChange()" aria-label="Budget area">
-              <option value="">Budget area</option>
+              <option value="">—</option>
               <option>Hot</option><option>Cold</option><option>Electrical</option><option>Mechanical</option>
               <option>Logistic</option><option>QA</option><option>Admin</option><option>Mirror</option><option>RFG</option>
             </select>
@@ -671,8 +696,34 @@ label .req { color: var(--agc-red); margin-left: 2px; }
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
       <button class="btn btn-danger footer-left" id="deletePRBtn" onclick="deletePR()"><i data-lucide="trash-2"></i> Delete</button>
+      <button class="btn btn-ghost" onclick="openNumbers()"><i data-lucide="hash"></i> Edit No.</button>
       <button class="btn btn-ghost" onclick="duplicatePR()"><i data-lucide="copy"></i> Duplicate</button>
       <button class="btn btn-primary hide-mobile" onclick="closeDetailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EDIT PR / PO NUMBERS (clerk) ===== -->
+<div class="modal-overlay" id="numbersModal" data-form="1">
+  <div class="modal" style="max-width:440px" role="dialog" aria-modal="true" aria-labelledby="numbersTitle">
+    <div class="modal-header">
+      <div style="min-width:0"><div class="modal-title" id="numbersTitle">PR / PO number</div><div class="modal-sub" id="numbersSub"></div></div>
+      <button class="close-btn" onclick="closeNumbers()" aria-label="Close"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label for="e_prNo">PR No.</label>
+        <input type="text" id="e_prNo" autocomplete="off" placeholder="e.g. 3001246369" style="font-family:var(--mono)" onkeydown="if(event.key==='Enter')saveNumbers()">
+      </div>
+      <div class="form-group">
+        <label for="e_poNo">PO No.</label>
+        <input type="text" id="e_poNo" autocomplete="off" placeholder="Leave empty until the PO is issued" style="font-family:var(--mono)" onkeydown="if(event.key==='Enter')saveNumbers()">
+      </div>
+      <div class="note">PR No. must be unique. Later CSV imports update this PR by its PR No.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost hide-mobile" onclick="closeNumbers()">Cancel</button>
+      <button class="btn btn-primary" id="numbersSaveBtn" onclick="saveNumbers()"><i data-lucide="check"></i> Save</button>
     </div>
   </div>
 </div>
@@ -750,6 +801,10 @@ function toRow(rec){
   PR_NUM_COLS.forEach(c => { if (rec[c] !== undefined) { const n = rec[c] === '' || rec[c] === null ? null : Number(rec[c]); row[c] = (n === null || isNaN(n)) ? null : n; } });
   PR_TS_COLS.forEach(c => { if (rec[c]) row[c] = rec[c]; });
   if (rec['Items'] !== undefined) row['Items'] = rec['Items'];
+  // PR No. is UNIQUE and assigned later by the clerk: an empty one must be NULL (many NULLs are allowed, many '' are not)
+  if (!String(row['PR No.'] ?? '').trim()) row['PR No.'] = null;
+  // only sent when there are files, so creating a PR keeps working before the "Attachments" column exists
+  if (Array.isArray(rec['Attachments']) && rec['Attachments'].length) row['Attachments'] = rec['Attachments'];
   return row;
 }
 
@@ -881,6 +936,7 @@ function fmtAmount(n){
   if (n == null || n === '' || isNaN(n)) return '—';
   return Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
+const hasPRNo = r => String(r['PR No.'] ?? '').trim() !== '';
 const hasPO = r => r['PO No.'] != null && String(r['PO No.']).trim() !== '' && String(r['PO No.']).trim() !== '0';
 
 window.addEventListener('online', () => $('offlineBanner').classList.remove('show'));
@@ -952,10 +1008,11 @@ const textBadge = (v, cls = 'badge-cat') => v ? `<span class="badge ${cls}">${es
 
 /* ===== FILTER CHIPS ===== */
 function renderChips(){
-  const sc = { all: prRecords.length, approving: 0, approved: 0, ordered: 0, unapproved: 0 };
+  const sc = { all: prRecords.length, approving: 0, approved: 0, ordered: 0, unapproved: 0, nopr: 0 };
   const dc = { undelivered: 0, partial: 0, delivered: 0 };
   prRecords.forEach(r => {
     const k = statusKey(r['Status']); if (k in sc) sc[k]++;
+    if (!hasPRNo(r)) sc.nopr++;
     const d = delivKey(r['Deliv. Status']); if (d in dc) dc[d]++;
   });
   const chip = (group, key, label, count, tone) => {
@@ -964,6 +1021,7 @@ function renderChips(){
   };
   $('quickFilterChips').innerHTML =
     chip('status', 'all', 'All', sc.all, '') +
+    (sc.nopr ? chip('status', 'nopr', 'Awaiting PR No.', sc.nopr, 'chip-count-warn') : '') +
     chip('status', 'approving', 'Approving', sc.approving, 'chip-count-warn') +
     chip('status', 'approved', 'Approved', sc.approved, '') +
     chip('status', 'ordered', 'Ordered', sc.ordered, 'chip-count-ok') +
@@ -991,9 +1049,13 @@ function cmp(a, b){
   return String(a || '').localeCompare(String(b || ''), 'en', { numeric: true });
 }
 function applyFilters(){
+  // a saved chip whose records are all gone (e.g. every request got its PR No.) would show an empty list with no chip to turn off
+  if (statusFilter === 'nopr' && !prRecords.some(r => !hasPRNo(r))) statusFilter = 'all';
+  if (statusFilter === 'unapproved' && !prRecords.some(r => statusKey(r['Status']) === 'unapproved')) statusFilter = 'all';
   const q = ($('searchInput').value || '').trim().toLowerCase();
   filteredRecords = prRecords.filter(r => {
-    if (statusFilter !== 'all' && statusKey(r['Status']) !== statusFilter) return false;
+    if (statusFilter === 'nopr') { if (hasPRNo(r)) return false; }
+    else if (statusFilter !== 'all' && statusKey(r['Status']) !== statusFilter) return false;
     if (delivFilter && delivKey(r['Deliv. Status']) !== delivFilter) return false;
     if (q) {
       const hay = [r['PR No.'], r['PO No.'], r['PR Title'], r['Creator'], r['PR_Vendor'], r['PO_Vendor'], r['Budget code'], r['Item Desc'], r['Section'], r['Status'], r['Quotation No'], r['Purchaser']]
@@ -1053,7 +1115,7 @@ function renderTable(){
   empty.classList.add('hidden');
   tb.innerHTML = filteredRecords.map(r => `
     <tr class="row-clickable" onclick="openDetail('${r._id}')">
-      <td>${escapeHtml(r['PR No.'] || '—')}</td>
+      <td>${hasPRNo(r) ? escapeHtml(r['PR No.']) : '<span class="badge badge-warn">Pending</span>'}</td>
       <td data-col="po" class="td-mono">${hasPO(r) ? escapeHtml(r['PO No.']) : '—'}</td>
       <td data-col="title" class="td-title" title="${escapeHtml(r['PR Title'] || '')}">${escapeHtml(r['PR Title'] || '—')}</td>
       <td data-col="section">${textBadge(r['Section'])}</td>
@@ -1078,7 +1140,7 @@ function renderCards(){
     <div class="inv-card" role="button" tabindex="0" onclick="openDetail('${r._id}')" onkeydown="if(event.key==='Enter')openDetail('${r._id}')">
       <div class="inv-card-top">
         <div class="inv-card-head">
-          <div class="card-taxonomy">${r['Section'] ? textBadge(r['Section']) : ''}<span class="part-id">${escapeHtml(r['PR No.'] || '—')}</span></div>
+          <div class="card-taxonomy">${r['Section'] ? textBadge(r['Section']) : ''}${hasPRNo(r) ? `<span class="part-id">${escapeHtml(r['PR No.'])}</span>` : '<span class="badge badge-warn">Awaiting PR No.</span>'}</div>
           <div class="inv-card-name">${escapeHtml(r['PR Title'] || '—')}</div>
           <div class="inv-card-pid">${hasPO(r) ? `PO <span class="class-val">${escapeHtml(r['PO No.'])}</span>` : 'No PO yet'}</div>
         </div>
@@ -1367,6 +1429,11 @@ window.openDetail = (id) => {
   const budget = r['Budget code']
     ? `<span class="budget-line"><span style="font-family:var(--mono)">${escapeHtml(r['Budget code'])}</span>${bt ? `<span class="badge ${bt === 'INVEST' ? 'badge-invest' : 'badge-blue'}">${bt}</span>` : ''}</span>`
     : '';
+  const atts = Array.isArray(r['Attachments']) ? r['Attachments'] : [];
+  const attHtml = atts.length ? `
+    <div class="form-section-title">Attachments (${atts.length})</div>
+    <div class="file-list">${atts.map((a, i) => `<button type="button" class="file-chip" onclick="openAttachment(${i})" title="Open ${escapeHtml(a.name)}">
+      <i data-lucide="file-text"></i><span class="fname">${escapeHtml(a.name)}</span><span class="fsize">${fmtSize(a.size)}</span><i data-lucide="external-link"></i></button>`).join('')}</div>` : '';
   const items = Array.isArray(r['Items']) ? r['Items'].filter(it => it && it.description) : [];
   const itemsHtml = items.length ? `
     <div class="form-section-title">Items (${items.length})</div>
@@ -1384,7 +1451,7 @@ window.openDetail = (id) => {
   $('detailBody').innerHTML = `
     <div class="detail-status">${statusBadge(r['Status'])}${r['Deliv. Status'] ? delivBadge(r['Deliv. Status']) : ''}<span class="posted">Posted ${fmtDate(r['Post Date'])}</span></div>
     <div class="detail-amounts">
-      <div class="amount-box"><div class="detail-label">PR No.</div><div class="amount-val">${escapeHtml(r['PR No.'] || '—')}</div></div>
+      <div class="amount-box"><div class="detail-label">PR No.</div>${hasPRNo(r) ? `<div class="amount-val">${escapeHtml(r['PR No.'])}</div>` : '<div class="amount-val muted">Awaiting PR No.</div>'}</div>
       <div class="amount-box"><div class="detail-label">PO No.</div>${hasPO(r) ? `<div class="amount-val">${escapeHtml(r['PO No.'])}</div>` : '<div class="amount-val muted">Not issued</div>'}</div>
     </div>
     <div class="detail-grid">
@@ -1407,6 +1474,7 @@ window.openDetail = (id) => {
       ${item('Post Date', r['Post Date'] ? fmtDate(r['Post Date']) : '', { mono: true })}
       ${items.length ? '' : item('Item Description', r['Item Desc'], { full: true })}
     </div>
+    ${attHtml}
     ${itemsHtml}`;
   showModal('detailModal');
 };
@@ -1414,7 +1482,7 @@ window.closeDetailModal = () => { hideModal('detailModal'); openPRId = null; };
 
 window.deletePR = async () => {
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
-  const ok = await confirmDialog({ title: `Delete PR ${r['PR No.'] || ''}?`, message: `${r['PR Title'] || ''}\n\nThis removes it for everyone and cannot be undone.`, okText: 'Delete', tone: 'danger' });
+  const ok = await confirmDialog({ title: hasPRNo(r) ? `Delete PR ${r['PR No.']}?` : 'Delete this request?', message: `${r['PR Title'] || ''}\n\nThis removes it for everyone and cannot be undone.`, okText: 'Delete', tone: 'danger' });
   if (!ok) return;
   const btn = $('deletePRBtn');
   btn.classList.add('btn-loading'); setSync('syncing');
@@ -1422,8 +1490,9 @@ window.deletePR = async () => {
     const { error } = await supabase.from(PR_COL).delete().eq('id', r._id);
     if (error) throw error;
     prRecords = prRecords.filter(x => x._id !== r._id);
-    saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast(`Deleted PR ${r['PR No.'] || ''}`);
-  } catch(e){ console.error(e); setSync('error'); toast('Delete failed: ' + e.message, 'error'); }
+    removeFiles(r['Attachments']);   // best effort: the row is already gone, an orphan file is harmless
+    saveCache(); closeDetailModal(); applyFilters(); setSync('live'); toast(hasPRNo(r) ? `Deleted PR ${r['PR No.']}` : 'Deleted request');
+  } catch(e){ console.error(e); setSync('error'); toast('Delete failed: ' + explainError(e), 'error'); }
   finally { btn.classList.remove('btn-loading'); }
 };
 
@@ -1440,8 +1509,99 @@ window.duplicatePR = () => {
     items: Array.isArray(r['Items']) && r['Items'].length ? r['Items'] : [{ ...makeBlankItem(), description: r['Item Desc'] || '', unitPrice: Number(r['PR Amount']) || 0 }]
   });
   prefillCreator();
-  $('createSub').textContent = 'Duplicated from PR ' + (r['PR No.'] || '');
+  $('createSub').textContent = 'Duplicated from ' + (hasPRNo(r) ? 'PR ' + r['PR No.'] : 'a request awaiting its PR No.') + '. Attachments are not copied';
 };
+
+/* ===== ATTACHMENTS (Supabase Storage, private bucket "pr-docs") ===== */
+const DOC_BUCKET = 'pr-docs';
+const MAX_FILES = 5, MAX_BYTES = 10 * 1024 * 1024;
+let pendingFiles = [];
+function fmtSize(n){ n = Number(n) || 0; return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+function explainError(e){
+  const m = String((e && e.message) || e);
+  if (/bucket not found/i.test(m)) return "Storage bucket 'pr-docs' does not exist yet. Run section 5 of supabase_schema.sql.";
+  if (/column/i.test(m) && /Attachments/.test(m)) return 'Column "Attachments" is missing. Run section 5 of supabase_schema.sql.';
+  if (/row-level security|violates .*polic/i.test(m)) return 'Blocked by a Supabase policy. Check the pr-docs storage policies.';
+  return m;
+}
+window.onQuotFiles = (ev) => {
+  for (const f of ev.target.files) {
+    if (!/\.(pdf|jpe?g|png)$/i.test(f.name)) { toast(`${f.name}: only PDF, JPG or PNG`, 'error'); continue; }
+    if (f.size > MAX_BYTES) { toast(`${f.name}: larger than 10 MB`, 'error'); continue; }
+    if (pendingFiles.some(p => p.name === f.name && p.size === f.size)) continue;
+    if (pendingFiles.length >= MAX_FILES) { toast('Up to 5 files per request', 'warn'); break; }
+    pendingFiles.push(f);
+  }
+  ev.target.value = '';
+  renderQuotFiles();
+};
+window.removeQuotFile = (i) => { pendingFiles.splice(i, 1); renderQuotFiles(); };
+function renderQuotFiles(){
+  $('quotFileList').innerHTML = pendingFiles.map((f, i) => `<div class="file-chip">
+    <i data-lucide="file-text"></i><span class="fname">${escapeHtml(f.name)}</span><span class="fsize">${fmtSize(f.size)}</span>
+    <button type="button" class="x" onclick="removeQuotFile(${i})" aria-label="Remove ${escapeHtml(f.name)}"><i data-lucide="x"></i></button></div>`).join('');
+  refreshIcons();
+}
+const safeName = n => (String(n).replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '').slice(-80)) || 'file';   // storage keys must be plain ASCII; the original name is kept in the record
+async function removeFiles(list){
+  const paths = (Array.isArray(list) ? list : []).map(a => a && a.path).filter(Boolean);
+  if (!paths.length) return;
+  try { await supabase.storage.from(DOC_BUCKET).remove(paths); } catch(e){ console.warn('cleanup failed', e); }
+}
+async function uploadAttachments(files){
+  const folder = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2);
+  const done = [];
+  try {
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const path = `quotations/${folder}/${i + 1}-${safeName(f.name)}`;
+      const { error } = await supabase.storage.from(DOC_BUCKET).upload(path, f, { contentType: f.type || undefined, upsert: false });
+      if (error) throw error;
+      done.push({ kind: 'quotation', name: f.name, path, size: f.size, type: f.type || '' });
+    }
+  } catch(e){ await removeFiles(done); throw e; }   // all or nothing: no half-uploaded request
+  return done;
+}
+window.openAttachment = async (i) => {
+  const r = prRecords.find(x => x._id === openPRId); const a = r && Array.isArray(r['Attachments']) ? r['Attachments'][i] : null;
+  if (!a) return;
+  const w = window.open('about:blank', '_blank');   // opened first so the popup blocker treats it as part of the click
+  try {
+    const { data, error } = await supabase.storage.from(DOC_BUCKET).createSignedUrl(a.path, 3600);
+    if (error) throw error;
+    if (w) { w.opener = null; w.location.href = data.signedUrl; } else window.location.href = data.signedUrl;
+  } catch(e){ if (w) w.close(); toast('Could not open file: ' + explainError(e), 'error'); }
+};
+
+/* ===== EDIT PR / PO NUMBERS (the clerk fills these in) ===== */
+window.openNumbers = () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r) return;
+  $('numbersSub').textContent = r['PR Title'] || '';
+  $('e_prNo').value = hasPRNo(r) ? r['PR No.'] : '';
+  $('e_poNo').value = hasPO(r) ? r['PO No.'] : '';
+  $('e_prNo').classList.remove('input-error');
+  showModal('numbersModal');
+  setTimeout(() => $('e_prNo').focus(), 50);
+};
+window.closeNumbers = () => hideModal('numbersModal');
+window.saveNumbers = async () => {
+  const r = prRecords.find(x => x._id === openPRId); if (!r) return;
+  const pr = $('e_prNo').value.trim(), po = $('e_poNo').value.trim();
+  const btn = $('numbersSaveBtn');
+  btn.classList.add('btn-loading'); setSync('syncing');
+  try {
+    const { error } = await supabase.from(PR_COL).update({ 'PR No.': pr || null, 'PO No.': po }).eq('id', r._id);
+    if (error) {
+      if (error.code === '23505') { $('e_prNo').classList.add('input-error'); toast(`PR No. ${pr} is already used by another PR`, 'error'); setSync('live'); return; }
+      throw error;
+    }
+    r['PR No.'] = pr; r['PO No.'] = po;
+    saveCache(); closeNumbers(); applyFilters(); openDetail(r._id); setSync('live');
+    toast(pr ? `Saved PR ${pr}` : 'PR No. cleared');
+  } catch(e){ console.error(e); setSync('error'); toast('Save failed: ' + explainError(e), 'error'); }
+  finally { btn.classList.remove('btn-loading'); }
+};
+$('e_prNo').addEventListener('input', () => $('e_prNo').classList.remove('input-error'));
 
 /* ===== MODAL HELPERS (store behaviour: form modals ignore backdrop taps, Esc closes view modals) ===== */
 function showModal(id){ $(id).classList.add('show'); refreshIcons(); }
@@ -1455,7 +1615,8 @@ document.querySelectorAll('.modal-overlay').forEach(ov => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || !$('dlgOverlay').hidden) return;
-  if ($('detailModal').classList.contains('show')) closeDetailModal();
+  if ($('numbersModal').classList.contains('show')) closeNumbers();
+  else if ($('detailModal').classList.contains('show')) closeDetailModal();
   else if ($('importModal').classList.contains('show')) closeImportModal();
 });
 
@@ -1486,7 +1647,7 @@ function prefillCreator(){
 window.openCreateModal = () => {
   window._activeDraftId = null; resetForm();
   $('createTitle').textContent = 'New Purchase Request';
-  $('createSub').textContent = 'PR No. is assigned on submit';
+  $('createSub').textContent = 'PR No. is assigned by the clerk after submit';
   prefillCreator();
   showModal('createModal');
   setTimeout(() => { if (window.innerWidth > 767) $('f_title').focus(); }, 50);
@@ -1499,6 +1660,7 @@ function resetForm(){
   $('f_requestType').value = 'Purchase'; $('f_discount').value = 0;
   $('f_budgetSuffix').innerHTML = '<option value="">—</option>';
   document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
+  pendingFiles = []; renderQuotFiles();
   toggleBudgetMode();
   currentItems = [makeBlankItem(), makeBlankItem(), makeBlankItem()]; renderItemRows();
 }
@@ -1603,7 +1765,8 @@ window.saveDraft = () => {
   const draftId = window._activeDraftId || ('dr_' + Date.now());
   drafts.unshift({ draftId, savedAt: new Date().toISOString(), ...f });
   saveDrafts(drafts); window._activeDraftId = draftId;
-  updateDrafts(); closeCreateModal(); toast('Draft saved on this device');
+  updateDrafts(); closeCreateModal();
+  if (pendingFiles.length) toast('Draft saved on this device. Attached files are not kept in drafts', 'warn'); else toast('Draft saved on this device');
 };
 function clearDraftById(id){ saveDrafts(loadDrafts().filter(d => d.draftId !== id)); updateDrafts(); }
 
@@ -1650,18 +1813,6 @@ window.deleteDraft = async (id) => {
 };
 
 /* ===== SUBMIT ===== */
-function generatePRNo(){
-  const d = new Date();
-  const ymd = d.getFullYear().toString().slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-  const prefix = 'PR' + ymd;
-  // max existing suffix + 1 (counting rows would reuse a number after a delete)
-  const maxSeq = prRecords.reduce((m, r) => {
-    const no = String(r['PR No.'] || '');
-    return no.startsWith(prefix) ? Math.max(m, parseInt(no.slice(prefix.length), 10) || 0) : m;
-  }, 0);
-  return prefix + String(maxSeq + 1).padStart(3, '0');
-}
-
 window.submitPR = async () => {
   const f = readForm();
   document.querySelectorAll('#createModal .input-error').forEach(el => el.classList.remove('input-error'));
@@ -1669,6 +1820,7 @@ window.submitPR = async () => {
   if (!f.title) missing.push(['f_title', 'PR Title']);
   if (!f.section) missing.push(['f_section', 'Section']);
   if (!f.creator) missing.push(['f_creator', 'Requested By']);
+  if (!f.budgetCode) missing.push([$('f_category').value === 'Investment' ? 'f_budgetFree' : ($('f_budgetSection').value ? 'f_budgetSuffix' : 'f_budgetSection'), 'Budget Code']);
   const validItems = f.items.filter(it => it.description && Number(it.qty) > 0);
   if (missing.length) {
     missing.forEach(([id]) => $(id).classList.add('input-error'));
@@ -1678,7 +1830,7 @@ window.submitPR = async () => {
   if (!validItems.length) { toast('Add at least one item with a description and qty', 'error'); return; }
   const { grand } = calcTotals(validItems, f.discount);
   const record = {
-    'PR No.': generatePRNo(), 'PO No.': '', 'Creator': f.creator, 'PR Title': f.title,
+    'PR No.': '', 'PO No.': '', 'Creator': f.creator, 'PR Title': f.title,
     'Section': f.section, 'Item Desc': validItems.map(it => `${it.description} (${it.qty} ${it.unit})`).join('; '),
     'Category': f.category || '', 'Work Class': f.workClass || '', 'Plan Type': f.planType || '',
     'Status': 'Requisition approving', 'Deliv. Status': '', 'PR_Vendor': f.prVendor, 'PO_Vendor': '',
@@ -1690,23 +1842,20 @@ window.submitPR = async () => {
   };
   const btn = $('submitPRBtn');
   btn.classList.add('btn-loading'); setSync('syncing');
+  let attachments = [];
   try {
-    // PR No. is UNIQUE: if another user took the number first, reload and take the next one
-    let ins, error;
-    for (let attempt = 0; attempt < 4; attempt++) {
-      ({ data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single());
-      if (!error || error.code !== '23505') break;
-      await loadFromSupabase();
-      record['PR No.'] = generatePRNo();
-    }
-    if (error) throw error;
+    // files first (all or nothing), then the row that points at them
+    if (pendingFiles.length) attachments = await uploadAttachments(pendingFiles);
+    record['Attachments'] = attachments;
+    const { data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single();
+    if (error) { await removeFiles(attachments); throw error; }
     prRecords.unshift({ _id: ins.id, ...record }); saveCache();
     if (window._activeDraftId) clearDraftById(window._activeDraftId);
-    window._activeDraftId = null;
+    window._activeDraftId = null; pendingFiles = [];
     closeCreateModal(); setSync('live');
     statusFilter = 'all'; delivFilter = ''; switchTab('list'); applyFilters();
-    toast(`Created PR ${record['PR No.']}`);
-  } catch(e){ console.error(e); setSync('error'); toast('Submit failed: ' + e.message, 'error'); }
+    toast(attachments.length ? `Request created with ${attachments.length} file${attachments.length > 1 ? 's' : ''}. Waiting for PR No.` : 'Request created. Waiting for PR No.');
+  } catch(e){ console.error(e); setSync('error'); toast('Submit failed: ' + explainError(e), 'error'); }
   finally { btn.classList.remove('btn-loading'); }
 };
 

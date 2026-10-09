@@ -200,3 +200,16 @@ alter publication supabase_realtime add table pr_records;
 -- CREATE POLICY "pr_records authenticated all" ON pr_records FOR ALL TO authenticated USING (true) WITH CHECK (true);
 -- ALTER TABLE pr_import_logs ENABLE ROW LEVEL SECURITY;
 -- CREATE POLICY "pr_import_logs authenticated all" ON pr_import_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- 5. Purchase Request: quotation files (run after section 4)
+-- Files live in a PRIVATE bucket and are opened through short-lived signed links; the PR row keeps
+-- [{kind, name, path, size, type}] in "Attachments". PR No. stays UNIQUE but is nullable: the clerk assigns it later.
+ALTER TABLE pr_records ADD COLUMN IF NOT EXISTS "Attachments" jsonb;
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('pr-docs', 'pr-docs', false, 10485760, ARRAY['application/pdf', 'image/jpeg', 'image/png'])
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "pr-docs read"   ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'pr-docs');
+CREATE POLICY "pr-docs upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'pr-docs');
+CREATE POLICY "pr-docs delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'pr-docs');
