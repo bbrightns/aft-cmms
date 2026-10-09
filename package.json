@@ -1,6 +1,6 @@
 {
   "name": "aft-cmms",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "description": "AFT CMMS Store & Inventory System",
   "main": "server.js",
   "scripts": {
