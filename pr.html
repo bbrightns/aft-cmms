@@ -1325,8 +1325,16 @@ window.submitPR = async () => {
   btn.classList.add('btn-loading');
   setSync('syncing');
   try {
-    const { data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single();
+    // PR No. is UNIQUE: if another user took the number first, reload and take the next one
+    let ins, error;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      ({ data: ins, error } = await supabase.from(PR_COL).insert([toRow(record)]).select('id').single());
+      if (!error || error.code !== '23505') break;
+      await loadFromSupabase();
+      record['PR No.'] = generatePRNo();
+    }
     if (error) throw error;
+    const prNo = record['PR No.'];
     prRecords.unshift({ _id: ins.id, ...record }); saveCache(); applyFilters();
     if (window._activeDraftId) clearDraftById(window._activeDraftId);
     window._activeDraftId = null; updateDraftTab(); closeCreateModal(); setSync('live');
@@ -1338,8 +1346,13 @@ window.submitPR = async () => {
 function generatePRNo(){
   const d = new Date();
   const ymd = d.getFullYear().toString().slice(2) + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
-  const sameDay = prRecords.filter(r => String(r['PR No.']||'').startsWith('PR' + ymd)).length;
-  return 'PR' + ymd + String(sameDay + 1).padStart(3, '0');
+  const prefix = 'PR' + ymd;
+  // max existing suffix + 1 (counting rows would reuse a number after a delete)
+  const maxSeq = prRecords.reduce((m, r) => {
+    const no = String(r['PR No.'] || '');
+    return no.startsWith(prefix) ? Math.max(m, parseInt(no.slice(prefix.length), 10) || 0) : m;
+  }, 0);
+  return prefix + String(maxSeq + 1).padStart(3, '0');
 }
 
 window.openImportModal = () => {
