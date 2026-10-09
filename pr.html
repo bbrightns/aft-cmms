@@ -332,6 +332,11 @@ button.file-chip:hover { border-color: var(--agc-blue); color: var(--agc-blue); 
 .tx-icon svg { width: 100%; height: 100%; overflow: visible; }
 .tx-track { fill: none; stroke: var(--border); stroke-width: 5; }
 .tx-arc { fill: none; stroke: var(--tx); stroke-width: 5; stroke-linecap: round; stroke-dasharray: 52 124; transform-origin: 32px 32px; animation: spin 0.9s linear infinite; }
+.tx-card[data-state="pending"] .tx-arc, .tx-card[data-state="stuck"] .tx-arc { animation: none; }
+/* spin the whole <svg> (own compositor layer) instead of a circle inside it: SVG-internal transforms repaint every frame and stutter on weaker GPUs */
+.tx-card[data-state="pending"] .tx-icon svg, .tx-card[data-state="stuck"] .tx-icon svg { animation: spin 0.9s linear infinite; will-change: transform; }
+/* no live blur of the whole page behind the status card while it is open */
+body:has(#txOverlay:not([hidden])) .modal-overlay { backdrop-filter: none; }
 .tx-disc { fill: var(--tx); transform-origin: 32px 32px; transform: scale(0); }
 .tx-mark { fill: none; stroke: #fff; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 60; stroke-dashoffset: 60; }
 .tx-card[data-state="pending"] .tx-disc, .tx-card[data-state="pending"] .tx-mark,
@@ -1310,7 +1315,8 @@ function delivBadge(s){
 // in-app requests: show where they are in the approval flow; legacy / imported rows keep the SAP status text
 function statusCell(r){
   if (r['Approval'] === 'pending') return '<span class="badge badge-warn">Pending approval</span>';
-  if (r['Approval'] === 'approved' && statusKey(r['Status']) === 'approving') return '<span class="badge badge-blue">Approved</span>';
+  // while SAP still says "approving" the real progress is ours: approved -> PR created. Once an import brings a later SAP status, that wins.
+  if (r['Approval'] === 'approved' && statusKey(r['Status']) === 'approving') return hasPRNo(r) ? '<span class="badge badge-blue">PR created</span>' : '<span class="badge badge-blue">Approved</span>';
   return statusBadge(r['Status']);
 }
 const textBadge = (v, cls = 'badge-cat') => v ? `<span class="badge ${cls}">${escapeHtml(v)}</span>` : '<span class="badge badge-none">—</span>';
