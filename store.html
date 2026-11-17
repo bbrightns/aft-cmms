@@ -6,8 +6,8 @@
 <title>Coating Store System - AGC</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
 html { scroll-behavior: smooth; }
@@ -2398,7 +2398,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </button>
 
     <!-- Upload zone — shown only when no data -->
-    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()">
+    <div class="upload-zone" id="uploadZone" onclick="settingsUploadCSV()">
       <div class="icon"><i data-lucide="upload-cloud" style="width:32px;height:32px"></i></div>
       <p><strong>อัปโหลด CSV</strong> เพื่ออัปเดต Database</p>
       <p style="font-size:11px;color:#94a3b8;margin-top:4px">คลิกหรือลาก CSV มาวางที่นี่</p>
@@ -3131,7 +3131,7 @@ function setSyncing(state) {
   dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
   txt.textContent = state === 'syncing' ? 'กำลังบันทึก...' : state === 'error' ? 'Error' : 'Live';
 }
-window.addEventListener('online', () => setSyncing('live'));
+window.addEventListener('online', () => { setSyncing('live'); fetchItems(false); });   // data may have changed while we were offline
 window.addEventListener('offline', () => setSyncing('error'));
 
 window.goLowStock = () => {
@@ -3146,12 +3146,24 @@ function refreshIcons() {
 }
 
 // ===== SUPABASE REALTIME =====
-async function fetchItems(showConflictBanner = false) {
-  try {
-    const { data, error } = await supabase
-      .from('inventory')
-      .select('*');
+// Supabase returns at most 1000 rows per request: page through, or anything past row 1000 silently disappears.
+async function fetchAllRows(table, columns = '*') {
+  const all = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from(table).select(columns).order('id').range(from, from + 999);
     if (error) throw error;
+    all.push(...data);
+    if (data.length < 1000) break;
+  }
+  return all;
+}
+
+let _fetchSeq = 0;
+async function fetchItems(showConflictBanner = false) {
+  const seq = ++_fetchSeq;
+  try {
+    const data = await fetchAllRows('inventory');
+    if (seq !== _fetchSeq) return;   // a newer fetch started meanwhile: never let an older answer overwrite it
 
     const newItems = data.map(d => ({ _id: d.id, ...d }));
     newItems.sort((a,b) => (b['Part ID']||'').localeCompare(a['Part ID']||''));
@@ -3182,6 +3194,7 @@ async function fetchItems(showConflictBanner = false) {
       subSel.value = current;
     }
     populateSubCategoryOptions();
+    refreshCatFilterOptions();
 
     applyFilters();
     updateStats();
@@ -3189,10 +3202,12 @@ async function fetchItems(showConflictBanner = false) {
     setSyncing('live');
   } catch (err) {
     console.error('Fetch items error:', err);
+    if (seq !== _fetchSeq) return;
     setSyncing('error');
   }
 }
 
+let _rtTimer = null, _rtExternal = false;
 function startRealtimeSync() {
   fetchItems(false);
 
@@ -3201,8 +3216,10 @@ function startRealtimeSync() {
     .channel('inventory-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, payload => {
       const d = payload.new || payload.old;
-      const hasExternalChange = d && d._device && d._device !== DEVICE_ID;
-      fetchItems(hasExternalChange);
+      if (d && d._device && d._device !== DEVICE_ID) _rtExternal = true;
+      // one CSV import fires hundreds of events: reload once when they stop coming
+      clearTimeout(_rtTimer);
+      _rtTimer = setTimeout(() => { const ext = _rtExternal; _rtExternal = false; fetchItems(ext); }, 400);
     })
     .subscribe();
 }
@@ -3458,7 +3475,7 @@ function updateFilterSelectStyles() {
 function doSort() {
   filteredItems.sort((a,b) => {
     let av = a[sortCol]||'', bv = b[sortCol]||'';
-    if (sortCol === 'Actual') { av = parseFloat(av)||-1; bv = parseFloat(bv)||-1; }
+    if (sortCol === 'Actual') { const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : -1; }; av = n(av); bv = n(bv); }   // 0 sorts above 'no data'
     if (av<bv) return sortAsc?-1:1;
     if (av>bv) return sortAsc?1:-1;
     return 0;
@@ -3566,14 +3583,12 @@ function updateStats() {
 }
 
 function initFilters() {
-  const cats = Object.keys(CAT_MAP).sort();
-  const catSel = document.getElementById('catFilter');
-  if(catSel && catSel.options.length <= 1) catSel.insertAdjacentHTML('beforeend', cats.map(c=>`<option value="${c}">${c}</option>`).join(''));
+  refreshCatFilterOptions();
   const subSel = document.getElementById('subCatFilter');
   if(subSel) {
     const cur = subSel.value;
     subSel.innerHTML = '<option value="">All Sub-cat</option>';
-    [...new Set([...ALL_SUB_CATEGORIES, ...items.map(r=>r['Sub Category']).filter(Boolean)])].sort().forEach(s=>subSel.innerHTML+=`<option value="${s}">${s}</option>`);
+    [...new Set([...ALL_SUB_CATEGORIES, ...items.map(r=>r['Sub Category']).filter(Boolean)])].sort().forEach(s=>subSel.innerHTML+=`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
     subSel.value = cur;
   }
   populateSubCategoryOptions();
@@ -3583,14 +3598,29 @@ function initFilters() {
 function populateSubCategoryOptions() {
   const dl = document.getElementById('subCategoryOptions');
   if(dl) dl.innerHTML = [...new Set([...ALL_SUB_CATEGORIES, ...items.map(r=>r['Sub Category']).filter(Boolean)])]
-    .sort().map(s=>`<option value="${s}"></option>`).join('');
+    .sort().map(s=>`<option value="${escapeHtml(s)}"></option>`).join('');
+}
+
+// Category dropdown = the known categories plus whatever the data really holds (MECHANICAL, BEARING, ...), one entry per spelling.
+function refreshCatFilterOptions() {
+  const sel = document.getElementById('catFilter');
+  if (!sel) return;
+  const cur = sel.value.toLowerCase();
+  const seen = new Map();
+  [...Object.keys(CAT_MAP), ...items.map(getDisplayMainCategory)].forEach(c => {
+    c = String(c || '').trim();
+    if (c && !seen.has(c.toLowerCase())) seen.set(c.toLowerCase(), c);
+  });
+  const opts = [...seen.values()].sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All Categories</option>' + opts.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  sel.value = seen.get(cur) || '';
 }
 
 window.populateSubCat = (_mainCat, targetId) => {
   populateSubCategoryOptions();
   const el = document.getElementById(targetId);
   if (el && el.tagName === 'SELECT') {
-    el.innerHTML = '<option value="">—</option>' + ALL_SUB_CATEGORIES.map(s=>`<option value="${s}">${s}</option>`).join('');
+    el.innerHTML = '<option value="">—</option>' + ALL_SUB_CATEGORIES.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   }
 };
 
@@ -3698,7 +3728,7 @@ function populateBrandOptions() {
   if(!dl) return;
   dl.innerHTML = [...new Set(items.map(r => (r['Brand']||'').trim()).filter(Boolean))]
     .sort((a,b)=>a.localeCompare(b))
-    .map(b=>`<option value="${b.replace(/"/g,'&quot;')}"></option>`).join('');
+    .map(b=>`<option value="${escapeHtml(b)}"></option>`).join('');
 }
 
 function getDisplayMainCategory(r) {
@@ -4269,6 +4299,7 @@ window.executeUndoLog = async () => {
 
     } else {
       toast('รายการประเภทนี้ไม่สามารถย้อนกลับได้', 'warn');
+      setSyncing('live');
       return;
     }
 
@@ -4290,10 +4321,14 @@ function getItemChangeSummary(oldItem, newData) {
   const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan'];
   const changed = [];
   fields.forEach(f => {
+    if (!(f in newData)) return;   // not part of this save (e.g. Stock left untouched)
     const oldVal = cleanSingleLine(oldItem[f] ?? '');
     const newVal = cleanSingleLine(newData[f] ?? '');
     if (oldVal !== newVal) changed.push(`${f}: ${oldVal || '—'} → ${newVal || '—'}`);
   });
+  if ('imageUrl' in newData && (oldItem['imageUrl'] || '') !== (newData['imageUrl'] || '')) {
+    changed.push(`imageUrl: ${oldItem['imageUrl'] ? 'มีรูป' : '—'} → ${newData['imageUrl'] ? 'รูปใหม่' : '—'}`);
+  }
   return changed.length ? changed.join('\n') : 'ไม่มีการเปลี่ยนแปลงข้อมูล';
 }
 
@@ -4356,6 +4391,7 @@ function setAdjustPositionValue(val) {
   window.updateAdjPositionPreview(true);
 }
 
+let _adjInitLoc = '', _adjInitPos = '';
 window.openAdjust = (id, initialMode = 'in') => {
   adjustItem=items.find(x=>x._id===id); if(!adjustItem) return;
   adjustQty=1; adjustMode=initialMode;
@@ -4367,6 +4403,9 @@ window.openAdjust = (id, initialMode = 'in') => {
   const locEl = document.getElementById('adj_location');
   if(locEl) locEl.value = adjustItem['Location'] || '';
   setAdjustPositionValue(adjustItem['Position'] || '');
+  // what the form shows before the user touches it (legacy values are normalised for display only)
+  _adjInitLoc = locEl ? locEl.value : '';
+  _adjInitPos = buildAdjustPositionValue(true);
   document.getElementById('adjWarnMsg').style.display='none';
   setAdjustMode(initialMode);
   document.getElementById('adjustModal').style.display='flex';
@@ -4637,6 +4676,7 @@ window.saveItem = async () => {
   setSyncing('syncing');
   try {
     let uploadedUrl = currentPhotoUrl;
+    let removePhotoAfterSave = false;   // delete the stored file only once the row no longer points at it
     let finalPartId = partId;
     if (!editItemId) {
       finalPartId = await getNextPartIdSafe();
@@ -4661,18 +4701,10 @@ window.saveItem = async () => {
         const { data: urlData } = supabase.storage
           .from('parts')
           .getPublicUrl(`${cleanPartId}.jpg`);
-        uploadedUrl = urlData.publicUrl;
+        // the file name never changes (<Part ID>.jpg): without a new query string browsers keep showing the old photo
+        uploadedUrl = urlData.publicUrl + '?v=' + Date.now();
       } else {
-        if (currentPhotoUrl) {
-          try {
-            const cleanPartId = finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_');
-            await supabase.storage
-              .from('parts')
-              .remove([`${cleanPartId}.jpg`]);
-          } catch (delErr) {
-            console.warn("Storage deletion warning:", delErr);
-          }
-        }
+        removePhotoAfterSave = !!(editItemId && (items.find(x => x._id === editItemId) || {})['imageUrl']);
         uploadedUrl = '';
       }
     }
@@ -4707,12 +4739,18 @@ window.saveItem = async () => {
       const oldItem = items.find(x => x._id === editItemId);
       const changeNote = getItemChangeSummary(oldItem, data);
       
-      const { error: updateErr } = await supabase
+      const { data: updRows, error: updateErr } = await supabase
         .from('inventory')
         .update(data)
-        .eq('id', editItemId);
+        .eq('id', editItemId)
+        .select('id');
       if (updateErr) throw updateErr;
+      if (!updRows || !updRows.length) throw new Error('ไม่พบรายการนี้ในระบบแล้ว (อาจถูกลบไปแล้ว) หรือบัญชีนี้ไม่มีสิทธิ์แก้ไข');
       dbDone = true;
+      if (removePhotoAfterSave) {
+        try { await supabase.storage.from('parts').remove([`${finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_')}.jpg`]); }
+        catch (delErr) { console.warn('Storage deletion warning:', delErr); }
+      }
       tx.step(txId, 'กำลังบันทึกประวัติ...');
 
       const editUndoPayload = { action: 'edit', partId: finalPartId, itemId: editItemId, before: oldItem, after: data };
@@ -4792,11 +4830,13 @@ window.confirmDelete = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    const { error: delErr } = await supabase
+    const { data: delRows, error: delErr } = await supabase
       .from('inventory')
       .delete()
-      .eq('id', deleteItemId);
+      .eq('id', deleteItemId)
+      .select('id');
     if (delErr) throw delErr;
+    if (!delRows || !delRows.length) throw new Error('ไม่พบรายการนี้ในระบบแล้ว (อาจถูกลบไปแล้ว) หรือบัญชีนี้ไม่มีสิทธิ์ลบ');
     dbDone = true;
     tx.step(txId, 'กำลังบันทึกประวัติ...');
 
@@ -4979,7 +5019,7 @@ window.confirmCSVUpload = async () => {
 
     invalidateLogsCache();
     localStorage.setItem('csvUploaded','1');
-    updateHomeStats();
+    await fetchItems(false);
     toast(`${mode==='replace'?'แทนที่':'Merge'} ${csvParsedData.length} รายการสำเร็จ`,'success');
   } catch(e){ toast('Upload Error: '+e.message,'error'); setSyncing('error'); }
   finally { document.getElementById('loadingOverlay').style.display='none'; btn.classList.remove('btn-loading'); }
@@ -5043,8 +5083,7 @@ window.confirmClearAllData = async () => {
 
     invalidateLogsCache();
     localStorage.removeItem('csvUploaded');
-    items = [];
-    updateHomeStats();
+    await fetchItems(false);
     toast('ล้างข้อมูลเรียบร้อย','warn');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
   finally { document.getElementById('loadingOverlay').style.display = 'none'; btn.classList.remove('btn-loading'); }
@@ -5090,7 +5129,7 @@ window.confirmClearAllLogs = async () => {
 const uz = document.getElementById('uploadZone');
 uz.addEventListener('dragover', e=>{ e.preventDefault(); uz.style.borderColor='var(--agc-blue)'; });
 uz.addEventListener('dragleave', ()=>{ uz.style.borderColor=''; });
-uz.addEventListener('drop', e=>{ e.preventDefault(); uz.style.borderColor=''; const f=e.dataTransfer.files[0]; if(f&&f.name.endsWith('.csv')){ document.getElementById('csvFileInput').files; handleCSVUpload({target:{files:[f],value:''}}); } });
+uz.addEventListener('drop', e=>{ e.preventDefault(); uz.style.borderColor=''; const f=e.dataTransfer.files[0]; if(!f) return; if(!canPerform('uploadCSV')){ toast('บัญชีนี้ไม่มีสิทธิ์นำเข้า CSV','error'); return; } if(/\.csv$/i.test(f.name)) handleCSVUpload({target:{files:[f],value:''}}); else toast('รองรับเฉพาะไฟล์ .csv','error'); });
 
 // ===== TOAST =====
 window.toast = (msg, type='success') => {
@@ -5522,7 +5561,7 @@ function getReorderSuggestion(r) {
   return qty > 0 ? qty : 0;
 }
 function escapeHtml(v) {
-  return String(v ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -5642,7 +5681,7 @@ window.applyFilters = () => {
   const stock = document.getElementById('stockFilter')?.value || '';
   // Everything except the multi-value filters; the panel reuses it to count what each option would give.
   advCorePass = r => {
-    if (cat && getDisplayMainCategory(r) !== cat) return false;
+    if (cat && String(getDisplayMainCategory(r)).trim().toLowerCase() !== cat.toLowerCase()) return false;   // data has both 'Other' and 'OTHER'
     if (dept && (r['Department'] || '').toUpperCase() !== dept) return false;
     if (sub && r['Sub Category'] !== sub) return false;
     if (plant && r['Plant'] !== plant) return false;
@@ -6108,11 +6147,10 @@ function updateAdjPreview() {
   const isZero=adjustMode==='out' && cur<=0 && adjustQty>0;
   const isOver = adjustMode==='out' && adjustQty>cur;
   const isLow = adjustMode==='out' && mn>0 && next<mn && adjustQty>0;
-  const currentLoc = adjustItem['Location'] || '';
-  const currentPos = adjustItem['Position'] || '';
   const newLoc = document.getElementById('adj_location')?.value || '';
   const newPos = buildAdjustPositionValue(false);
-  const moved = (newLoc && newLoc !== currentLoc) || (newPos && newPos !== currentPos);
+  const padPos = v => String(v || '').replace(/-(\d)$/, '-0$1');
+  const moved = (newLoc && newLoc !== _adjInitLoc) || (newPos && padPos(newPos) !== _adjInitPos);
   const warn=document.getElementById('adjWarnMsg');
   document.getElementById('newStockPreview').textContent=next;
   if(warn) {
@@ -6130,11 +6168,16 @@ function updateAdjPreview() {
 window.confirmAdjust = async () => {
   if(!adjustItem) return;
   const cur=parseFloat(adjustItem['Actual'])||0;
-  const newLocation = cleanSingleLine(document.getElementById('adj_location')?.value || adjustItem['Location'] || '');
-  const newPosition = cleanSingleLine(buildAdjustPositionValue(true) || adjustItem['Position'] || '');
   const oldLocation = adjustItem['Location'] || '';
   const oldPosition = adjustItem['Position'] || '';
-  const moved = (newLocation && newLocation !== oldLocation) || (newPosition && newPosition !== oldPosition);
+  // only a value the user changed in this popup is written back; a plain เบิก/รับ never rewrites the stored position
+  const formLoc = cleanSingleLine(document.getElementById('adj_location')?.value || '');
+  const formPos = cleanSingleLine(buildAdjustPositionValue(true));
+  const locChanged = !!formLoc && formLoc !== _adjInitLoc;
+  const posChanged = !!formPos && formPos !== _adjInitPos;
+  const newLocation = locChanged ? formLoc : oldLocation;
+  const newPosition = posChanged ? formPos : oldPosition;
+  const moved = locChanged || posChanged;
   if(adjustMode==='out' && cur<=0 && adjustQty>0){ toast('Stock is zero. Cannot withdraw.','error'); return; }
   if(adjustMode==='out' && adjustQty>cur){ toast('จำนวนเกิน Stock ที่มีอยู่','error'); return; }
   if(adjustQty===0 && !moved){ toast('ไม่มีข้อมูลที่ต้องอัปเดต','warn'); return; }
@@ -6154,8 +6197,8 @@ window.confirmAdjust = async () => {
       item_id: adjustItem._id,
       qty: parseFloat(adjustQty),
       mode: adjustMode,
-      new_loc: newLocation,
-      new_pos: newPosition,
+      new_loc: locChanged ? newLocation : null,
+      new_pos: posChanged ? newPosition : null,
       device_id: DEVICE_ID,
       user_name: getCurrentUserName()
     });
@@ -6167,7 +6210,8 @@ window.confirmAdjust = async () => {
 
     rpcDone = true;
     tx.step(txId, 'กำลังบันทึกประวัติ...');
-    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
+    const srvStock = parseFloat(finalActual);   // the server's number: `next` was computed from what this screen last saw
+    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${Number.isFinite(srvStock) ? srvStock : next})`;
     const adjUndoPayload = {
       action: adjustQty===0 ? 'position' : adjustMode,
       qty: parseFloat(adjustQty),
@@ -6291,7 +6335,7 @@ window.openDetail = (id) => {
   const imageUrl = r['imageUrl'] || '';
   const imageHtml = imageUrl ? `
     <div style="text-align:center; margin-bottom:16px;">
-      <img src="${escapeHtml(imageUrl)}" alt="Part Photo" style="max-width:100%; max-height:240px; border-radius:8px; object-fit:contain; cursor:zoom-in; border:1px solid var(--border);" onclick="window.zoomImage('${escapeHtml(imageUrl)}')">
+      <img src="${escapeHtml(imageUrl)}" alt="Part Photo" style="max-width:100%; max-height:240px; border-radius:8px; object-fit:contain; cursor:zoom-in; border:1px solid var(--border);" onclick="window.zoomImage(this.src)">
     </div>
   ` : '';
   document.getElementById('detailBody').innerHTML = imageHtml + `
