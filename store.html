@@ -805,6 +805,7 @@ html, body {
 .adv-filter-backdrop { display:none; }
 .adv-filter-panel { position:fixed; z-index:300; width:min(720px, calc(100vw - 16px)); background:var(--surface); border:1.5px solid var(--border2); border-radius:12px; box-shadow:var(--shadow-md); display:flex; flex-direction:column; max-height:min(480px, calc(100vh - 24px)); }
 .adv-filter-panel[hidden] { display:none; }
+.adv-filter-badge[hidden] { display:none !important; }   /* .chip-count sets display, which beats [hidden] */
 .adv-filter-panel:focus { outline:none; }
 .adv-filter-cols { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:0; overflow:hidden; flex:1; min-height:0; }
 .adv-filter-col { display:flex; flex-direction:column; min-height:0; padding:12px 12px 8px; border-right:1px solid var(--border); }
