@@ -920,11 +920,11 @@ html, body {
 .adv-tag:hover { background:#d6ddf2; }
 .adv-tag-clear { flex:0 0 auto; padding:5px 8px; border:none; background:none; color:var(--danger-text); font-family:var(--sans); font-size:12px; font-weight:700; cursor:pointer; text-decoration:underline; white-space:nowrap; }
 .adv-filter-backdrop { display:none; }
-.adv-filter-panel { position:fixed; z-index:300; width:min(920px, calc(100vw - 16px)); background:var(--surface); border:1.5px solid var(--border2); border-radius:12px; box-shadow:var(--shadow-md); display:flex; flex-direction:column; max-height:min(520px, calc(100vh - 24px)); }
+.adv-filter-panel { position:fixed; z-index:300; width:min(1100px, calc(100vw - 16px)); background:var(--surface); border:1.5px solid var(--border2); border-radius:12px; box-shadow:var(--shadow-md); display:flex; flex-direction:column; max-height:min(520px, calc(100vh - 24px)); }
 .adv-filter-panel[hidden] { display:none; }
 .adv-filter-badge[hidden] { display:none !important; }   /* .chip-count sets display, which beats [hidden] */
 .adv-filter-panel:focus { outline:none; }
-.adv-filter-cols { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:0; overflow:hidden; flex:1; min-height:0; }
+.adv-filter-cols { display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:0; overflow:hidden; flex:1; min-height:0; }
 .adv-filter-col { display:flex; flex-direction:column; min-height:0; overflow-y:auto; border-right:1px solid var(--border); }
 .adv-filter-col:last-child { border-right:none; }
 .adv-filter-group { display:flex; flex-direction:column; padding:12px 12px 8px; }
@@ -3228,7 +3228,7 @@ const ALL_SUB_CATEGORIES = [...new Set(Object.values(CAT_MAP).flat())].sort((a,b
 // ===== STATE =====
 let items = [];
 let filteredItems = [];
-// Multi-value filter state (Sub Cat / Brand / Plant); logic lives next to applyFilters().
+// Multi-value filter state (Status / Dept / Plant / Class / Location / Area / Main Cat / Sub Cat / Brand); logic lives next to applyFilters().
 // `fixed` fields have a set list of options tested by a predicate; the others list the column's own values.
 const ADV_FIELDS = [
   { key: 'status', label: 'Status', fixed: [
@@ -3239,16 +3239,19 @@ const ADV_FIELDS = [
   ] },
   { key: 'dept',  col: 'Department',   label: 'Dept' },
   { key: 'plant', col: 'Plant',        label: 'Plant' },
+  { key: 'class', col: 'CLASS',        label: 'Class' },
+  { key: 'main',  col: 'Main Category', label: 'Main Cat', get: r => getDisplayMainCategory(r) },   // derived from Sub Cat, same as the table shows
   { key: 'sub',   col: 'Sub Category', label: 'Sub Cat', search: true },
   { key: 'brand', col: 'Brand',        label: 'Brand',   search: true },
   { key: 'location', col: 'Location',  label: 'Location' },
   { key: 'area',  col: 'Area',         label: 'Area',    search: true },
 ];
 // Desktop columns: short lists stacked, long (searchable) ones fill the rest of their column.
-const ADV_COLUMNS = [['status', 'dept', 'plant'], ['location', 'area'], ['sub'], ['brand']];
+const ADV_COLUMNS = [['status', 'dept', 'plant'], ['class', 'location', 'area'], ['main'], ['sub'], ['brand']];
 const advSel = Object.fromEntries(ADV_FIELDS.map(f => [f.key, new Set()]));
 const advSearch = Object.fromEntries(ADV_FIELDS.map(f => [f.key, '']));
 const advField = k => ADV_FIELDS.find(f => f.key === k);
+const advVal = (f, r) => f.get ? f.get(r) : r[f.col];
 function advReset() { ADV_FIELDS.forEach(f => { advSel[f.key].clear(); advSearch[f.key] = ''; }); }
 let advCorePass = () => true;
 let sortCol = 'Part ID', sortAsc = false;
@@ -5712,8 +5715,8 @@ function stockValueSummary(rows) {
 const VAL_DIMS = [
   { col: 'Department',    label: 'Dept',     adv: 'dept' },
   { col: 'Plant',         label: 'Plant',    adv: 'plant' },
-  { col: 'Main Category', label: 'Main Cat', get: r => getDisplayMainCategory(r) },
-  { col: 'CLASS',         label: 'Class' },
+  { col: 'Main Category', label: 'Main Cat', adv: 'main', get: r => getDisplayMainCategory(r) },
+  { col: 'CLASS',         label: 'Class',    adv: 'class' },
   { col: 'Location',      label: 'Location', adv: 'location' },
 ];
 const VAL_NONE = '(ไม่ระบุ)';
@@ -6272,7 +6275,7 @@ function advPass(r, skipKey) {
     const sel = advSel[f.key];
     if (f.key === skipKey || !sel.size) continue;
     if (f.fixed) { if (!f.fixed.some(([k, , test]) => sel.has(k) && test(r))) return false; }
-    else if (!sel.has(advNorm(r[f.col]))) return false;
+    else if (!sel.has(advNorm(advVal(f, r)))) return false;
   }
   return true;
 }
@@ -6344,7 +6347,7 @@ function renderAdvFilterLists() {
       opts = f.fixed.map(([k, , test]) => [k, base.filter(test).length]);
     } else {
       const counts = new Map();
-      base.forEach(r => { const k = advNorm(r[f.col]); counts.set(k, (counts.get(k) || 0) + 1); });
+      base.forEach(r => { const k = advNorm(advVal(f, r)); counts.set(k, (counts.get(k) || 0) + 1); });
       advSel[f.key].forEach(k => { if (!counts.has(k)) counts.set(k, 0); });   // a pick never disappears
       opts = [...counts.entries()]
       .filter(([k, c]) => (c > 0 || advSel[f.key].has(k)) && (!s || k.includes(s) || advSel[f.key].has(k)))
