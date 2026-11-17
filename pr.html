@@ -6,7 +6,7 @@
 <title>AFT-CMMS — Purchase Request</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
 /* Component values below are copied from store.html (computed styles of the Inventory page) so both pages
@@ -2040,7 +2040,8 @@ window.saveNumbers = async () => {
   const txId = tx.begin('edit', 'Saving numbers', 'Updating PR / PO number…');
   setSync('syncing');
   try {
-    const { error } = await supabase.from(PR_COL).update({ 'PR No.': pr || null, 'PO No.': po }).eq('id', r._id);
+    const { data: upd, error } = await supabase.from(PR_COL).update({ 'PR No.': pr || null, 'PO No.': po }).eq('id', r._id).select('id');
+    if (!error && (!upd || !upd.length)) throw new Error('This request no longer exists, or this account may not edit it.');
     if (error) {
       if (error.code === '23505') {
         $('e_prNo').classList.add('input-error'); setSync('live');
@@ -2049,7 +2050,8 @@ window.saveNumbers = async () => {
       }
       throw error;
     }
-    r['PR No.'] = pr; r['PO No.'] = po;
+    // a realtime reload may have swapped the record objects while the request was in flight: update the live one
+    Object.assign(prRecords.find(x => x._id === r._id) || r, { 'PR No.': pr, 'PO No.': po });
     saveCache(); closeNumbers(); applyFilters(); openDetail(r._id); setSync('live');
     tx.success(txId, { title: pr ? 'Numbers saved' : 'PR No. cleared', sub: [pr && 'PR ' + pr, po && 'PO ' + po].filter(Boolean).join(' · ') || r['PR Title'] || '' });
   } catch(e){ console.error(e); setSync('error'); tx.fail(txId, { title: 'Could not save', msg: explainError(e), retry: (e && (e.code || e.statusCode)) ? () => saveNumbers() : undefined }); }
@@ -2076,8 +2078,8 @@ document.addEventListener('keydown', e => {
 
 /* ===== EXPORT ===== */
 window.exportCSV = () => {
-  const records = filteredRecords.length ? filteredRecords : prRecords;
-  if (!records.length) { toast('Nothing to export', 'warn'); return; }
+  const records = filteredRecords;   // exactly what the list shows; an empty result never falls back to "everything"
+  if (!records.length) { toast(prRecords.length ? 'No PR matches the current filters. Nothing to export' : 'Nothing to export', 'warn'); return; }
   const fields = ['PR No.','PO No.','PR Title','Section','Creator','PR_Vendor','PO_Vendor','Status','Deliv. Status','PR Amount','PO Amount','Currency Key',
     'Budget code','Post Date','Category','Work Class','Plan Type','Purchaser','Entry by','Item Desc','Quotation No','Request Type','Delivery Date','Discount'];
   const esc = v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
@@ -2085,7 +2087,7 @@ window.exportCSV = () => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
   a.download = `PR_export_${new Date().toISOString().slice(0,10)}.csv`;
-  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);   // revoking at once can cancel the download
   toast(`Exported ${records.length} PRs`);
 };
 
@@ -2159,7 +2161,7 @@ function renderItemRows(){
   updateTotals(); refreshIcons();
 }
 window.setItem = (idx, key, val) => {
-  if (key === 'qty' || key === 'unitPrice') val = Number(val) || 0;
+  if (key === 'qty' || key === 'unitPrice') val = Math.max(0, Number(val) || 0);   // min="0" on the input does not stop typed negatives
   currentItems[idx][key] = val;
   const tr = $('itemTbody').children[idx];
   if (tr) tr.querySelector('.col-amount').textContent = fmtAmount((Number(currentItems[idx].qty) || 0) * (Number(currentItems[idx].unitPrice) || 0));
@@ -2276,7 +2278,7 @@ function readForm(){
     creator: $('f_creator').value.trim(), deliveryDate: $('f_deliveryDate').value,
     prVendor: $('f_prVendor').value.trim(), quotation: $('f_quotation').value.trim(),
     budgetCode: $('f_budgetCode').value.trim(), purchaser: $('f_purchaser').value,
-    discount: Number($('f_discount').value || 0), currency: currentCcy(), items: currentItems.map(it => ({ ...it })),
+    discount: Math.min(Math.max(Number($('f_discount').value) || 0, 0), 100), currency: currentCcy(), items: currentItems.map(it => ({ ...it })),
     justify: { what: $('j_what').value.trim(), why: $('j_why').value.trim(), whyNow: $('j_whyNow').value.trim(), alternatives: $('j_alt').value.trim() }
   };
 }
@@ -2465,6 +2467,8 @@ function parseCSV(text){
   if (field || cur.length) { cur.push(field); rows.push(cur); }
   if (!rows.length) return [];
   const headers = rows[0].map(h => h.trim());
+  // a wrong file (e.g. the store inventory export) used to import as N empty requests
+  if (!headers.includes('PR Title') && !headers.includes('PR No.')) throw new Error('this is not a PR export: no "PR No." or "PR Title" column');
   return rows.slice(1).filter(r => r.some(v => v.trim() !== '')).map(r => {
     const o = {};
     headers.forEach((h, i) => {
@@ -2482,11 +2486,28 @@ window.confirmImport = async () => {
   if (!csvParsed || !csvParsed.length) return;
   const mode = document.querySelector('input[name=importMode]:checked').value;
   const n = csvParsed.length;
+  const now = new Date().toISOString();
+  const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
+  let skippedDup = 0;
+  if (mode === 'replace') {
+    // everything is checked BEFORE anything is deleted
+    const seen = new Set(), dup = new Set();
+    rows.forEach(r => { const k = r['PR No.']; if (!k) return; if (seen.has(k)) dup.add(k); seen.add(k); });
+    if (dup.size) { toast(`The file has ${dup.size} duplicate PR No. (${[...dup].slice(0, 5).join(', ')}${dup.size > 5 ? ', …' : ''}). Fix the file first. Nothing was changed`, 'error'); return; }
+    // the CSV carries no items, attachments, justification or approval: replacing drops them
+    const inApp = prRecords.filter(r => r['Approval'] || (Array.isArray(r['Items']) && r['Items'].length) || (Array.isArray(r['Attachments']) && r['Attachments'].length)).length;
+    if (inApp && !await confirmDialog({ title: `Replace will lose ${inApp} request${inApp > 1 ? 's' : ''} created in this app`,
+      message: 'Their item lines, attached files, justification and approval status are not part of a CSV and cannot be re-imported.\n\nA full backup file is downloaded to this device first.', okText: 'Replace anyway', tone: 'danger' })) return;
+    if (prRecords.length) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(prRecords)], { type: 'application/json' }));
+      a.download = `PR_backup_before_replace_${now.slice(0, 19).replace(/[T:]/g, '-')}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+  }
   const txId = tx.begin(mode === 'replace' ? 'del' : 'edit', 'Importing CSV', `Reading ${n.toLocaleString()} rows…`);
   setSync('syncing');
   try {
-    const now = new Date().toISOString();
-    const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
     tx.step(txId, mode === 'replace' ? 'Clearing existing requests…' : 'Merging rows…');
     if (mode === 'replace') {
       const { error: delErr } = await supabase.from(PR_COL).delete().neq('id', '');
@@ -2499,7 +2520,16 @@ window.confirmImport = async () => {
     } else {
       // merge: upsert by PR No. (last row wins inside one CSV); rows without a PR No. are always inserted
       const byNo = new Map(); const noKey = [];
-      rows.forEach(r => { if (r['PR No.']) byNo.set(r['PR No.'], r); else noKey.push(r); });
+      // A request that is still waiting for its PR No. has no key to merge on. Re-importing an export used to add it
+      // again every time, so skip the ones that already exist (same title, requester, post date and amount).
+      const sig = r => [r['PR Title'], r['Creator'], r['Post Date'], Number(r['PR Amount']) || 0].map(v => String(v ?? '').trim().toLowerCase()).join('|');
+      const have = new Set(prRecords.filter(r => !hasPRNo(r)).map(sig));
+      rows.forEach(r => {
+        if (r['PR No.']) { byNo.set(r['PR No.'], r); return; }
+        const s = sig(r);
+        if (have.has(s)) { skippedDup++; return; }
+        have.add(s); noKey.push(r);
+      });
       for (const chunk of chunkBatch([...byNo.values()], 400)) {
         const { error } = await supabase.from(PR_COL).upsert(chunk, { onConflict: 'PR No.' });
         if (error) throw error;
@@ -2512,7 +2542,7 @@ window.confirmImport = async () => {
     await supabase.from(PR_LOG_COL).insert([{ mode, count: csvParsed.length, device: DEVICE_ID }]);
     tx.step(txId, 'Refreshing the list…');
     await loadFromSupabase(); closeImportModal(); applyFilters(); setSync('live');
-    tx.success(txId, { title: 'Import complete', sub: `${n.toLocaleString()} rows · ${mode}` });
+    tx.success(txId, { title: 'Import complete', sub: `${(n - skippedDup).toLocaleString()} rows · ${mode}${skippedDup ? ` · ${skippedDup} already here, skipped` : ''}` });
   } catch(e){ console.error(e); setSync('error'); tx.fail(txId, { title: 'Import failed', msg: explainError(e) }); }   // no retry: a half-finished import must be checked first
   finally { onImportModeChange(); }
 };

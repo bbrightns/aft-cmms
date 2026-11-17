@@ -9,7 +9,7 @@
   
   <!-- Font and Icon libraries -->
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
   
   <!-- QR Code Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -373,7 +373,7 @@
   <!-- Loading State -->
   <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner"></div>
-    <div class="loading-text" id="loadingText">กำลังดึงข้อมูลอะไหล่จาก Firestore...</div>
+    <div class="loading-text" id="loadingText">กำลังดึงข้อมูลอะไหล่...</div>
   </div>
 
   <!-- Selection / Summary Banner -->
@@ -381,7 +381,7 @@
     <div id="selectionSummary">เลือกพิมพ์ 0 / 0 รายการ</div>
     <div class="action-group">
       <button class="btn btn-secondary" onclick="toggleSelectAll(true)" style="background: rgba(255,255,255,0.15); border: none; color: white;">เลือกทั้งหมด</button>
-      <button class="btn btn-secondary" onclick="toggleSelectAll(false)" style="background: rgba(255,255,255,0.1; border: none; color: rgba(255,255,255,0.7)">ล้างการเลือก</button>
+      <button class="btn btn-secondary" onclick="toggleSelectAll(false)" style="background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.7)">ล้างการเลือก</button>
     </div>
   </div>
 
@@ -444,6 +444,9 @@
     let currentCols = 3;
 
     // Truncate string helper to exact limit
+    function escapeHtml(v) {
+      return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+    }
     function truncateText(str, maxLen = 30) {
       if (!str) return '—';
       if (str.length > maxLen) {
@@ -455,14 +458,19 @@
     // Load data
     async function loadData() {
       try {
-        if (supabase && supabase.auth) {
-          await supabase.auth.signInAnonymously().catch(err => console.warn("Auth skipped:", err));
-        }
+        // No signInAnonymously() here: it replaced a signed-in user's Google session with an anonymous one.
+        // Same access rule as the store: a Supabase session or the local guest flag, otherwise go to login.
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session && localStorage.getItem('isGuest') !== 'true') { window.location.replace('login.html'); return; }
 
-        const { data, error } = await supabase
-          .from('inventory')
-          .select('*');
-        if (error) throw error;
+        // Supabase returns at most 1000 rows per request
+        const data = [];
+        for (let from = 0; ; from += 1000) {
+          const { data: page, error } = await supabase.from('inventory').select('*').order('id').range(from, from + 999);
+          if (error) throw error;
+          data.push(...page);
+          if (page.length < 1000) break;
+        }
 
         items = data.map(d => ({ _id: d.id, ...d }));
 
@@ -563,15 +571,15 @@
         line3Text = truncateText(line3Text, 30);
 
         card.className = `label-card ${selectedIds.has(id) ? 'selected' : ''}`;
-        card.id = `card-${id}`;
+        card.dataset.id = id;
         card.onclick = () => toggleSelect(id);
 
         card.innerHTML = `
-          <div class="label-qr" id="qr-${id}"></div>
+          <div class="label-qr"></div>
           <div class="label-details">
-            <div class="label-line-1">${partId}</div>
-            <div class="label-line-2" title="${[brand, model].filter(Boolean).join(' ') || desc || ''}">${line2Text}</div>
-            <div class="label-line-3" title="${[location, position].filter(Boolean).join(' / ') || ''}">${line3Text}</div>
+            <div class="label-line-1">${escapeHtml(partId)}</div>
+            <div class="label-line-2" title="${escapeHtml([brand, model].filter(Boolean).join(' ') || desc || '')}">${escapeHtml(line2Text)}</div>
+            <div class="label-line-3" title="${escapeHtml([location, position].filter(Boolean).join(' / ') || '')}">${escapeHtml(line3Text)}</div>
           </div>
         `;
 
@@ -583,7 +591,8 @@
           if (currentCols === 4) qrSize = 54;
           else if (currentCols === 5) qrSize = 44;
 
-          new QRCode(document.getElementById(`qr-${id}`), {
+          if (!item['Part ID'] || !card.isConnected) return;   // nothing to encode / the list was re-rendered meanwhile
+          new QRCode(card.querySelector('.label-qr'), {
             text: partId,
             width: qrSize,
             height: qrSize,
@@ -596,8 +605,9 @@
     }
 
     // Toggle single card selection
+    const cardOf = id => [...document.querySelectorAll('.label-card')].find(c => c.dataset.id === String(id));
     function toggleSelect(id) {
-      const card = document.getElementById(`card-${id}`);
+      const card = cardOf(id);
       if (selectedIds.has(id)) {
         selectedIds.delete(id);
         if (card) card.classList.remove('selected');
@@ -610,18 +620,14 @@
 
     // Bulk selection
     window.toggleSelectAll = function(select) {
-      const filtered = getFilteredItems();
-
-      filtered.forEach(item => {
-        const card = document.getElementById(`card-${item._id}`);
-        if (select) {
-          selectedIds.add(item._id);
-          if (card) card.classList.add('selected');
-        } else {
-          selectedIds.delete(item._id);
-          if (card) card.classList.remove('selected');
-        }
-      });
+      if (!select) {
+        // clear everything, including labels currently hidden by the search / filters
+        selectedIds.clear();
+        document.querySelectorAll('.label-card.selected').forEach(c => c.classList.remove('selected'));
+      } else {
+        getFilteredItems().forEach(item => selectedIds.add(item._id));
+        document.querySelectorAll('.label-card').forEach(c => c.classList.add('selected'));
+      }
       updateSummary();
     };
 
@@ -629,7 +635,8 @@
     function updateSummary() {
       const filtered = getFilteredItems();
       const summary = document.getElementById('selectionSummary');
-      summary.textContent = `เลือกพิมพ์ ${selectedIds.size} / ${filtered.length} รายการ (กรองเฉพาะชิ้นงานที่มี Position จากทั้งหมด ${items.length} รายการ)`;
+      const hidden = selectedIds.size - filtered.filter(i => selectedIds.has(i._id)).length;
+      summary.textContent = `เลือกพิมพ์ ${selectedIds.size} / ${filtered.length} รายการ${hidden > 0 ? ` · ${hidden} รายการที่เลือกถูกตัวกรองซ่อนอยู่ (จะไม่ถูกพิมพ์)` : ''} (กรองเฉพาะชิ้นงานที่มี Position จากทั้งหมด ${items.length} รายการ)`;
     }
 
     // Columns change handler
@@ -649,9 +656,11 @@
     };
 
     // Filters wrapper
+    // debounced: every render redraws one QR code per label
+    let _filterTimer = null;
     window.applyFilters = function() {
-      renderLabels();
-      updateSummary();
+      clearTimeout(_filterTimer);
+      _filterTimer = setTimeout(() => { renderLabels(); updateSummary(); }, 200);
     };
 
     // Print Command
@@ -660,6 +669,11 @@
         alert("กรุณาเลือกฉลากอย่างน้อย 1 รายการก่อนสั่งพิมพ์");
         return;
       }
+      // only labels on screen are printed: say so instead of silently printing fewer than the count shows
+      const visible = getFilteredItems().filter(i => selectedIds.has(i._id)).length;
+      const hidden = selectedIds.size - visible;
+      if (!visible) { alert("ฉลากที่เลือกถูกตัวกรองซ่อนอยู่ทั้งหมด กรุณาล้างคำค้นหา/ตัวกรองก่อนสั่งพิมพ์"); return; }
+      if (hidden > 0 && !confirm(`จะพิมพ์ ${visible} ฉลากที่แสดงอยู่ อีก ${hidden} ฉลากที่เลือกถูกตัวกรองซ่อนอยู่และจะไม่ถูกพิมพ์\n\nพิมพ์ต่อหรือไม่?`)) return;
       window.print();
     };
 

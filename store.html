@@ -6,8 +6,8 @@
 <title>Coating Store System - AGC</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
 <style>
 html { scroll-behavior: smooth; }
@@ -2404,7 +2404,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </button>
 
     <!-- Upload zone — shown only when no data -->
-    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()">
+    <div class="upload-zone" id="uploadZone" onclick="settingsUploadCSV()">
       <div class="icon"><i data-lucide="upload-cloud" style="width:32px;height:32px"></i></div>
       <p><strong>อัปโหลด CSV</strong> เพื่ออัปเดต Database</p>
       <p style="font-size:11px;color:#94a3b8;margin-top:4px">คลิกหรือลาก CSV มาวางที่นี่</p>
@@ -2433,7 +2433,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.20.0</div>
+    <div class="home-version">v1.20.1</div>
 
 
     <!-- Compat stubs -->
@@ -3087,6 +3087,9 @@ const CAT_MAP = {
   "Pneumatics & Fluid": ["Air Regulator","Butterfly Valve","Cylinder","Fitting","Pressure Gauge","Regulator","Solenoid Valve","Solenoid valve"]
 };
 
+// Columns of the inventory table that the app reads/writes (CSV import and undo only ever touch these).
+const INV_COLUMNS = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','CLASS','imageUrl'];
+
 const SUB_TO_MAIN_CATEGORY = Object.entries(CAT_MAP).reduce((acc,[main,subs]) => {
   subs.forEach(sub => acc[sub.toLowerCase()] = main);
   return acc;
@@ -3142,7 +3145,7 @@ function setSyncing(state) {
   dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
   txt.textContent = state === 'syncing' ? 'กำลังบันทึก...' : state === 'error' ? 'Error' : 'Live';
 }
-window.addEventListener('online', () => setSyncing('live'));
+window.addEventListener('online', () => { setSyncing('live'); fetchItems(false); });   // data may have changed while we were offline
 window.addEventListener('offline', () => setSyncing('error'));
 
 window.goLowStock = () => {
@@ -3157,12 +3160,24 @@ function refreshIcons() {
 }
 
 // ===== SUPABASE REALTIME =====
-async function fetchItems(showConflictBanner = false) {
-  try {
-    const { data, error } = await supabase
-      .from('inventory')
-      .select('*');
+// Supabase returns at most 1000 rows per request: page through, or anything past row 1000 silently disappears.
+async function fetchAllRows(table, columns = '*') {
+  const all = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from(table).select(columns).order('id').range(from, from + 999);
     if (error) throw error;
+    all.push(...data);
+    if (data.length < 1000) break;
+  }
+  return all;
+}
+
+let _fetchSeq = 0;
+async function fetchItems(showConflictBanner = false) {
+  const seq = ++_fetchSeq;
+  try {
+    const data = await fetchAllRows('inventory');
+    if (seq !== _fetchSeq) return;   // a newer fetch started meanwhile: never let an older answer overwrite it
 
     const newItems = data.map(d => ({ _id: d.id, ...d }));
     newItems.sort((a,b) => (b['Part ID']||'').localeCompare(a['Part ID']||''));
@@ -3193,6 +3208,7 @@ async function fetchItems(showConflictBanner = false) {
       subSel.value = current;
     }
     populateSubCategoryOptions();
+    refreshCatFilterOptions();
 
     applyFilters();
     updateStats();
@@ -3200,10 +3216,12 @@ async function fetchItems(showConflictBanner = false) {
     setSyncing('live');
   } catch (err) {
     console.error('Fetch items error:', err);
+    if (seq !== _fetchSeq) return;
     setSyncing('error');
   }
 }
 
+let _rtTimer = null, _rtExternal = false;
 function startRealtimeSync() {
   fetchItems(false);
 
@@ -3212,8 +3230,10 @@ function startRealtimeSync() {
     .channel('inventory-changes')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'inventory' }, payload => {
       const d = payload.new || payload.old;
-      const hasExternalChange = d && d._device && d._device !== DEVICE_ID;
-      fetchItems(hasExternalChange);
+      if (d && d._device && d._device !== DEVICE_ID) _rtExternal = true;
+      // one CSV import fires hundreds of events: reload once when they stop coming
+      clearTimeout(_rtTimer);
+      _rtTimer = setTimeout(() => { const ext = _rtExternal; _rtExternal = false; fetchItems(ext); }, 400);
     })
     .subscribe();
 }
@@ -3466,7 +3486,7 @@ function updateFilterSelectStyles() {
 function doSort() {
   filteredItems.sort((a,b) => {
     let av = a[sortCol]||'', bv = b[sortCol]||'';
-    if (sortCol === 'Actual') { av = parseFloat(av)||-1; bv = parseFloat(bv)||-1; }
+    if (sortCol === 'Actual') { const n = v => { const x = parseFloat(v); return Number.isFinite(x) ? x : -1; }; av = n(av); bv = n(bv); }   // 0 sorts above 'no data'
     if (av<bv) return sortAsc?-1:1;
     if (av>bv) return sortAsc?1:-1;
     return 0;
@@ -3574,14 +3594,12 @@ function updateStats() {
 }
 
 function initFilters() {
-  const cats = Object.keys(CAT_MAP).sort();
-  const catSel = document.getElementById('catFilter');
-  if(catSel && catSel.options.length <= 1) catSel.insertAdjacentHTML('beforeend', cats.map(c=>`<option value="${c}">${c}</option>`).join(''));
+  refreshCatFilterOptions();
   const subSel = document.getElementById('subCatFilter');
   if(subSel) {
     const cur = subSel.value;
     subSel.innerHTML = '<option value="">All Sub-cat</option>';
-    [...new Set([...ALL_SUB_CATEGORIES, ...items.map(r=>r['Sub Category']).filter(Boolean)])].sort().forEach(s=>subSel.innerHTML+=`<option value="${s}">${s}</option>`);
+    [...new Set([...ALL_SUB_CATEGORIES, ...items.map(r=>r['Sub Category']).filter(Boolean)])].sort().forEach(s=>subSel.innerHTML+=`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`);
     subSel.value = cur;
   }
   populateSubCategoryOptions();
@@ -3591,14 +3609,29 @@ function initFilters() {
 function populateSubCategoryOptions() {
   const dl = document.getElementById('subCategoryOptions');
   if(dl) dl.innerHTML = [...new Set([...ALL_SUB_CATEGORIES, ...items.map(r=>r['Sub Category']).filter(Boolean)])]
-    .sort().map(s=>`<option value="${s}"></option>`).join('');
+    .sort().map(s=>`<option value="${escapeHtml(s)}"></option>`).join('');
+}
+
+// Category dropdown = the known categories plus whatever the data really holds (MECHANICAL, BEARING, ...), one entry per spelling.
+function refreshCatFilterOptions() {
+  const sel = document.getElementById('catFilter');
+  if (!sel) return;
+  const cur = sel.value.toLowerCase();
+  const seen = new Map();
+  [...Object.keys(CAT_MAP), ...items.map(getDisplayMainCategory)].forEach(c => {
+    c = String(c || '').trim();
+    if (c && !seen.has(c.toLowerCase())) seen.set(c.toLowerCase(), c);
+  });
+  const opts = [...seen.values()].sort((a, b) => a.localeCompare(b));
+  sel.innerHTML = '<option value="">All Categories</option>' + opts.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  sel.value = seen.get(cur) || '';
 }
 
 window.populateSubCat = (_mainCat, targetId) => {
   populateSubCategoryOptions();
   const el = document.getElementById(targetId);
   if (el && el.tagName === 'SELECT') {
-    el.innerHTML = '<option value="">—</option>' + ALL_SUB_CATEGORIES.map(s=>`<option value="${s}">${s}</option>`).join('');
+    el.innerHTML = '<option value="">—</option>' + ALL_SUB_CATEGORIES.map(s=>`<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
   }
 };
 
@@ -3706,7 +3739,7 @@ function populateBrandOptions() {
   if(!dl) return;
   dl.innerHTML = [...new Set(items.map(r => (r['Brand']||'').trim()).filter(Boolean))]
     .sort((a,b)=>a.localeCompare(b))
-    .map(b=>`<option value="${b.replace(/"/g,'&quot;')}"></option>`).join('');
+    .map(b=>`<option value="${escapeHtml(b)}"></option>`).join('');
 }
 
 function getDisplayMainCategory(r) {
@@ -3858,6 +3891,39 @@ function getUndoData(log) {
   return null;
 }
 
+// ----- Which log rows may be undone -----
+// A row can be undone once. The undo itself is written as a new row carrying undoOf = <original id>;
+// that row is not undoable (no undo-of-undo chains), and system rows (CSV import, clear all, export) never are.
+const UNDOABLE_TYPES = new Set(['in', 'out', 'edit', 'add', 'delete']);
+let _undoneIds = new Set();
+function isUndoRow(l) {
+  const u = getUndoData(l);
+  return !!(u && u.undoOf != null) || /Undo:/.test(l.msg || '');
+}
+function undoneLogIds(logs) {
+  const s = new Set();
+  (logs || []).forEach(l => {
+    const u = getUndoData(l);
+    if (u && u.undoOf != null) { s.add(String(u.undoOf)); return; }
+    const m = /Undo:/.test(l.msg || '') ? /ย้อนกลับจาก Log #(\d+)/.exec(l.note || '') : null;   // rows written before undoOf existed
+    if (m) s.add(m[1]);
+  });
+  return s;
+}
+function undoBlockReason(log) {
+  const type = log.type || (log.partId === 'SYSTEM' ? 'system' : 'edit');
+  if (!log.partId || log.partId === 'SYSTEM' || !UNDOABLE_TYPES.has(type)) return 'รายการของระบบไม่สามารถย้อนกลับได้';
+  if (isUndoRow(log)) return 'รายการนี้เป็นการย้อนกลับอยู่แล้ว ไม่สามารถย้อนซ้ำได้';
+  if (_undoneIds.has(String(log.id))) return 'รายการนี้ถูกย้อนกลับไปแล้ว';
+  return '';
+}
+async function isLogAlreadyUndone(logId) {   // asks the server too: another device may have undone it, or it scrolled out of the last 200 rows
+  try {
+    const { data, error } = await supabase.from('logs').select('id').like('note', `%"undoOf":"${logId}"%`).limit(1);
+    return !error && Array.isArray(data) && data.length > 0;
+  } catch (e) { return false; }
+}
+
 const FIELD_LABELS_TH = {
   'Actual': 'Stock',
   'Min': 'Min',
@@ -3978,7 +4044,8 @@ function logRowHtml(l, idx) {
     </div>
     <div class="lg-side">
       <div><div class="lg-who">${escapeHtml(user)}</div><div class="lg-time">${escapeHtml(when.time)}</div></div>
-      <button type="button" class="lg-undo" data-id="${escapeHtml(String(l.id))}" onclick="confirmUndoLog(this.dataset.id)" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>
+      ${undoBlockReason(l) ? (_undoneIds.has(String(l.id)) ? '<span style="font-size:11px;color:var(--text3);white-space:nowrap">ย้อนกลับแล้ว</span>' : '')
+        : `<button type="button" class="lg-undo" data-id="${escapeHtml(String(l.id))}" onclick="confirmUndoLog(this.dataset.id)" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>`}
     </div>
   </article>`;
 }
@@ -4006,6 +4073,7 @@ window.toggleLogDetail = (btn) => {
 
 function renderLog(logs) {
   _logsRendered = logs || [];
+  _undoneIds = undoneLogIds(_logsRendered);
   const el = document.getElementById('logList');
   if (!el) return;
   const countEl = document.getElementById('logCount');
@@ -4043,6 +4111,8 @@ window.confirmUndoLog = (logId) => {
     toast('ไม่พบข้อมูล Log นี้', 'error');
     return;
   }
+  const blocked = undoBlockReason(log);
+  if (blocked) { toast(blocked, 'warn'); return; }
   pendingUndoLogId = logId;
   
   const undoData = getUndoData(log);
@@ -4101,207 +4171,181 @@ window.executeUndoLog = async () => {
     toast('ไม่พบข้อมูล Log', 'error');
     return;
   }
-
+  pendingUndoLogId = null;   // one run per confirmation
   closeModal('undoModal');
+  const blocked = undoBlockReason(log);
+  if (blocked) { toast(blocked, 'warn'); return; }
+
   const btn = document.getElementById('confirmUndoBtn');
   if (btn) btn.classList.add('btn-loading');
   setSyncing('syncing');
 
+  // every undo row carries undoOf, in undo_data and (for databases without that column) in the note
+  const writeUndoLog = (type, partId, msg, noteText, payload) => {
+    const full = { ...payload, undoOf: String(log.id) };
+    return insertLog({
+      type, partId, msg,
+      note: noteText + '\n__UNDO_DATA__:' + JSON.stringify(full),
+      undo_data: full,
+      device: DEVICE_ID,
+      user: getCurrentUserName()
+    });
+  };
+  const qtyOf = (undoData) => {
+    let qty = undoData?.qty;
+    if (!qty) {
+      const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
+      qty = match ? parseFloat(match[0]) : 1;
+    }
+    return parseFloat(qty);
+  };
+
   try {
+    if (await isLogAlreadyUndone(log.id)) throw new Error('รายการนี้ถูกย้อนกลับไปแล้ว');
+
     const undoData = getUndoData(log);
     const type = log.type || (log.partId === 'SYSTEM' ? 'system' : 'edit');
     const partId = log.partId;
+    let warnAfter = '';
 
-    if (type === 'out') {
-      let qty = undoData?.qty;
-      if (!qty) {
-        const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
-        qty = match ? parseFloat(match[0]) : 1;
-      }
+    if (type === 'out' || type === 'in') {
+      const qty = qtyOf(undoData);
       const item = items.find(x => x['Part ID'] === partId);
       if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
+      const back = type === 'out' ? 'in' : 'out';
 
       const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
         item_id: item._id,
-        qty: parseFloat(qty),
-        mode: 'in',
-        new_loc: null,
-        new_pos: null,
-        device_id: DEVICE_ID,
-        user_name: getCurrentUserName()
-      });
-      if (rpcErr) throw rpcErr;
-
-      await insertLog({
-        type: 'in',
-        partId: partId,
-        msg: `↩️ Undo: คืน Stock เบิกของ ${qty} pcs`,
-        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'in', qty, partId, itemId: item._id }),
-        undo_data: { action: 'in', qty, partId, itemId: item._id },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
-
-    } else if (type === 'in') {
-      let qty = undoData?.qty;
-      if (!qty) {
-        const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
-        qty = match ? parseFloat(match[0]) : 1;
-      }
-      const item = items.find(x => x['Part ID'] === partId);
-      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
-
-      const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
-        item_id: item._id,
-        qty: parseFloat(qty),
-        mode: 'out',
+        qty,
+        mode: back,
         new_loc: null,
         new_pos: null,
         device_id: DEVICE_ID,
         user_name: getCurrentUserName()
       });
       if (rpcErr) {
-        if (rpcErr.message.includes('OVER_STOCK') || rpcErr.message.includes('ZERO_STOCK')) {
-          const curActual = parseFloat(item['Actual']) || 0;
-          const newActual = Math.max(0, curActual - qty);
-          const { error: upErr } = await supabase.from('inventory').update({ "Actual": String(newActual), _updatedAt: new Date().toISOString() }).eq('id', item._id);
-          if (upErr) throw upErr;
-        } else {
-          throw rpcErr;
-        }
+        // Not enough stock left to take the received quantity back out (some was withdrawn since).
+        // Never force it: the log would say "-qty" while the stock moved by less.
+        if (/OVER_STOCK|ZERO_STOCK/.test(rpcErr.message || '')) throw new Error(`Stock ปัจจุบันเหลือน้อยกว่า ${qty} pcs (มีการเบิกหลังจากรับของรายการนี้) จึงย้อนกลับไม่ได้`);
+        throw rpcErr;
       }
 
-      await insertLog({
-        type: 'out',
-        partId: partId,
-        msg: `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
-        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'out', qty, partId, itemId: item._id }),
-        undo_data: { action: 'out', qty, partId, itemId: item._id },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog(back, partId,
+        back === 'in' ? `↩️ Undo: คืน Stock เบิกของ ${qty} pcs` : `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
+        `ย้อนกลับจาก Log #${log.id} (${log.msg})`,
+        { action: back, qty, partId, itemId: item._id });
 
     } else if (type === 'edit') {
       const item = items.find(x => x['Part ID'] === partId);
       if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
 
-      let restoreData = {};
-      if (undoData && undoData.before) {
-        restoreData = { ...undoData.before };
-        delete restoreData._id;
-        delete restoreData.id;
+      // Restore ONLY the fields that edit changed. Writing the whole old row back also rolled Stock back,
+      // wiping every เบิก/รับ made after the edit.
+      const NOT_RESTORED = new Set(['_id', 'id', '_updatedAt', '_device', '_updatedBy', 'Part ID']);
+      const restoreData = {};
+      const editedTo = {};   // what the edit set each field to
+      if (undoData && undoData.action === 'position') {
+        restoreData['Location'] = undoData.oldLocation || '';
+        restoreData['Position'] = undoData.oldPosition || '';
+      } else if (undoData && undoData.before) {
+        const before = undoData.before, after = undoData.after || {};
+        Object.keys(after).forEach(k => {
+          if (NOT_RESTORED.has(k)) return;
+          if (String(before[k] ?? '') !== String(after[k] ?? '')) { restoreData[k] = before[k] ?? ''; editedTo[k] = after[k] ?? ''; }
+        });
       } else {
         const cleanNote = log.note ? log.note.split('__UNDO_DATA__:')[0] : '';
-        const lines = cleanNote.split('\n').filter(Boolean);
-        lines.forEach(line => {
-          if (line.includes('->') || line.includes('→')) {
-            const sep = line.includes('->') ? '->' : '→';
-            const parts = line.split(':');
-            const field = (parts[0] || '').trim();
-            const valRest = parts.slice(1).join(':');
-            const oldVal = (valRest.split(sep)[0] || '').trim();
-            if (field) {
-              restoreData[field] = oldVal === '—' ? '' : oldVal;
-            }
-          }
+        cleanNote.split('\n').filter(Boolean).forEach(line => {
+          const sep = line.includes('->') ? '->' : (line.includes('→') ? '→' : null);
+          const colon = line.indexOf(':');
+          if (!sep || colon <= 0) return;
+          const field = line.slice(0, colon).trim();
+          if (!INV_COLUMNS.includes(field) || NOT_RESTORED.has(field)) return;   // only real columns
+          const [oldPart, ...newParts] = line.slice(colon + 1).split(sep);
+          const norm = v => { v = (v || '').trim(); return v === '—' ? '' : v; };
+          restoreData[field] = norm(oldPart);
+          editedTo[field] = norm(newParts.join(sep));
         });
       }
-
-      if (Object.keys(restoreData).length === 0) {
-        throw new Error('ไม่พบข้อมูลเดิมสำหรับย้อนกลับ');
+      // Stock goes back only if nothing touched it since the edit
+      if ('Actual' in restoreData && 'Actual' in editedTo && String(item['Actual'] ?? '') !== String(editedTo['Actual'])) {
+        delete restoreData['Actual'];
+        warnAfter = 'Stock ไม่ถูกย้อน เพราะมีการเบิก/รับหลังการแก้ไขนั้น';
       }
+      if (Object.keys(restoreData).length === 0) {
+        throw new Error(warnAfter ? 'มีการเบิก/รับหลังการแก้ไขนี้ จึงย้อน Stock กลับไม่ได้' : 'ไม่พบข้อมูลเดิมสำหรับย้อนกลับ');
+      }
+      const diffNote = Object.keys(restoreData).map(k =>
+        k === 'imageUrl' ? 'imageUrl: — → รูปเดิม'
+          : `${k}: ${cleanSingleLine(item[k] ?? '') || '—'} → ${cleanSingleLine(restoreData[k]) || '—'}`).join('\n');
 
-      restoreData._updatedAt = new Date().toISOString();
-      restoreData._device = DEVICE_ID;
-      restoreData._updatedBy = getCurrentUserName();
-
-      const { error: upErr } = await supabase.from('inventory').update(restoreData).eq('id', item._id);
+      const { data: updRows, error: upErr } = await supabase.from('inventory')
+        .update({ ...restoreData, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
+        .eq('id', item._id).select('id');
       if (upErr) throw upErr;
+      if (!updRows || !updRows.length) throw new Error('ไม่พบรายการนี้ในระบบแล้ว หรือบัญชีนี้ไม่มีสิทธิ์แก้ไข');
 
-      await insertLog({
-        type: 'edit',
-        partId: partId,
-        msg: `↩️ Undo: คืนค่าข้อมูลก่อนแก้ไข`,
-        note: `ย้อนกลับจาก Log #${log.id}` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'edit', partId, itemId: item._id, before: item, after: restoreData }),
-        undo_data: { action: 'edit', partId, itemId: item._id, before: item, after: restoreData },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog('edit', partId, `↩️ Undo: คืนค่าข้อมูลก่อนแก้ไข`,
+        `ย้อนกลับจาก Log #${log.id}\n${diffNote}`,
+        { action: 'edit', partId, itemId: item._id });
 
     } else if (type === 'add') {
       const item = items.find(x => x['Part ID'] === partId);
-      if (item) {
-        const { error: delErr } = await supabase.from('inventory').delete().eq('id', item._id);
-        if (delErr) throw delErr;
-      }
+      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบแล้ว (อาจถูกลบไปก่อนหน้านี้)`);
+      const { error: delErr } = await supabase.from('inventory').delete().eq('id', item._id);
+      if (delErr) throw delErr;
 
-      await insertLog({
-        type: 'delete',
-        partId: partId,
-        msg: `↩️ Undo: ลบรายการที่เพิ่มเข้ามา`,
-        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'delete', partId, itemId: item ? item._id : null, deletedItem: item }),
-        undo_data: { action: 'delete', partId, itemId: item ? item._id : null, deletedItem: item },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog('delete', partId, `↩️ Undo: ลบรายการที่เพิ่มเข้ามา`,
+        `ย้อนกลับจาก Log #${log.id} (${log.msg})`,
+        { action: 'delete', partId, itemId: item._id, deletedItem: item });
 
     } else if (type === 'delete') {
-      let restoreItem = undoData?.deletedItem;
-      if (!restoreItem) {
-        restoreItem = {
-          id: crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15),
-          "Part ID": partId,
-          "Brand": "Restored Item",
-          "Description": "กู้คืนจาก Log #" + log.id,
-          "Actual": "0",
-          _updatedAt: new Date().toISOString(),
-          _device: DEVICE_ID,
-          _updatedBy: getCurrentUserName()
-        };
-      } else {
-        delete restoreItem._id;
-      }
+      // needs the saved copy of the row; without it there is nothing real to restore
+      const saved = undoData?.deletedItem;
+      if (!saved || !saved['Part ID']) throw new Error('Log นี้ไม่มีสำเนาข้อมูลของรายการที่ถูกลบ จึงกู้คืนไม่ได้');
+      if (items.some(x => x['Part ID'] === saved['Part ID'])) throw new Error(`มี Part ID: ${saved['Part ID']} อยู่ในระบบแล้ว`);
+      const restoreItem = { id: saved.id || saved._id || crypto.randomUUID() };
+      INV_COLUMNS.forEach(c => { if (saved[c] !== undefined) restoreItem[c] = saved[c]; });
+      Object.assign(restoreItem, { _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() });
 
       const { error: insErr } = await supabase.from('inventory').insert([restoreItem]);
       if (insErr) throw insErr;
 
-      await insertLog({
-        type: 'add',
-        partId: partId,
-        msg: `↩️ Undo: กู้คืนรายการที่ถูกลบ`,
-        note: `ย้อนกลับจาก Log #${log.id}` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'add', partId, itemId: restoreItem.id, itemData: restoreItem }),
-        undo_data: { action: 'add', partId, itemId: restoreItem.id, itemData: restoreItem },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog('add', partId, `↩️ Undo: กู้คืนรายการที่ถูกลบ`,
+        `ย้อนกลับจาก Log #${log.id}`,
+        { action: 'add', partId, itemId: restoreItem.id });
 
     } else {
-      toast('รายการประเภทนี้ไม่สามารถย้อนกลับได้', 'warn');
-      return;
+      throw new Error('รายการประเภทนี้ไม่สามารถย้อนกลับได้');
     }
 
     await fetchItems(false);
     invalidateLogsCache();
     await loadLogs(true);
+    setSyncing('live');
     toast('ย้อนกลับรายการเรียบร้อยแล้ว', 'success');
+    if (warnAfter) toast(warnAfter, 'warn');
   } catch (err) {
-    toast('เกิดข้อผิดพลาดในการ Undo: ' + err.message, 'error');
-    setSyncing('error');
+    toast('ย้อนกลับไม่สำเร็จ: ' + err.message, 'error');
+    setSyncing(navigator.onLine ? 'live' : 'error');
   } finally {
     if (btn) btn.classList.remove('btn-loading');
   }
 };
-
 
 function getItemChangeSummary(oldItem, newData) {
   if (!oldItem) return '';
   const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan'];
   const changed = [];
   fields.forEach(f => {
+    if (!(f in newData)) return;   // not part of this save (e.g. Stock left untouched)
     const oldVal = cleanSingleLine(oldItem[f] ?? '');
     const newVal = cleanSingleLine(newData[f] ?? '');
     if (oldVal !== newVal) changed.push(`${f}: ${oldVal || '—'} → ${newVal || '—'}`);
   });
+  if ('imageUrl' in newData && (oldItem['imageUrl'] || '') !== (newData['imageUrl'] || '')) {
+    changed.push(`imageUrl: ${oldItem['imageUrl'] ? 'มีรูป' : '—'} → ${newData['imageUrl'] ? 'รูปใหม่' : '—'}`);
+  }
   return changed.length ? changed.join('\n') : 'ไม่มีการเปลี่ยนแปลงข้อมูล';
 }
 
@@ -4364,6 +4408,7 @@ function setAdjustPositionValue(val) {
   window.updateAdjPositionPreview(true);
 }
 
+let _adjInitLoc = '', _adjInitPos = '';
 window.openAdjust = (id, initialMode = 'in') => {
   adjustItem=items.find(x=>x._id===id); if(!adjustItem) return;
   adjustQty=1; adjustMode=initialMode;
@@ -4375,6 +4420,9 @@ window.openAdjust = (id, initialMode = 'in') => {
   const locEl = document.getElementById('adj_location');
   if(locEl) locEl.value = adjustItem['Location'] || '';
   setAdjustPositionValue(adjustItem['Position'] || '');
+  // what the form shows before the user touches it (legacy values are normalised for display only)
+  _adjInitLoc = locEl ? locEl.value : '';
+  _adjInitPos = buildAdjustPositionValue(true);
   document.getElementById('adjWarnMsg').style.display='none';
   setAdjustMode(initialMode);
   document.getElementById('adjustModal').style.display='flex';
@@ -4504,8 +4552,12 @@ function getPreviewNextPartId() {
   return `SPFL-C-${String(max + 1).padStart(4, '0')}`;
 }
 
+// Stock as the edit form showed it when it opened. Saving with this value untouched must not write Stock at all,
+// otherwise an edit of e.g. the description overwrites every เบิก/รับ made while the form was open.
+let _editOrigActual = null;
 window.openAddModal = () => {
   editItemId=null;
+  _editOrigActual = null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class','vendor','deliver_unit'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_partid').value = getPreviewNextPartId();
@@ -4555,6 +4607,7 @@ window.openEdit = (id) => {
   setLocationValue(r['Location']||'');
   setPositionValue(r['Position']||'');
   document.getElementById('f_actual').value=r['Actual']||'';
+  _editOrigActual = cleanSingleLine(document.getElementById('f_actual').value);
   document.getElementById('f_min').value=r['Min']||'';
   document.getElementById('f_max').value=r['Max']||'';
   document.getElementById('f_cost').value=r['COST']||'';
@@ -4613,6 +4666,10 @@ window.saveItem = async () => {
     if(!partId){ document.getElementById('err_partid').textContent='จำเป็นต้องระบุ Part ID'; hasError=true; }
   }
   if(!department){ document.getElementById('err_department').textContent='จำเป็นต้องระบุ แผนก'; hasError=true; }
+  const stockTouched = !editItemId || actual !== _editOrigActual;
+  if(stockTouched && actual!=='' && (isNaN(parseFloat(actual))||parseFloat(actual)<0)){
+    document.getElementById('err_actual').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
+  }
   if(min!=='' && (isNaN(parseFloat(min))||parseFloat(min)<0)){
     document.getElementById('err_min').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
   }
@@ -4645,6 +4702,7 @@ window.saveItem = async () => {
   setSyncing('syncing');
   try {
     let uploadedUrl = currentPhotoUrl;
+    let removePhotoAfterSave = false;   // delete the stored file only once the row no longer points at it
     let finalPartId = partId;
     if (!editItemId) {
       finalPartId = await getNextPartIdSafe();
@@ -4669,18 +4727,10 @@ window.saveItem = async () => {
         const { data: urlData } = supabase.storage
           .from('parts')
           .getPublicUrl(`${cleanPartId}.jpg`);
-        uploadedUrl = urlData.publicUrl;
+        // the file name never changes (<Part ID>.jpg): without a new query string browsers keep showing the old photo
+        uploadedUrl = urlData.publicUrl + '?v=' + Date.now();
       } else {
-        if (currentPhotoUrl) {
-          try {
-            const cleanPartId = finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_');
-            await supabase.storage
-              .from('parts')
-              .remove([`${cleanPartId}.jpg`]);
-          } catch (delErr) {
-            console.warn("Storage deletion warning:", delErr);
-          }
-        }
+        removePhotoAfterSave = !!(editItemId && (items.find(x => x._id === editItemId) || {})['imageUrl']);
         uploadedUrl = '';
       }
     }
@@ -4710,17 +4760,25 @@ window.saveItem = async () => {
       _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName()
     };
 
+    if (!stockTouched) delete data['Actual'];   // Stock was not edited in this form: keep whatever the database has now
+
     tx.step(txId, 'กำลังบันทึกข้อมูล...');
     if (editItemId) {
       const oldItem = items.find(x => x._id === editItemId);
       const changeNote = getItemChangeSummary(oldItem, data);
       
-      const { error: updateErr } = await supabase
+      const { data: updRows, error: updateErr } = await supabase
         .from('inventory')
         .update(data)
-        .eq('id', editItemId);
+        .eq('id', editItemId)
+        .select('id');
       if (updateErr) throw updateErr;
+      if (!updRows || !updRows.length) throw new Error('ไม่พบรายการนี้ในระบบแล้ว (อาจถูกลบไปแล้ว) หรือบัญชีนี้ไม่มีสิทธิ์แก้ไข');
       dbDone = true;
+      if (removePhotoAfterSave) {
+        try { await supabase.storage.from('parts').remove([`${finalPartId.replace(/[^a-zA-Z0-9_-]/g, '_')}.jpg`]); }
+        catch (delErr) { console.warn('Storage deletion warning:', delErr); }
+      }
       tx.step(txId, 'กำลังบันทึกประวัติ...');
 
       const editUndoPayload = { action: 'edit', partId: finalPartId, itemId: editItemId, before: oldItem, after: data };
@@ -4800,11 +4858,13 @@ window.confirmDelete = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    const { error: delErr } = await supabase
+    const { data: delRows, error: delErr } = await supabase
       .from('inventory')
       .delete()
-      .eq('id', deleteItemId);
+      .eq('id', deleteItemId)
+      .select('id');
     if (delErr) throw delErr;
+    if (!delRows || !delRows.length) throw new Error('ไม่พบรายการนี้ในระบบแล้ว (อาจถูกลบไปแล้ว) หรือบัญชีนี้ไม่มีสิทธิ์ลบ');
     dbDone = true;
     tx.step(txId, 'กำลังบันทึกประวัติ...');
 
@@ -4867,15 +4927,25 @@ function parseCSV(text) {
   while(rows.length && rows[rows.length-1].every(v=>!v.trim())) rows.pop();
   if(rows.length < 2) throw new Error('CSV ไม่มีข้อมูล');
   const headers = rows[0].map(h=>h.trim());
-  return rows.slice(1).map(vals => {
+  if(!headers.includes('Part ID')) throw new Error('ไม่พบคอลัมน์ "Part ID" — ไฟล์นี้ไม่ใช่ไฟล์ Export ของ Store');
+  // Only known inventory columns are imported: an extra header (or an "id" column) used to go straight to the database.
+  const all = rows.slice(1).filter(vals => vals.some(v => v.trim())).map(vals => {
     const obj = {};
-    headers.forEach((h,i)=> obj[h] = (vals[i]||'').trim());
+    headers.forEach((h,i)=> { if(INV_COLUMNS.includes(h)) obj[h] = (vals[i]||'').trim(); });
     return obj;
-  }).filter(r => {
+  });
+  const out = all.filter(r => {
     const pid = (r['Part ID']||'').trim();
     // Valid Part ID: non-empty, no whitespace, has at least one digit (filters out anomalies like "Cable side")
     return pid && !/\s/.test(pid) && /\d/.test(pid);
   });
+  const seen = new Set(), dups = new Set();
+  out.forEach(r => { const k = r['Part ID'].toLowerCase(); if(seen.has(k)) dups.add(r['Part ID']); seen.add(k); });
+  out.skipped = all.length - out.length;                                   // rows dropped for an invalid Part ID
+  out.ignoredCols = headers.filter(h => h && !INV_COLUMNS.includes(h));    // columns that are not imported
+  out.dups = [...dups];                                                    // Part IDs that appear more than once
+  if(!out.length) throw new Error('ไม่พบแถวที่มี Part ID ถูกต้อง');
+  return out;
 }
 
 window.handleCSVUpload = (e) => {
@@ -4887,6 +4957,9 @@ window.handleCSVUpload = (e) => {
       document.getElementById('csvPreview').innerHTML = `
         <p style="font-weight:700;margin-bottom:8px">ตรวจพบ <span style="color:var(--agc-blue)">${csvParsedData.length} รายการ</span> จากไฟล์ <span style="font-family:var(--mono)">${escapeHtml(file.name)}</span></p>
         <p>ตัวอย่างแถวแรก: <strong>${escapeHtml((csvParsedData[0]['Brand']||'') + ' ' + (csvParsedData[0]['Model']||''))}</strong> (${escapeHtml(csvParsedData[0]['Part ID']||'')})</p>
+        ${csvParsedData.skipped ? `<p style="color:var(--warn);margin-top:6px">ข้าม ${csvParsedData.skipped} แถว เพราะ Part ID ว่าง / มีช่องว่าง / ไม่มีตัวเลข</p>` : ''}
+        ${csvParsedData.ignoredCols.length ? `<p style="color:var(--text3);margin-top:6px">คอลัมน์ที่ไม่นำเข้า: ${escapeHtml(csvParsedData.ignoredCols.join(', '))}</p>` : ''}
+        ${csvParsedData.dups.length ? `<p style="color:var(--danger);font-weight:700;margin-top:6px">Part ID ซ้ำในไฟล์ ${csvParsedData.dups.length} รายการ (${escapeHtml(csvParsedData.dups.slice(0,5).join(', '))}${csvParsedData.dups.length>5?', ...':''}) — แก้ไฟล์ก่อนจึงจะอัปโหลดได้</p>` : ''}
       `;
       document.getElementById('csvModal').style.display='flex';
       document.querySelector('input[name="csvUploadMode"][value="merge"]')?.click();
@@ -4901,6 +4974,7 @@ window.handleCSVUpload = (e) => {
 
 window.confirmCSVUpload = async () => {
   if(!csvParsedData) return;
+  if(csvParsedData.dups && csvParsedData.dups.length) { toast('ไฟล์มี Part ID ซ้ำ กรุณาแก้ไฟล์ก่อน', 'error'); return; }
   const mode = document.querySelector('input[name="csvUploadMode"]:checked')?.value || 'merge';
   if(mode === 'replace' && cleanSingleLine(document.getElementById('csvReplaceConfirmInput')?.value || '') !== 'REPLACE') {
     toast('กรุณาพิมพ์ REPLACE เพื่อยืนยัน Replace All', 'error');
@@ -4913,67 +4987,40 @@ window.confirmCSVUpload = async () => {
   document.getElementById('loadingOverlay').style.display='flex';
   setSyncing('syncing');
   try {
+    // Both modes write the new rows FIRST, matched to the existing rows by Part ID (ids, photos and history stay attached).
+    // Replace then removes what is not in the file. If anything fails on the way, the old data is still there.
+    const existing = await fetchAllRows('inventory', 'id, "Part ID"');   // the quotes matter: unquoted, the client strips the space
+    const byPartId = new Map();
+    existing.forEach(d => {
+      const pid = (d['Part ID']||'').trim().toLowerCase();
+      if(pid) byPartId.set(pid, d.id);
+    });
+    const stamp = { _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() };
+    const keepIds = new Set();
+    const toUpsert = csvParsedData.map(row => {
+      const id = byPartId.get(row['Part ID'].trim().toLowerCase()) || (crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15));
+      keepIds.add(id);
+      return { id, ...cleanItemRowData(row), ...stamp };
+    });
+
+    if(mode === 'replace' && items.length) {
+      // a copy of what is about to be replaced, saved to this device
+      downloadInventoryCSV(items, `SPFL_Store_Backup_before_replace_${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.csv`);
+    }
+
+    for (let i = 0; i < toUpsert.length; i += 500) {
+      const { error: upsertErr } = await supabase.from('inventory').upsert(toUpsert.slice(i, i + 500));
+      if (upsertErr) throw upsertErr;
+    }
+
     if(mode === 'replace') {
-      // Delete all existing rows
-      const { error: delErr } = await supabase.from('inventory').delete().neq('id', 'dummy_nonexistent');
-      if (delErr) throw delErr;
-
-      // Insert new rows in chunks
-      const chunks = [];
-      for (let i = 0; i < csvParsedData.length; i += 500) {
-        chunks.push(csvParsedData.slice(i, i + 500));
-      }
-      for (const chunk of chunks) {
-        const rows = chunk.map(row => {
-          const newId = crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15);
-          return {
-            id: newId,
-            ...cleanItemRowData(row),
-            _updatedAt: new Date().toISOString(),
-            _device: DEVICE_ID,
-            _updatedBy: getCurrentUserName()
-          };
-        });
-        const { error: insertErr } = await supabase.from('inventory').insert(rows);
-        if (insertErr) throw insertErr;
-      }
-    } else {
-      // Merge: get existing ids
-      const { data: existing, error: getErr } = await supabase.from('inventory').select('id, Part ID');
-      if (getErr) throw getErr;
-
-      const byPartId = new Map();
-      existing.forEach(d => {
-        const pid = (d['Part ID']||'').trim().toLowerCase();
-        if(pid) byPartId.set(pid, d.id);
-      });
-
-      const toUpsert = [];
-      for (const row of csvParsedData) {
-        const pid = (row['Part ID']||'').trim().toLowerCase();
-        if(!pid) continue;
-        const existingId = byPartId.get(pid);
-        const newId = existingId || (crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15));
-        toUpsert.push({
-          id: newId,
-          ...cleanItemRowData(row),
-          _updatedAt: new Date().toISOString(),
-          _device: DEVICE_ID,
-          _updatedBy: getCurrentUserName()
-        });
-      }
-
-      // Upsert in chunks
-      const chunks = [];
-      for (let i = 0; i < toUpsert.length; i += 500) {
-        chunks.push(toUpsert.slice(i, i + 500));
-      }
-      for (const chunk of chunks) {
-        const { error: upsertErr } = await supabase.from('inventory').upsert(chunk);
-        if (upsertErr) throw upsertErr;
+      const removeIds = existing.map(d => d.id).filter(id => !keepIds.has(id));
+      for (let i = 0; i < removeIds.length; i += 100) {
+        const { error: delErr } = await supabase.from('inventory').delete().in('id', removeIds.slice(i, i + 100));
+        if (delErr) throw delErr;
       }
     }
-    
+
     const csvUndoPayload = { action: 'csv_upload', mode, count: csvParsedData.length };
     await insertLog({
       type: 'add',
@@ -4987,9 +5034,12 @@ window.confirmCSVUpload = async () => {
 
     invalidateLogsCache();
     localStorage.setItem('csvUploaded','1');
-    updateHomeStats();
+    await fetchItems(false);
     toast(`${mode==='replace'?'แทนที่':'Merge'} ${csvParsedData.length} รายการสำเร็จ`,'success');
-  } catch(e){ toast('Upload Error: '+e.message,'error'); setSyncing('error'); }
+  } catch(e){
+    toast('Upload Error: '+e.message+' — ข้อมูลเดิมไม่ถูกลบ ตรวจสอบรายการแล้วลองใหม่','error'); setSyncing('error');
+    fetchItems(false).catch(() => {});   // show whatever was written before the failure
+  }
   finally { document.getElementById('loadingOverlay').style.display='none'; btn.classList.remove('btn-loading'); }
 };
 
@@ -5051,8 +5101,7 @@ window.confirmClearAllData = async () => {
 
     invalidateLogsCache();
     localStorage.removeItem('csvUploaded');
-    items = [];
-    updateHomeStats();
+    await fetchItems(false);
     toast('ล้างข้อมูลเรียบร้อย','warn');
   } catch(e){ toast('Error: '+e.message,'error'); setSyncing('error'); }
   finally { document.getElementById('loadingOverlay').style.display = 'none'; btn.classList.remove('btn-loading'); }
@@ -5098,7 +5147,7 @@ window.confirmClearAllLogs = async () => {
 const uz = document.getElementById('uploadZone');
 uz.addEventListener('dragover', e=>{ e.preventDefault(); uz.style.borderColor='var(--agc-blue)'; });
 uz.addEventListener('dragleave', ()=>{ uz.style.borderColor=''; });
-uz.addEventListener('drop', e=>{ e.preventDefault(); uz.style.borderColor=''; const f=e.dataTransfer.files[0]; if(f&&f.name.endsWith('.csv')){ document.getElementById('csvFileInput').files; handleCSVUpload({target:{files:[f],value:''}}); } });
+uz.addEventListener('drop', e=>{ e.preventDefault(); uz.style.borderColor=''; const f=e.dataTransfer.files[0]; if(!f) return; if(!canPerform('uploadCSV')){ toast('บัญชีนี้ไม่มีสิทธิ์นำเข้า CSV','error'); return; } if(/\.csv$/i.test(f.name)) handleCSVUpload({target:{files:[f],value:''}}); else toast('รองรับเฉพาะไฟล์ .csv','error'); });
 
 // ===== TOAST =====
 window.toast = (msg, type='success') => {
@@ -5528,7 +5577,7 @@ function getReorderSuggestion(r) {
   return qty > 0 ? qty : 0;
 }
 function escapeHtml(v) {
-  return String(v ?? '').replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 }
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -5622,7 +5671,7 @@ window.applyFilters = () => {
   const stock = document.getElementById('stockFilter')?.value || '';
   // Everything except the multi-value filters; the panel reuses it to count what each option would give.
   advCorePass = r => {
-    if (cat && getDisplayMainCategory(r) !== cat) return false;
+    if (cat && String(getDisplayMainCategory(r)).trim().toLowerCase() !== cat.toLowerCase()) return false;   // data has both 'Other' and 'OTHER'
     if (dept && (r['Department'] || '').toUpperCase() !== dept) return false;
     if (sub && r['Sub Category'] !== sub) return false;
     if (plant && r['Plant'] !== plant) return false;
@@ -6095,11 +6144,10 @@ function updateAdjPreview() {
   const isZero=adjustMode==='out' && cur<=0 && adjustQty>0;
   const isOver = adjustMode==='out' && adjustQty>cur;
   const isLow = adjustMode==='out' && mn>0 && next<mn && adjustQty>0;
-  const currentLoc = adjustItem['Location'] || '';
-  const currentPos = adjustItem['Position'] || '';
   const newLoc = document.getElementById('adj_location')?.value || '';
   const newPos = buildAdjustPositionValue(false);
-  const moved = (newLoc && newLoc !== currentLoc) || (newPos && newPos !== currentPos);
+  const padPos = v => String(v || '').replace(/-(\d)$/, '-0$1');
+  const moved = (newLoc && newLoc !== _adjInitLoc) || (newPos && padPos(newPos) !== _adjInitPos);
   const warn=document.getElementById('adjWarnMsg');
   document.getElementById('newStockPreview').textContent=next;
   if(warn) {
@@ -6117,11 +6165,16 @@ function updateAdjPreview() {
 window.confirmAdjust = async () => {
   if(!adjustItem) return;
   const cur=parseFloat(adjustItem['Actual'])||0;
-  const newLocation = cleanSingleLine(document.getElementById('adj_location')?.value || adjustItem['Location'] || '');
-  const newPosition = cleanSingleLine(buildAdjustPositionValue(true) || adjustItem['Position'] || '');
   const oldLocation = adjustItem['Location'] || '';
   const oldPosition = adjustItem['Position'] || '';
-  const moved = (newLocation && newLocation !== oldLocation) || (newPosition && newPosition !== oldPosition);
+  // only a value the user changed in this popup is written back; a plain เบิก/รับ never rewrites the stored position
+  const formLoc = cleanSingleLine(document.getElementById('adj_location')?.value || '');
+  const formPos = cleanSingleLine(buildAdjustPositionValue(true));
+  const locChanged = !!formLoc && formLoc !== _adjInitLoc;
+  const posChanged = !!formPos && formPos !== _adjInitPos;
+  const newLocation = locChanged ? formLoc : oldLocation;
+  const newPosition = posChanged ? formPos : oldPosition;
+  const moved = locChanged || posChanged;
   if(adjustMode==='out' && cur<=0 && adjustQty>0){ toast('Stock is zero. Cannot withdraw.','error'); return; }
   if(adjustMode==='out' && adjustQty>cur){ toast('จำนวนเกิน Stock ที่มีอยู่','error'); return; }
   if(adjustQty===0 && !moved){ toast('ไม่มีข้อมูลที่ต้องอัปเดต','warn'); return; }
@@ -6141,8 +6194,8 @@ window.confirmAdjust = async () => {
       item_id: adjustItem._id,
       qty: parseFloat(adjustQty),
       mode: adjustMode,
-      new_loc: newLocation,
-      new_pos: newPosition,
+      new_loc: locChanged ? newLocation : null,
+      new_pos: posChanged ? newPosition : null,
       device_id: DEVICE_ID,
       user_name: getCurrentUserName()
     });
@@ -6154,7 +6207,8 @@ window.confirmAdjust = async () => {
 
     rpcDone = true;
     tx.step(txId, 'กำลังบันทึกประวัติ...');
-    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${next})`;
+    const srvStock = parseFloat(finalActual);   // the server's number: `next` was computed from what this screen last saw
+    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${Number.isFinite(srvStock) ? srvStock : next})`;
     const adjUndoPayload = {
       action: adjustQty===0 ? 'position' : adjustMode,
       qty: parseFloat(adjustQty),
@@ -6278,7 +6332,7 @@ window.openDetail = (id) => {
   const imageUrl = r['imageUrl'] || '';
   const imageHtml = imageUrl ? `
     <div style="text-align:center; margin-bottom:16px;">
-      <img src="${escapeHtml(imageUrl)}" alt="Part Photo" style="max-width:100%; max-height:240px; border-radius:8px; object-fit:contain; cursor:zoom-in; border:1px solid var(--border);" onclick="window.zoomImage('${escapeHtml(imageUrl)}')">
+      <img src="${escapeHtml(imageUrl)}" alt="Part Photo" style="max-width:100%; max-height:240px; border-radius:8px; object-fit:contain; cursor:zoom-in; border:1px solid var(--border);" onclick="window.zoomImage(this.src)">
     </div>
   ` : '';
   document.getElementById('detailBody').innerHTML = imageHtml + `
@@ -6318,7 +6372,7 @@ function updateCSVUploadConfirmState() {
   const input = document.getElementById('csvReplaceConfirmInput');
   const btn = document.getElementById('csvConfirmBtn');
   if(box) box.classList.toggle('show', mode === 'replace');
-  if(btn) btn.disabled = mode === 'replace' && cleanSingleLine(input?.value || '') !== 'REPLACE';
+  if(btn) btn.disabled = !!(csvParsedData && csvParsedData.dups && csvParsedData.dups.length) || (mode === 'replace' && cleanSingleLine(input?.value || '') !== 'REPLACE');
   if (window.lucide) lucide.createIcons();
 }
 window.updateCSVUploadConfirmState = updateCSVUploadConfirmState;
@@ -6342,15 +6396,19 @@ window.executeExportCSV = () => {
   exportRowsToCSV(rowsData, mode);
   closeModal('exportModal');
 };
-function exportRowsToCSV(rowsData, mode='all') {
-  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
-  const rows=[cols.join(',')];
-  rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
+const EXPORT_COLS = ['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
+function downloadInventoryCSV(rowsData, filename) {
+  const rows=[EXPORT_COLS.join(',')];
+  rowsData.forEach(r=>rows.push(EXPORT_COLS.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));
+  a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportRowsToCSV(rowsData, mode='all') {
   const suffix = mode==='filtered'?'Filtered':mode==='low'?'LowStock':'All';
-  a.download=`SPFL_Store_${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  downloadInventoryCSV(rowsData, `SPFL_Store_${suffix}_${new Date().toISOString().slice(0,10)}.csv`);
   
   // Log export action to database
   insertLog({

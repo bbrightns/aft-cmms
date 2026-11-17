@@ -1,0 +1,9 @@
+# Not part of the web app: keep data exports, backups and the DB schema off the public site
+backup/
+*.csv
+supabase_schema.sql
+AGENTS.md
+DESIGN.md
+PRODUCT.md
+server.js
+*.cmd
