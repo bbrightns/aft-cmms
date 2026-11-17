@@ -791,6 +791,55 @@ html, body {
   .quick-filter-chips { padding:10px 12px 0; }
 }
 
+/* Multi-value filter: Sub Cat / Brand / Plant */
+.adv-filter-btn { display:inline-flex; align-items:center; gap:6px; }
+.adv-filter-btn [data-lucide] { width:14px; height:14px; }
+.adv-filter-btn[aria-expanded="true"] { border-color:var(--agc-blue); color:var(--agc-blue); }
+.adv-filter-tags { display:contents; }
+.adv-tag { flex:0 0 auto; display:inline-flex; align-items:center; gap:4px; max-width:260px; padding:5px 6px 5px 11px; border:1.5px solid var(--agc-blue); background:#e8ecf8; color:var(--agc-blue); border-radius:999px; font-family:var(--sans); font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+.adv-tag b { font-weight:600; color:var(--text2); }
+.adv-tag span { overflow:hidden; text-overflow:ellipsis; }
+.adv-tag [data-lucide] { width:13px; height:13px; flex:0 0 auto; }
+.adv-tag:hover { background:#d6ddf2; }
+.adv-tag-clear { flex:0 0 auto; padding:5px 8px; border:none; background:none; color:var(--danger-text); font-family:var(--sans); font-size:12px; font-weight:700; cursor:pointer; text-decoration:underline; white-space:nowrap; }
+.adv-filter-backdrop { display:none; }
+.adv-filter-panel { position:fixed; z-index:300; width:min(720px, calc(100vw - 16px)); background:var(--surface); border:1.5px solid var(--border2); border-radius:12px; box-shadow:var(--shadow-md); display:flex; flex-direction:column; max-height:min(480px, calc(100vh - 24px)); }
+.adv-filter-panel[hidden] { display:none; }
+.adv-filter-panel:focus { outline:none; }
+.adv-filter-cols { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:0; overflow:hidden; flex:1; min-height:0; }
+.adv-filter-col { display:flex; flex-direction:column; min-height:0; padding:12px 12px 8px; border-right:1px solid var(--border); }
+.adv-filter-col:last-child { border-right:none; }
+.adv-filter-col-head { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+.adv-filter-col-title { font-family:var(--mono); font-size:10px; font-weight:700; color:var(--text3); letter-spacing:1px; text-transform:uppercase; }
+.adv-filter-col-clear { border:none; background:none; color:var(--agc-blue); font-family:var(--sans); font-size:11px; font-weight:700; cursor:pointer; padding:2px 4px; visibility:hidden; }
+.adv-filter-col-clear.show { visibility:visible; }
+.adv-filter-search { width:100%; padding:6px 9px; margin-bottom:6px; border:1.5px solid var(--border); border-radius:7px; background:var(--bg2); font-family:var(--sans); font-size:12px; color:var(--text); }
+.adv-filter-search:focus { outline:none; border-color:var(--agc-blue); background:var(--surface); }
+.adv-filter-list { overflow-y:auto; overscroll-behavior:contain; min-height:60px; flex:1; }
+.adv-filter-list label { display:flex; align-items:center; gap:9px; padding:6px 4px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; border-radius:6px; }
+.adv-filter-list label:hover { background:var(--bg2); }
+.adv-filter-list label.zero { color:var(--text3); font-weight:500; }
+.adv-filter-list label.blank .adv-opt-name { font-style:italic; color:var(--text3); }
+.adv-filter-list input { width:16px; height:16px; flex:0 0 auto; accent-color:var(--agc-blue); }
+.adv-opt-name { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.adv-opt-count { font-family:var(--mono); font-size:11px; color:var(--text3); }
+.adv-filter-empty { padding:8px 4px; font-size:12px; color:var(--text3); }
+.adv-filter-foot { display:flex; align-items:center; gap:8px; padding:10px 12px; border-top:1px solid var(--border); }
+.adv-filter-foot .adv-foot-meta { flex:1; font-family:var(--mono); font-size:12px; color:var(--text2); }
+.adv-filter-foot button { padding:8px 14px; border-radius:8px; font-family:var(--sans); font-size:13px; font-weight:700; cursor:pointer; }
+.adv-foot-reset { border:1.5px solid var(--border); background:var(--bg2); color:var(--text2); }
+.adv-foot-done { border:1.5px solid var(--agc-blue); background:var(--agc-blue); color:#fff; }
+.adv-filter-panel button:focus-visible, .adv-filter-panel input:focus-visible, .adv-tag:focus-visible { outline:2px solid var(--agc-blue); outline-offset:2px; }
+@media (max-width: 767px) {
+  .adv-filter-backdrop:not([hidden]) { display:block; position:fixed; inset:0; z-index:299; background:rgba(0,0,0,.4); }
+  .adv-filter-panel { left:0 !important; right:0; top:auto !important; bottom:0; width:100%; max-height:82vh; border-radius:16px 16px 0 0; border-bottom:none; }
+  .adv-filter-cols { grid-template-columns:1fr; overflow-y:auto; }
+  .adv-filter-col { border-right:none; border-bottom:1px solid var(--border); min-height:auto; }
+  .adv-filter-list { max-height:220px; flex:none; }
+  .adv-filter-list label { padding:9px 4px; }
+  .adv-filter-foot { padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
+}
+
 
 /* Adjust modal: location / position */
 .adjust-location-box {
@@ -2465,7 +2514,12 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <span class="quick-filter-sep" aria-hidden="true"></span>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="ELEC" onclick="setQuickFilter('ELEC')">ELEC</button>
       <button class="quick-filter-chip" data-filter-group="dept" data-chip="MECH" onclick="setQuickFilter('MECH')">MECH</button>
+      <span class="quick-filter-sep" aria-hidden="true"></span>
+      <button type="button" class="quick-filter-chip adv-filter-btn" id="advFilterBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="advFilterPanel" onclick="toggleAdvFilter(event)"><i data-lucide="sliders-horizontal"></i> Filter <span class="chip-count adv-filter-badge" id="advFilterBadge" hidden>0</span></button>
+      <span class="adv-filter-tags" id="advFilterTags"></span>
     </div>
+    <div class="adv-filter-backdrop" id="advFilterBackdrop" hidden onclick="closeAdvFilter()"></div>
+    <div class="adv-filter-panel" id="advFilterPanel" role="dialog" aria-label="ตัวกรองเพิ่มเติม" tabindex="-1" hidden></div>
     <div class="search-result-meta" id="searchResultMeta">Showing 0 / 0 items</div>
     <div class="tabs">
       <div class="tab active" onclick="setTab('inventory',this)">Inventory</div>
@@ -3045,6 +3099,15 @@ const ALL_SUB_CATEGORIES = [...new Set(Object.values(CAT_MAP).flat())].sort((a,b
 // ===== STATE =====
 let items = [];
 let filteredItems = [];
+// Multi-value filter state (Sub Cat / Brand / Plant); logic lives next to applyFilters().
+const ADV_FIELDS = [
+  { key: 'sub',   col: 'Sub Category', label: 'Sub Cat' },
+  { key: 'brand', col: 'Brand',        label: 'Brand' },
+  { key: 'plant', col: 'Plant',        label: 'Plant' },
+];
+const advSel = { sub: new Set(), brand: new Set(), plant: new Set() };
+const advSearch = { sub: '', brand: '', plant: '' };
+let advCorePass = () => true;
 let sortCol = 'Part ID', sortAsc = false;
 let adjustItem = null, adjustMode = 'out', adjustQty = 1;
 let editItemId = null, deleteItemId = null;
@@ -3230,6 +3293,7 @@ window.goInventory = () => {
   activeStockFilter = 'all';
   activeDeptFilter = '';
   ['catFilter','departmentFilter','subCatFilter','plantFilter','stockFilter'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  ADV_FIELDS.forEach(f => { advSel[f.key].clear(); advSearch[f.key] = ''; });
   updateQuickFilterChipUI();
   applyFilters();
   updateStats();
@@ -5495,7 +5559,7 @@ function emptyStateHtml(scope='inventory') {
   return `<div class="empty"><div class="empty-icon"><i data-lucide="package-search" style="width:36px;height:36px"></i></div><p>ไม่พบรายการที่ค้นหา</p><p style="font-size:12px;color:var(--text3);margin-top:6px">ลองค้นด้วย Brand, Model, Location หรือ Position</p>${canPerform('addEdit') ? `<button class="empty-action-btn" onclick="openAddModal()"><i data-lucide="plus" style="width:14px;height:14px"></i> เพิ่มรายการใหม่</button>` : ''}</div>`;
 }
 function updateQuickFilterChipUI() {
-  document.querySelectorAll('.quick-filter-chip').forEach(btn => {
+  document.querySelectorAll('.quick-filter-chip[data-filter-group]').forEach(btn => {
     const chip = btn.dataset.chip;
     const group = btn.dataset.filterGroup;
     const active = group === 'stock'
@@ -5575,7 +5639,8 @@ window.applyFilters = () => {
   const sub = document.getElementById('subCatFilter')?.value || '';
   const plant = document.getElementById('plantFilter')?.value || '';
   const stock = document.getElementById('stockFilter')?.value || '';
-  filteredItems = items.filter(r => {
+  // Everything except the multi-value filters; the panel reuses it to count what each option would give.
+  advCorePass = r => {
     if (cat && getDisplayMainCategory(r) !== cat) return false;
     if (dept && (r['Department'] || '').toUpperCase() !== dept) return false;
     if (sub && r['Sub Category'] !== sub) return false;
@@ -5588,9 +5653,148 @@ window.applyFilters = () => {
       if (!hay.includes(q)) return false;
     }
     return true;
-  });
+  };
+  filteredItems = items.filter(r => advCorePass(r) && advPass(r));
   doSort(); renderTable(); renderCards(); updateStats();
+  renderAdvFilterTags();
+  if (advPanelOpen()) renderAdvFilterLists();
 };
+
+/* ---- Multi-value filter (Sub Cat / Brand / Plant) ----
+   Values are matched trimmed + upper-cased, so "Keyence", "KEYENCE " and "keyence" are one option.
+   Inside a field the picks are OR (KEYENCE or OMRON); across fields and with the chips/search it is AND.
+   Each field's option counts ignore that field's own picks, so ticking a 2nd brand never shows 0. */
+const advNorm = v => String(v ?? '').trim().replace(/\s+/g, ' ').toUpperCase();
+const advLabel = k => k === '' ? '(ไม่ระบุ)' : k;
+function advPass(r, skipKey) {
+  for (const f of ADV_FIELDS) {
+    if (f.key === skipKey || !advSel[f.key].size) continue;
+    if (!advSel[f.key].has(advNorm(r[f.col]))) return false;
+  }
+  return true;
+}
+function advActiveCount() { return ADV_FIELDS.reduce((n, f) => n + advSel[f.key].size, 0); }
+function advPanelOpen() { const p = document.getElementById('advFilterPanel'); return p && !p.hidden; }
+
+function renderAdvFilterTags() {
+  const box = document.getElementById('advFilterTags');
+  const badge = document.getElementById('advFilterBadge');
+  const btn = document.getElementById('advFilterBtn');
+  const n = advActiveCount();
+  if (badge) { badge.textContent = n; badge.hidden = n === 0; }
+  if (btn) btn.classList.toggle('group-active', n > 0);
+  if (!box) return;
+  const tags = ADV_FIELDS.filter(f => advSel[f.key].size).map(f => {
+    const vals = [...advSel[f.key]].map(advLabel);
+    const text = vals.length > 2 ? `${vals[0]} +${vals.length - 1}` : vals.join(', ');
+    return `<button type="button" class="adv-tag" onclick="clearAdvField('${f.key}')" title="${escapeHtml(f.label + ': ' + vals.join(', '))} — คลิกเพื่อล้าง" aria-label="ล้างตัวกรอง ${escapeHtml(f.label)}"><b>${f.label}:</b><span>${escapeHtml(text)}</span><i data-lucide="x"></i></button>`;
+  });
+  if (tags.length) tags.push(`<button type="button" class="adv-tag-clear" onclick="clearAdvField()">ล้างทั้งหมด</button>`);
+  box.innerHTML = tags.join('');
+  refreshIcons();
+}
+
+window.clearAdvField = (key) => {
+  ADV_FIELDS.forEach(f => { if (!key || f.key === key) { advSel[f.key].clear(); advSearch[f.key] = ''; } });
+  if (advPanelOpen()) document.querySelectorAll('#advFilterPanel .adv-filter-search').forEach(i => { if (!key || i.dataset.advKey === key) i.value = ''; });
+  applyFilters();
+};
+
+function renderAdvFilterShell() {
+  const p = document.getElementById('advFilterPanel');
+  p.innerHTML = `<div class="adv-filter-cols">${ADV_FIELDS.map(f => `
+    <div class="adv-filter-col">
+      <div class="adv-filter-col-head"><span class="adv-filter-col-title" id="advTitle-${f.key}">${f.label}</span><button type="button" class="adv-filter-col-clear" data-adv-clear="${f.key}">ล้าง</button></div>
+      ${f.key === 'plant' ? '' : `<input type="search" class="adv-filter-search" data-adv-key="${f.key}" placeholder="ค้นหา ${f.label}..." value="${escapeHtml(advSearch[f.key])}" aria-label="ค้นหา ${f.label}">`}
+      <div class="adv-filter-list" data-adv-list="${f.key}" role="group" aria-labelledby="advTitle-${f.key}"></div>
+    </div>`).join('')}</div>
+    <div class="adv-filter-foot"><span class="adv-foot-meta" id="advFootMeta"></span><button type="button" class="adv-foot-reset" data-adv-clear="">ล้างทั้งหมด</button><button type="button" class="adv-foot-done" onclick="closeAdvFilter()">เสร็จ</button></div>`;
+  p.querySelectorAll('.adv-filter-search').forEach(inp => inp.addEventListener('input', () => {
+    advSearch[inp.dataset.advKey] = inp.value; renderAdvFilterLists();
+  }));
+  p.querySelectorAll('[data-adv-clear]').forEach(b => b.addEventListener('click', () => clearAdvField(b.dataset.advClear || undefined)));
+  p.addEventListener('change', e => {
+    const cb = e.target.closest('input[data-adv-val]');
+    if (!cb) return;
+    const set = advSel[cb.dataset.advField];
+    cb.checked ? set.add(cb.dataset.advVal) : set.delete(cb.dataset.advVal);
+    applyFilters();   // re-renders the lists with fresh counts
+  });
+}
+
+function renderAdvFilterLists() {
+  const p = document.getElementById('advFilterPanel');
+  if (!p) return;
+  const core = items.filter(advCorePass);
+  ADV_FIELDS.forEach(f => {
+    const list = p.querySelector(`[data-adv-list="${f.key}"]`);
+    if (!list) return;
+    // Counts reflect every other filter, so the list narrows as you filter (pick ELEC → only ELEC brands count).
+    const counts = new Map();
+    core.forEach(r => { if (advPass(r, f.key)) { const k = advNorm(r[f.col]); counts.set(k, (counts.get(k) || 0) + 1); } });
+    advSel[f.key].forEach(k => { if (!counts.has(k)) counts.set(k, 0); });   // a pick never disappears
+    const s = advNorm(advSearch[f.key]);
+    const opts = [...counts.entries()]
+      .filter(([k, c]) => (c > 0 || advSel[f.key].has(k)) && (!s || k.includes(s) || advSel[f.key].has(k)))
+      .sort((a, b) => (advSel[f.key].has(b[0]) - advSel[f.key].has(a[0])) || (a[0] === '') - (b[0] === '') || a[0].localeCompare(b[0]));
+    const scroll = list.scrollTop;
+    const focusVal = document.activeElement?.closest?.(`[data-adv-list="${f.key}"]`) ? document.activeElement.dataset.advVal : null;
+    list.innerHTML = opts.length ? opts.map(([k, c]) => `<label class="${c ? '' : 'zero'} ${k === '' ? 'blank' : ''}"><input type="checkbox" data-adv-field="${f.key}" data-adv-val="${escapeHtml(k)}" ${advSel[f.key].has(k) ? 'checked' : ''}><span class="adv-opt-name" title="${escapeHtml(advLabel(k))}">${escapeHtml(advLabel(k))}</span><span class="adv-opt-count">${c}</span></label>`).join('')
+      : `<div class="adv-filter-empty">${s ? 'ไม่พบ' : 'ไม่มีรายการ'}</div>`;
+    list.scrollTop = scroll;
+    if (focusVal != null) [...list.querySelectorAll('input')].find(i => i.dataset.advVal === focusVal)?.focus();
+    p.querySelector(`[data-adv-clear="${f.key}"]`)?.classList.toggle('show', advSel[f.key].size > 0);
+  });
+  const meta = document.getElementById('advFootMeta');
+  if (meta) meta.textContent = `${filteredItems.length} / ${items.length} items`;
+}
+
+function positionAdvFilter() {
+  const p = document.getElementById('advFilterPanel'), btn = document.getElementById('advFilterBtn');
+  if (!p || p.hidden || window.innerWidth < 768) return;
+  const r = btn.getBoundingClientRect();
+  p.style.top = Math.min(r.bottom + 6, window.innerHeight - p.offsetHeight - 8) + 'px';
+  p.style.left = Math.max(8, Math.min(r.left, window.innerWidth - p.offsetWidth - 8)) + 'px';
+}
+window.closeAdvFilter = () => {
+  const p = document.getElementById('advFilterPanel');
+  if (!p || p.hidden) return;
+  p.hidden = true;
+  document.getElementById('advFilterBackdrop').hidden = true;
+  const btn = document.getElementById('advFilterBtn');
+  btn?.setAttribute('aria-expanded', 'false');
+};
+window.toggleAdvFilter = (e) => {
+  e.stopPropagation();
+  if (advPanelOpen()) { closeAdvFilter(); return; }
+  if (typeof closeColPicker === 'function') closeColPicker();
+  const p = document.getElementById('advFilterPanel');
+  renderAdvFilterShell();
+  p.hidden = false;
+  document.getElementById('advFilterBackdrop').hidden = false;
+  document.getElementById('advFilterBtn').setAttribute('aria-expanded', 'true');
+  renderAdvFilterLists();
+  positionAdvFilter();
+  // Desktop: focus the first search box. Mobile: don't, or the keyboard covers the sheet.
+  if (window.innerWidth >= 768) p.querySelector('.adv-filter-search, input')?.focus({ preventScroll: true });
+  else p.focus({ preventScroll: true });
+};
+document.addEventListener('click', e => {
+  if (!advPanelOpen()) return;
+  if (e.composedPath().some(n => n.id === 'advFilterPanel' || n.id === 'advFilterBtn')) return;
+  closeAdvFilter();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && advPanelOpen()) { e.preventDefault(); closeAdvFilter(); document.getElementById('advFilterBtn')?.focus(); }
+});
+window.addEventListener('resize', positionAdvFilter);
+document.addEventListener('scroll', e => {
+  // Desktop popover is anchored to the button: page scroll closes it (like the column picker). Mobile is a sheet.
+  if (!advPanelOpen() || window.innerWidth < 768) return;
+  const t = e.target;
+  if (t && t.nodeType === 1 && t.closest('#advFilterPanel')) return;
+  closeAdvFilter();
+}, true);
 
 function renderTable() {
   const tbody = document.getElementById('tableBody');
