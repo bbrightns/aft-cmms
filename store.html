@@ -3090,6 +3090,9 @@ const CAT_MAP = {
   "Pneumatics & Fluid": ["Air Regulator","Butterfly Valve","Cylinder","Fitting","Pressure Gauge","Regulator","Solenoid Valve","Solenoid valve"]
 };
 
+// Columns of the inventory table that the app reads/writes (CSV import and undo only ever touch these).
+const INV_COLUMNS = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','CLASS','imageUrl'];
+
 const SUB_TO_MAIN_CATEGORY = Object.entries(CAT_MAP).reduce((acc,[main,subs]) => {
   subs.forEach(sub => acc[sub.toLowerCase()] = main);
   return acc;
@@ -3880,6 +3883,39 @@ function getUndoData(log) {
   return null;
 }
 
+// ----- Which log rows may be undone -----
+// A row can be undone once. The undo itself is written as a new row carrying undoOf = <original id>;
+// that row is not undoable (no undo-of-undo chains), and system rows (CSV import, clear all, export) never are.
+const UNDOABLE_TYPES = new Set(['in', 'out', 'edit', 'add', 'delete']);
+let _undoneIds = new Set();
+function isUndoRow(l) {
+  const u = getUndoData(l);
+  return !!(u && u.undoOf != null) || /Undo:/.test(l.msg || '');
+}
+function undoneLogIds(logs) {
+  const s = new Set();
+  (logs || []).forEach(l => {
+    const u = getUndoData(l);
+    if (u && u.undoOf != null) { s.add(String(u.undoOf)); return; }
+    const m = /Undo:/.test(l.msg || '') ? /ย้อนกลับจาก Log #(\d+)/.exec(l.note || '') : null;   // rows written before undoOf existed
+    if (m) s.add(m[1]);
+  });
+  return s;
+}
+function undoBlockReason(log) {
+  const type = log.type || (log.partId === 'SYSTEM' ? 'system' : 'edit');
+  if (!log.partId || log.partId === 'SYSTEM' || !UNDOABLE_TYPES.has(type)) return 'รายการของระบบไม่สามารถย้อนกลับได้';
+  if (isUndoRow(log)) return 'รายการนี้เป็นการย้อนกลับอยู่แล้ว ไม่สามารถย้อนซ้ำได้';
+  if (_undoneIds.has(String(log.id))) return 'รายการนี้ถูกย้อนกลับไปแล้ว';
+  return '';
+}
+async function isLogAlreadyUndone(logId) {   // asks the server too: another device may have undone it, or it scrolled out of the last 200 rows
+  try {
+    const { data, error } = await supabase.from('logs').select('id').like('note', `%"undoOf":"${logId}"%`).limit(1);
+    return !error && Array.isArray(data) && data.length > 0;
+  } catch (e) { return false; }
+}
+
 const FIELD_LABELS_TH = {
   'Actual': 'Stock',
   'Min': 'Min',
@@ -4000,7 +4036,8 @@ function logRowHtml(l, idx) {
     </div>
     <div class="lg-side">
       <div><div class="lg-who">${escapeHtml(user)}</div><div class="lg-time">${escapeHtml(when.time)}</div></div>
-      <button type="button" class="lg-undo" data-id="${escapeHtml(String(l.id))}" onclick="confirmUndoLog(this.dataset.id)" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>
+      ${undoBlockReason(l) ? (_undoneIds.has(String(l.id)) ? '<span style="font-size:11px;color:var(--text3);white-space:nowrap">ย้อนกลับแล้ว</span>' : '')
+        : `<button type="button" class="lg-undo" data-id="${escapeHtml(String(l.id))}" onclick="confirmUndoLog(this.dataset.id)" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>`}
     </div>
   </article>`;
 }
@@ -4028,6 +4065,7 @@ window.toggleLogDetail = (btn) => {
 
 function renderLog(logs) {
   _logsRendered = logs || [];
+  _undoneIds = undoneLogIds(_logsRendered);
   const el = document.getElementById('logList');
   if (!el) return;
   const countEl = document.getElementById('logCount');
@@ -4065,6 +4103,8 @@ window.confirmUndoLog = (logId) => {
     toast('ไม่พบข้อมูล Log นี้', 'error');
     return;
   }
+  const blocked = undoBlockReason(log);
+  if (blocked) { toast(blocked, 'warn'); return; }
   pendingUndoLogId = logId;
   
   const undoData = getUndoData(log);
@@ -4123,198 +4163,167 @@ window.executeUndoLog = async () => {
     toast('ไม่พบข้อมูล Log', 'error');
     return;
   }
-
+  pendingUndoLogId = null;   // one run per confirmation
   closeModal('undoModal');
+  const blocked = undoBlockReason(log);
+  if (blocked) { toast(blocked, 'warn'); return; }
+
   const btn = document.getElementById('confirmUndoBtn');
   if (btn) btn.classList.add('btn-loading');
   setSyncing('syncing');
 
+  // every undo row carries undoOf, in undo_data and (for databases without that column) in the note
+  const writeUndoLog = (type, partId, msg, noteText, payload) => {
+    const full = { ...payload, undoOf: String(log.id) };
+    return insertLog({
+      type, partId, msg,
+      note: noteText + '\n__UNDO_DATA__:' + JSON.stringify(full),
+      undo_data: full,
+      device: DEVICE_ID,
+      user: getCurrentUserName()
+    });
+  };
+  const qtyOf = (undoData) => {
+    let qty = undoData?.qty;
+    if (!qty) {
+      const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
+      qty = match ? parseFloat(match[0]) : 1;
+    }
+    return parseFloat(qty);
+  };
+
   try {
+    if (await isLogAlreadyUndone(log.id)) throw new Error('รายการนี้ถูกย้อนกลับไปแล้ว');
+
     const undoData = getUndoData(log);
     const type = log.type || (log.partId === 'SYSTEM' ? 'system' : 'edit');
     const partId = log.partId;
+    let warnAfter = '';
 
-    if (type === 'out') {
-      let qty = undoData?.qty;
-      if (!qty) {
-        const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
-        qty = match ? parseFloat(match[0]) : 1;
-      }
+    if (type === 'out' || type === 'in') {
+      const qty = qtyOf(undoData);
       const item = items.find(x => x['Part ID'] === partId);
       if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
+      const back = type === 'out' ? 'in' : 'out';
 
       const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
         item_id: item._id,
-        qty: parseFloat(qty),
-        mode: 'in',
-        new_loc: null,
-        new_pos: null,
-        device_id: DEVICE_ID,
-        user_name: getCurrentUserName()
-      });
-      if (rpcErr) throw rpcErr;
-
-      await insertLog({
-        type: 'in',
-        partId: partId,
-        msg: `↩️ Undo: คืน Stock เบิกของ ${qty} pcs`,
-        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'in', qty, partId, itemId: item._id }),
-        undo_data: { action: 'in', qty, partId, itemId: item._id },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
-
-    } else if (type === 'in') {
-      let qty = undoData?.qty;
-      if (!qty) {
-        const match = (log.msg || '').match(/(\d+(?:\.\d+)?)\s*pcs/i) || (log.msg || '').match(/\d+/);
-        qty = match ? parseFloat(match[0]) : 1;
-      }
-      const item = items.find(x => x['Part ID'] === partId);
-      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
-
-      const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
-        item_id: item._id,
-        qty: parseFloat(qty),
-        mode: 'out',
+        qty,
+        mode: back,
         new_loc: null,
         new_pos: null,
         device_id: DEVICE_ID,
         user_name: getCurrentUserName()
       });
       if (rpcErr) {
-        if (rpcErr.message.includes('OVER_STOCK') || rpcErr.message.includes('ZERO_STOCK')) {
-          const curActual = parseFloat(item['Actual']) || 0;
-          const newActual = Math.max(0, curActual - qty);
-          const { error: upErr } = await supabase.from('inventory').update({ "Actual": String(newActual), _updatedAt: new Date().toISOString() }).eq('id', item._id);
-          if (upErr) throw upErr;
-        } else {
-          throw rpcErr;
-        }
+        // Not enough stock left to take the received quantity back out (some was withdrawn since).
+        // Never force it: the log would say "-qty" while the stock moved by less.
+        if (/OVER_STOCK|ZERO_STOCK/.test(rpcErr.message || '')) throw new Error(`Stock ปัจจุบันเหลือน้อยกว่า ${qty} pcs (มีการเบิกหลังจากรับของรายการนี้) จึงย้อนกลับไม่ได้`);
+        throw rpcErr;
       }
 
-      await insertLog({
-        type: 'out',
-        partId: partId,
-        msg: `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
-        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'out', qty, partId, itemId: item._id }),
-        undo_data: { action: 'out', qty, partId, itemId: item._id },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog(back, partId,
+        back === 'in' ? `↩️ Undo: คืน Stock เบิกของ ${qty} pcs` : `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
+        `ย้อนกลับจาก Log #${log.id} (${log.msg})`,
+        { action: back, qty, partId, itemId: item._id });
 
     } else if (type === 'edit') {
       const item = items.find(x => x['Part ID'] === partId);
       if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
 
-      let restoreData = {};
-      if (undoData && undoData.before) {
-        restoreData = { ...undoData.before };
-        delete restoreData._id;
-        delete restoreData.id;
+      // Restore ONLY the fields that edit changed. Writing the whole old row back also rolled Stock back,
+      // wiping every เบิก/รับ made after the edit.
+      const NOT_RESTORED = new Set(['_id', 'id', '_updatedAt', '_device', '_updatedBy', 'Part ID']);
+      const restoreData = {};
+      const editedTo = {};   // what the edit set each field to
+      if (undoData && undoData.action === 'position') {
+        restoreData['Location'] = undoData.oldLocation || '';
+        restoreData['Position'] = undoData.oldPosition || '';
+      } else if (undoData && undoData.before) {
+        const before = undoData.before, after = undoData.after || {};
+        Object.keys(after).forEach(k => {
+          if (NOT_RESTORED.has(k)) return;
+          if (String(before[k] ?? '') !== String(after[k] ?? '')) { restoreData[k] = before[k] ?? ''; editedTo[k] = after[k] ?? ''; }
+        });
       } else {
         const cleanNote = log.note ? log.note.split('__UNDO_DATA__:')[0] : '';
-        const lines = cleanNote.split('\n').filter(Boolean);
-        lines.forEach(line => {
-          if (line.includes('->') || line.includes('→')) {
-            const sep = line.includes('->') ? '->' : '→';
-            const parts = line.split(':');
-            const field = (parts[0] || '').trim();
-            const valRest = parts.slice(1).join(':');
-            const oldVal = (valRest.split(sep)[0] || '').trim();
-            if (field) {
-              restoreData[field] = oldVal === '—' ? '' : oldVal;
-            }
-          }
+        cleanNote.split('\n').filter(Boolean).forEach(line => {
+          const sep = line.includes('->') ? '->' : (line.includes('→') ? '→' : null);
+          const colon = line.indexOf(':');
+          if (!sep || colon <= 0) return;
+          const field = line.slice(0, colon).trim();
+          if (!INV_COLUMNS.includes(field) || NOT_RESTORED.has(field)) return;   // only real columns
+          const [oldPart, ...newParts] = line.slice(colon + 1).split(sep);
+          const norm = v => { v = (v || '').trim(); return v === '—' ? '' : v; };
+          restoreData[field] = norm(oldPart);
+          editedTo[field] = norm(newParts.join(sep));
         });
       }
-
-      if (Object.keys(restoreData).length === 0) {
-        throw new Error('ไม่พบข้อมูลเดิมสำหรับย้อนกลับ');
+      // Stock goes back only if nothing touched it since the edit
+      if ('Actual' in restoreData && 'Actual' in editedTo && String(item['Actual'] ?? '') !== String(editedTo['Actual'])) {
+        delete restoreData['Actual'];
+        warnAfter = 'Stock ไม่ถูกย้อน เพราะมีการเบิก/รับหลังการแก้ไขนั้น';
       }
+      if (Object.keys(restoreData).length === 0) {
+        throw new Error(warnAfter ? 'มีการเบิก/รับหลังการแก้ไขนี้ จึงย้อน Stock กลับไม่ได้' : 'ไม่พบข้อมูลเดิมสำหรับย้อนกลับ');
+      }
+      const diffNote = Object.keys(restoreData).map(k =>
+        k === 'imageUrl' ? 'imageUrl: — → รูปเดิม'
+          : `${k}: ${cleanSingleLine(item[k] ?? '') || '—'} → ${cleanSingleLine(restoreData[k]) || '—'}`).join('\n');
 
-      restoreData._updatedAt = new Date().toISOString();
-      restoreData._device = DEVICE_ID;
-      restoreData._updatedBy = getCurrentUserName();
-
-      const { error: upErr } = await supabase.from('inventory').update(restoreData).eq('id', item._id);
+      const { data: updRows, error: upErr } = await supabase.from('inventory')
+        .update({ ...restoreData, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
+        .eq('id', item._id).select('id');
       if (upErr) throw upErr;
+      if (!updRows || !updRows.length) throw new Error('ไม่พบรายการนี้ในระบบแล้ว หรือบัญชีนี้ไม่มีสิทธิ์แก้ไข');
 
-      await insertLog({
-        type: 'edit',
-        partId: partId,
-        msg: `↩️ Undo: คืนค่าข้อมูลก่อนแก้ไข`,
-        note: `ย้อนกลับจาก Log #${log.id}` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'edit', partId, itemId: item._id, before: item, after: restoreData }),
-        undo_data: { action: 'edit', partId, itemId: item._id, before: item, after: restoreData },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog('edit', partId, `↩️ Undo: คืนค่าข้อมูลก่อนแก้ไข`,
+        `ย้อนกลับจาก Log #${log.id}\n${diffNote}`,
+        { action: 'edit', partId, itemId: item._id });
 
     } else if (type === 'add') {
       const item = items.find(x => x['Part ID'] === partId);
-      if (item) {
-        const { error: delErr } = await supabase.from('inventory').delete().eq('id', item._id);
-        if (delErr) throw delErr;
-      }
+      if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบแล้ว (อาจถูกลบไปก่อนหน้านี้)`);
+      const { error: delErr } = await supabase.from('inventory').delete().eq('id', item._id);
+      if (delErr) throw delErr;
 
-      await insertLog({
-        type: 'delete',
-        partId: partId,
-        msg: `↩️ Undo: ลบรายการที่เพิ่มเข้ามา`,
-        note: `ย้อนกลับจาก Log #${log.id} (${log.msg})` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'delete', partId, itemId: item ? item._id : null, deletedItem: item }),
-        undo_data: { action: 'delete', partId, itemId: item ? item._id : null, deletedItem: item },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog('delete', partId, `↩️ Undo: ลบรายการที่เพิ่มเข้ามา`,
+        `ย้อนกลับจาก Log #${log.id} (${log.msg})`,
+        { action: 'delete', partId, itemId: item._id, deletedItem: item });
 
     } else if (type === 'delete') {
-      let restoreItem = undoData?.deletedItem;
-      if (!restoreItem) {
-        restoreItem = {
-          id: crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15),
-          "Part ID": partId,
-          "Brand": "Restored Item",
-          "Description": "กู้คืนจาก Log #" + log.id,
-          "Actual": "0",
-          _updatedAt: new Date().toISOString(),
-          _device: DEVICE_ID,
-          _updatedBy: getCurrentUserName()
-        };
-      } else {
-        delete restoreItem._id;
-      }
+      // needs the saved copy of the row; without it there is nothing real to restore
+      const saved = undoData?.deletedItem;
+      if (!saved || !saved['Part ID']) throw new Error('Log นี้ไม่มีสำเนาข้อมูลของรายการที่ถูกลบ จึงกู้คืนไม่ได้');
+      if (items.some(x => x['Part ID'] === saved['Part ID'])) throw new Error(`มี Part ID: ${saved['Part ID']} อยู่ในระบบแล้ว`);
+      const restoreItem = { id: saved.id || saved._id || crypto.randomUUID() };
+      INV_COLUMNS.forEach(c => { if (saved[c] !== undefined) restoreItem[c] = saved[c]; });
+      Object.assign(restoreItem, { _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() });
 
       const { error: insErr } = await supabase.from('inventory').insert([restoreItem]);
       if (insErr) throw insErr;
 
-      await insertLog({
-        type: 'add',
-        partId: partId,
-        msg: `↩️ Undo: กู้คืนรายการที่ถูกลบ`,
-        note: `ย้อนกลับจาก Log #${log.id}` + `\n__UNDO_DATA__:` + JSON.stringify({ action: 'add', partId, itemId: restoreItem.id, itemData: restoreItem }),
-        undo_data: { action: 'add', partId, itemId: restoreItem.id, itemData: restoreItem },
-        device: DEVICE_ID,
-        user: getCurrentUserName()
-      });
+      await writeUndoLog('add', partId, `↩️ Undo: กู้คืนรายการที่ถูกลบ`,
+        `ย้อนกลับจาก Log #${log.id}`,
+        { action: 'add', partId, itemId: restoreItem.id });
 
     } else {
-      toast('รายการประเภทนี้ไม่สามารถย้อนกลับได้', 'warn');
-      setSyncing('live');
-      return;
+      throw new Error('รายการประเภทนี้ไม่สามารถย้อนกลับได้');
     }
 
     await fetchItems(false);
     invalidateLogsCache();
     await loadLogs(true);
+    setSyncing('live');
     toast('ย้อนกลับรายการเรียบร้อยแล้ว', 'success');
+    if (warnAfter) toast(warnAfter, 'warn');
   } catch (err) {
-    toast('เกิดข้อผิดพลาดในการ Undo: ' + err.message, 'error');
-    setSyncing('error');
+    toast('ย้อนกลับไม่สำเร็จ: ' + err.message, 'error');
+    setSyncing(navigator.onLine ? 'live' : 'error');
   } finally {
     if (btn) btn.classList.remove('btn-loading');
   }
 };
-
 
 function getItemChangeSummary(oldItem, newData) {
   if (!oldItem) return '';
