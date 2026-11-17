@@ -97,6 +97,9 @@ html { scroll-behavior: smooth; }
 
 /* ACTION PAGE */
 .action-page { padding: 20px; max-width: 500px; margin: 0 auto; }
+.val-page { padding: 20px; max-width: 720px; margin: 0 auto; font-family: var(--sans); }
+.val-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin: 0 0 16px; color: var(--text); }
+.val-title svg { width: 22px; height: 22px; color: var(--agc-blue); }
 .action-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .action-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
 .qa-search-wrap { position: relative; margin-bottom: 10px; }
@@ -2403,6 +2406,16 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
 
+    <!--stock value: on demand only, no figure on the Home screen-->
+    <button class="home-sec-btn" style="margin-bottom:16px" onclick="goValue()">
+      <div class="home-sec-icon" style="background:#eff6ff;color:#001F6B"><i data-lucide="wallet" style="width:20px;height:20px"></i></div>
+      <div class="home-sec-info">
+        <div class="home-sec-title">มูลค่าคลัง</div>
+        <div class="home-sec-sub">ON-HAND STOCK VALUE</div>
+      </div>
+      <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
+    </button>
+
     <!-- Upload zone — shown only when no data -->
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFileInput').click()">
       <div class="icon"><i data-lucide="upload-cloud" style="width:32px;height:32px"></i></div>
@@ -2481,6 +2494,10 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 </div>
 
 <!-- INVENTORY PAGE -->
+<div id="pageValue" style="display:none">
+  <div class="val-page" id="valPage"></div>
+</div>
+
 <div id="pageInventory" style="display:none">
   <div class="inv-page">
     <div class="stats-bar" id="statsBar"></div>
@@ -3243,7 +3260,7 @@ async function loadLogs(force = false) {
 
 // ===== PAGES =====
 function showPage(id) {
-  ['pageHome','pageAction','pageInventory'].forEach(p => {
+  ['pageHome','pageAction','pageValue','pageInventory'].forEach(p => {
     document.getElementById(p).style.display = 'none';
   });
   document.body.classList.remove('inv-scroll-compact');
@@ -3257,6 +3274,7 @@ function showPage(id) {
 }
 
 window.goHome = () => { showPage('pageHome'); updateHomeStats(); };
+window.goValue = () => { showPage('pageValue'); renderValuePage(); window.scrollTo(0, 0); };
 
 window.goAction = (mode) => {
   qaMode = mode; qaSelectedItem = null; qaQty = 1;
@@ -5553,6 +5571,12 @@ function stockValueSummary(rows) {
     if (Number.isFinite(v)) { priced++; value += v; }
   });
   return { value, stocked, priced, missing: stocked - priced };
+}
+function renderValuePage() {
+  const box = document.getElementById('valPage');
+  if (!box) return;
+  box.innerHTML = '<h2 class="val-title"><i data-lucide="wallet"></i> มูลค่าคลัง</h2>';
+  refreshIcons();
 }
 function getReorderSuggestion(r) {
   const a = getActualNumber(r?.['Actual']);
