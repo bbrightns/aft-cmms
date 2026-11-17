@@ -5595,6 +5595,7 @@ window.goInventoryWithFilters = (stockFilter='all', deptFilter=null) => {
 
   activeStockFilter = stockFilter || 'all';
   if (deptFilter !== null) activeDeptFilter = deptFilter || '';
+  ADV_FIELDS.forEach(f => { advSel[f.key].clear(); advSearch[f.key] = ''; });   // Home stat counts assume no Brand/Sub Cat picks
 
   const sf = document.getElementById('stockFilter');
   const df = document.getElementById('departmentFilter');
@@ -5713,13 +5714,16 @@ function renderAdvFilterShell() {
     advSearch[inp.dataset.advKey] = inp.value; renderAdvFilterLists();
   }));
   p.querySelectorAll('[data-adv-clear]').forEach(b => b.addEventListener('click', () => clearAdvField(b.dataset.advClear || undefined)));
-  p.addEventListener('change', e => {
-    const cb = e.target.closest('input[data-adv-val]');
-    if (!cb) return;
-    const set = advSel[cb.dataset.advField];
-    cb.checked ? set.add(cb.dataset.advVal) : set.delete(cb.dataset.advVal);
-    applyFilters();   // re-renders the lists with fresh counts
-  });
+  if (!p.dataset.bound) {   // the panel element persists across opens: bind once
+    p.dataset.bound = '1';
+    p.addEventListener('change', e => {
+      const cb = e.target.closest('input[data-adv-val]');
+      if (!cb) return;
+      const set = advSel[cb.dataset.advField];
+      cb.checked ? set.add(cb.dataset.advVal) : set.delete(cb.dataset.advVal);
+      applyFilters();   // re-renders the lists with fresh counts
+    });
+  }
 }
 
 function renderAdvFilterLists() {
@@ -5736,7 +5740,7 @@ function renderAdvFilterLists() {
     const s = advNorm(advSearch[f.key]);
     const opts = [...counts.entries()]
       .filter(([k, c]) => (c > 0 || advSel[f.key].has(k)) && (!s || k.includes(s) || advSel[f.key].has(k)))
-      .sort((a, b) => (advSel[f.key].has(b[0]) - advSel[f.key].has(a[0])) || (a[0] === '') - (b[0] === '') || a[0].localeCompare(b[0]));
+      .sort((a, b) => ((a[0] === '') - (b[0] === '')) || a[0].localeCompare(b[0]));   // stable A→Z: ticking never moves rows under the cursor
     const scroll = list.scrollTop;
     const focusVal = document.activeElement?.closest?.(`[data-adv-list="${f.key}"]`) ? document.activeElement.dataset.advVal : null;
     list.innerHTML = opts.length ? opts.map(([k, c]) => `<label class="${c ? '' : 'zero'} ${k === '' ? 'blank' : ''}"><input type="checkbox" data-adv-field="${f.key}" data-adv-val="${escapeHtml(k)}" ${advSel[f.key].has(k) ? 'checked' : ''}><span class="adv-opt-name" title="${escapeHtml(advLabel(k))}">${escapeHtml(advLabel(k))}</span><span class="adv-opt-count">${c}</span></label>`).join('')
