@@ -3100,7 +3100,7 @@ let filteredItems = [];
 // `fixed` fields have a set list of options tested by a predicate; the others list the column's own values.
 const ADV_FIELDS = [
   { key: 'status', label: 'Status', fixed: [
-    ['ok',      'In Stock',     r => stockStatus(r['Actual'], r['Min']) === 'ok'],
+    ['ok',      'In Stock',     r => getActualNumber(r['Actual']) > 0],   // qty > 0 (Low items included); exact complement of No Stock
     ['low',     'Low',          r => stockStatus(r['Actual'], r['Min']) === 'low'],
     ['nostock', 'No Stock',     r => isNoStockItem(r)],
     ['nopos',   'ไม่มีตำแหน่ง', r => isStockedWithoutPosition(r)],
