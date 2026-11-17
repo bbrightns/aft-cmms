@@ -5518,6 +5518,42 @@ function isLowStockItem(r) {
   const m = getActualNumber(r?.['Min']);
   return Number.isFinite(a) && Number.isFinite(m) && m > 0 && a < m;
 }
+// ===== STOCK VALUE (on-hand qty × COST) =====
+// COST is free text in the DB ("5,300", "฿25", "set", ""). Anything that is not a positive number counts as "no price".
+function parseCost(v) {
+  const s = String(v ?? '').replace(/฿|,|\s|THB|baht|บาท/gi, '');
+  if (!/^\d+(\.\d+)?$/.test(s)) return NaN;
+  const n = parseFloat(s);
+  return n > 0 ? n : NaN;
+}
+function onhandQty(r) {
+  const n = getActualNumber(r?.['Actual']);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+// NaN = stocked but unpriced (unknown value, must not be summed as 0); 0 = nothing on hand.
+function itemValue(r) {
+  const q = onhandQty(r);
+  if (!q) return 0;
+  return q * parseCost(r?.['COST']);
+}
+function isMissingCost(r) { return onhandQty(r) > 0 && !Number.isFinite(parseCost(r?.['COST'])); }
+function fmtBaht(n) { return '฿' + Math.round(n).toLocaleString('en-US'); }
+function fmtBahtShort(n) {
+  if (n >= 1e6) return '฿' + (n / 1e6).toFixed(2) + 'M';
+  if (n >= 1e5) return '฿' + Math.round(n / 1e3) + 'K';
+  return fmtBaht(n);
+}
+// Totals for any list of rows: value is summed over priced rows only, so always show it with `priced/stocked`.
+function stockValueSummary(rows) {
+  let value = 0, stocked = 0, priced = 0;
+  rows.forEach(r => {
+    if (!onhandQty(r)) return;
+    stocked++;
+    const v = itemValue(r);
+    if (Number.isFinite(v)) { priced++; value += v; }
+  });
+  return { value, stocked, priced, missing: stocked - priced };
+}
 function getReorderSuggestion(r) {
   const a = getActualNumber(r?.['Actual']);
   const m = getActualNumber(r?.['Min']);
