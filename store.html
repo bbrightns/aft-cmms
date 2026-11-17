@@ -143,6 +143,36 @@ html { scroll-behavior: smooth; }
 .val-export { font: inherit; font-size: 14px; font-weight: 700; width: 100%; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 24px; }
 .val-export:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
 .val-export svg { width: 18px; height: 18px; }
+.val-warn-btn { font: inherit; font-size: 14px; font-weight: 700; min-height: 40px; padding: 6px 14px; border-radius: 8px; border: 0; background: var(--agc-blue); color: #fff; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.val-warn-btn svg { width: 16px; height: 16px; }
+.pe-back { padding: 0; margin-bottom: 6px; }
+.pe-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.pe-progress { font-size: 15px; color: var(--text); }
+.pe-progress strong { font-family: var(--mono); }
+.pe-hint { font-size: 13px; line-height: 1.6; color: var(--text2); background: var(--surface2); border: 1.5px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 12px; }
+.pe-row { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+.pe-row.saved { border-color: var(--accent2); background: #f3fbf6; }
+.pe-row[data-busy] { opacity: .6; }
+.pe-meta { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text2); }
+.pe-name { font-size: 16px; font-weight: 700; color: var(--text); margin-top: 2px; overflow-wrap: anywhere; }
+.pe-desc { font-size: 13px; color: var(--text2); margin-top: 2px; overflow-wrap: anywhere; }
+.pe-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.pe-btn { font: inherit; font-size: 14px; font-weight: 700; min-height: 44px; padding: 8px 14px; border-radius: 10px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+.pe-btn:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+.pe-btn svg { width: 16px; height: 16px; }
+.pe-btn.pe-save { background: var(--agc-blue); border-color: var(--agc-blue); color: #fff; }
+.pe-btn[disabled] { opacity: .5; cursor: not-allowed; }
+.pe-entry { flex: 1 1 240px; display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.pe-input-wrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.pe-input-wrap > span { font-size: 12px; font-weight: 600; color: var(--text2); white-space: nowrap; }
+.pe-row input.pe-input { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; font-weight: 700; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 10px; border: 1.5px solid var(--border-strong); background: #fff; color: var(--text); text-align: right; }
+.pe-row input.pe-input:focus { outline: 2px solid var(--agc-blue); outline-offset: 1px; border-color: var(--agc-blue); }
+.pe-row input.pe-input[aria-invalid="true"] { border-color: var(--danger); }
+.pe-done { flex: 1; min-width: 150px; margin-left: auto; display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; color: var(--accent2); text-align: right; }
+.pe-done svg { width: 16px; height: 16px; flex-shrink: 0; }
+.pe-err { font-size: 13px; font-weight: 600; color: var(--danger-text); margin-top: 6px; }
+.pe-err:empty { display: none; }
+.pe-row a:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
 .val-page button:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
 @media (max-width: 480px) { .val-page { padding: 16px 14px 32px; } .val-hero-num { font-size: 30px; } }
 .action-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
@@ -3263,7 +3293,7 @@ async function fetchItems(showConflictBanner = false) {
     applyFilters();
     updateStats();
     updateHomeStats();
-    if (document.getElementById('pageValue').style.display !== 'none') renderValuePage();
+    if (document.getElementById('pageValue').style.display !== 'none' && valView === 'overview') renderValuePage();   // entry view keeps its inputs
     setSyncing('live');
   } catch (err) {
     console.error('Fetch items error:', err);
@@ -3324,7 +3354,7 @@ function showPage(id) {
 }
 
 window.goHome = () => { showPage('pageHome'); updateHomeStats(); };
-window.goValue = () => { showPage('pageValue'); renderValuePage(); window.scrollTo(0, 0); };
+window.goValue = () => { valView = 'overview'; showPage('pageValue'); renderValuePage(); window.scrollTo(0, 0); };
 
 window.goAction = (mode) => {
   qaMode = mode; qaSelectedItem = null; qaQty = 1;
@@ -5646,7 +5676,7 @@ const VAL_DIMS = [
   { col: 'Location',      label: 'Location', adv: 'location' },
 ];
 const VAL_NONE = '(ไม่ระบุ)';
-let valDim = 'Department', valOpenGroup = null;
+let valDim = 'Department', valOpenGroup = null, valView = 'overview';
 function valItemName(r) { return [r['Brand'], r['Model']].map(v => String(v || '').trim()).filter(Boolean).join(' ') || String(r['Description'] || '').trim() || '—'; }
 function valGroups(dim) {
   const map = new Map();
@@ -5672,6 +5702,7 @@ function topValueRows(rows, n) {
 function renderValuePage() {
   const box = document.getElementById('valPage');
   if (!box) return;
+  if (valView === 'entry') { renderPriceEntry(); return; }
   const head = '<h2 class="val-title"><i data-lucide="wallet"></i> มูลค่าคลัง</h2>';
   if (!items.length) {
     box.innerHTML = head + '<div class="val-empty">ยังไม่มีข้อมูลสินค้า</div>';
@@ -5709,7 +5740,7 @@ function renderValuePage() {
       <div class="val-hero-label">มูลค่า on-hand</div>
       <div class="val-hero-num">${fmtBaht(sum.value)}</div>
       <div class="val-hero-cov">คิดจาก <strong>${sum.priced}</strong> / ${sum.stocked} รายการที่มีของ</div>
-      ${sum.missing ? `<div class="val-warn" id="valMissingBox"><i data-lucide="alert-triangle"></i><span>อีก <strong>${sum.missing}</strong> รายการมีของแต่ยังไม่มีราคา มูลค่าจริงจึงสูงกว่านี้</span></div>` : ''}
+      ${sum.missing ? `<div class="val-warn" id="valMissingBox"><i data-lucide="alert-triangle"></i><span>อีก <strong>${sum.missing}</strong> รายการมีของแต่ยังไม่มีราคา มูลค่าจริงจึงสูงกว่านี้</span><button type="button" class="val-warn-btn" data-val-entry>กรอกราคา <i data-lucide="arrow-right"></i></button></div>` : ''}
       <div class="val-note">มูลค่า = จำนวนคงเหลือ × ราคาต่อหน่วยที่บันทึกไว้ (ไม่ใช่ตัวเลขทางบัญชี)</div>
     </section>
     <section class="val-sec">
@@ -5758,6 +5789,204 @@ document.addEventListener('click', e => {
   else if (d.valDetail) openDetail(d.valDetail);
   else if (d.valInv) { const dim = VAL_DIMS.find(x => x.col === valDim); if (dim && dim.adv) valGoInventory(dim.adv, d.valInv); }
   else if ('valExport' in d) exportValueCSV();
+});
+
+// ===== QUICK PRICE ENTRY (stocked items with no price) =====
+// The list is a snapshot taken on entry: a saved row stays put (✓ + Undo) instead of jumping away under the cursor.
+const PE_PAGE = 30, PE_HIGH_PRICE = 500000;
+let peIds = [], peDept = '', peShown = PE_PAGE;
+const peSaved = new Map();     // itemId -> { old, now }
+const peConfirmHigh = new Set();
+function peSearchText(r, withDesc) {
+  return [r['Brand'], r['Model'], withDesc ? r['Description'] : ''].map(v => cleanSingleLine(v || '')).filter(Boolean).join(' ');
+}
+function openPriceEntry() {
+  const classRank = r => ({ A: 0, B: 1, C: 2 }[advNorm(r['CLASS'])] ?? 3);
+  peIds = items.filter(isMissingCost)
+    .sort((a, b) => classRank(a) - classRank(b) || onhandQty(b) - onhandQty(a) || String(a['Part ID']).localeCompare(String(b['Part ID'])))
+    .map(r => r._id);
+  peSaved.clear(); peConfirmHigh.clear(); peDept = ''; peShown = PE_PAGE;
+  valView = 'entry';
+  renderPriceEntry();
+  window.scrollTo(0, 0);
+}
+function peRows() {
+  const rows = peIds.map(id => items.find(x => x._id === id)).filter(Boolean);
+  return peDept ? rows.filter(r => advNorm(r['Department']) === peDept) : rows;
+}
+function peRowHtml(r) {
+  const saved = peSaved.get(r._id);
+  const canEdit = canPerform('addEdit');
+  const hasName = !!peSearchText(r, false);
+  const name = hasName ? peSearchText(r, false) : (cleanSingleLine(r['Description'] || '') || '—');
+  const q = peSearchText(r, false) || peSearchText(r, true);
+  const meta = [r['Part ID'], advNorm(r['Department']), r['CLASS'] ? 'Class ' + r['CLASS'] : '', 'คงเหลือ ' + onhandQty(r).toLocaleString('en-US')].filter(Boolean).map(escapeHtml).join(' · ');
+  return `<div class="pe-row ${saved ? 'saved' : ''}" data-pe-row="${escapeHtml(r._id)}">
+    <div class="pe-meta">${meta}</div>
+    <div class="pe-name">${escapeHtml(name)}</div>
+    ${hasName && r['Description'] ? `<div class="pe-desc">${escapeHtml(r['Description'])}</div>` : ''}
+    <div class="pe-actions">
+      <button type="button" class="pe-btn" data-pe-copy="${escapeHtml(r._id)}"><i data-lucide="copy"></i> Copy</button>
+      ${q ? `<a class="pe-btn" target="_blank" rel="noopener noreferrer" href="https://www.google.com/search?q=${encodeURIComponent(q + ' ราคา')}"><i data-lucide="search"></i> Google</a>` : ''}
+      ${saved
+        ? `<span class="pe-done"><i data-lucide="check-circle"></i> ${fmtBaht(saved.now)} × ${onhandQty(r).toLocaleString('en-US')} = ${fmtBaht(saved.now * onhandQty(r))}</span><button type="button" class="pe-btn" data-pe-undo="${escapeHtml(r._id)}">Undo</button>`
+        : `<span class="pe-entry"><label class="pe-input-wrap"><span>฿ / หน่วย</span><input type="text" inputmode="decimal" autocomplete="off" class="pe-input" data-pe-input="${escapeHtml(r._id)}" placeholder="ราคา" aria-label="ราคาต่อ 1 หน่วย ${escapeHtml(r['Part ID'] || '')}" ${canEdit ? '' : 'disabled'}></label>
+           <button type="button" class="pe-btn pe-save" data-pe-save="${escapeHtml(r._id)}" ${canEdit ? '' : 'disabled'}>บันทึก</button></span>`}
+    </div>
+    <div class="pe-err" role="alert"></div>
+  </div>`;
+}
+function peProgressText() {
+  const left = peIds.length - peSaved.size;
+  return `กรอกแล้ว <strong>${peSaved.size}</strong> · เหลือ <strong>${left}</strong>`;
+}
+function renderPriceEntry() {
+  const box = document.getElementById('valPage');
+  const all = peIds.map(id => items.find(x => x._id === id)).filter(Boolean);
+  const depts = [...new Set(all.map(r => advNorm(r['Department'])).filter(Boolean))].sort();
+  const rows = peRows();
+  box.innerHTML = `
+    <button type="button" class="val-link pe-back" data-pe-back><i data-lucide="arrow-left"></i> กลับไปมูลค่าคลัง</button>
+    <h2 class="val-title"><i data-lucide="tag"></i> กรอกราคา</h2>
+    <div class="pe-bar">
+      <div class="pe-progress" id="peProgress">${peProgressText()}</div>
+      ${depts.length > 1 ? `<div class="val-seg" role="group" aria-label="กรองแผนก"><button type="button" class="${peDept ? '' : 'active'}" data-pe-dept="">ทั้งหมด</button>${depts.map(d => `<button type="button" class="${peDept === d ? 'active' : ''}" data-pe-dept="${escapeHtml(d)}">${escapeHtml(d)}</button>`).join('')}</div>` : ''}
+    </div>
+    <div class="pe-hint">${canPerform('addEdit')
+      ? 'กด <strong>Copy</strong> หรือ <strong>Google</strong> เพื่อค้นราคา แล้ววางในช่องได้เลย (วาง “฿5,300.00” ได้ ระบบล้างรูปแบบให้) กด <strong>Enter</strong> เพื่อบันทึกและไปช่องถัดไป · ใส่ราคา<strong>ต่อ 1 หน่วย</strong>ที่นับในสต็อก'
+      : 'บัญชีนี้ดูรายการได้ แต่ไม่มีสิทธิ์กรอกราคา (ต้องเป็น Engineer หรือ Admin)'}</div>
+    ${rows.length ? rows.slice(0, peShown).map(peRowHtml).join('') : '<div class="val-empty">ไม่มีรายการที่ต้องกรอกราคา 🎉</div>'}
+    ${rows.length > peShown ? `<button type="button" class="val-export" data-pe-more>แสดงเพิ่ม (เหลืออีก ${rows.length - peShown})</button>` : ''}`;
+  refreshIcons();
+}
+function peRowEl(id) { return document.querySelector(`#valPage [data-pe-row="${CSS.escape(id)}"]`); }
+function peSetError(id, msg) { const el = peRowEl(id)?.querySelector('.pe-err'); if (el) el.textContent = msg || ''; }
+function peReplaceRow(id) {
+  const el = peRowEl(id), r = items.find(x => x._id === id);
+  if (!el || !r) return;
+  el.outerHTML = peRowHtml(r);
+  const p = document.getElementById('peProgress'); if (p) p.innerHTML = peProgressText();
+  refreshIcons();
+}
+function peFocusNext(id) {
+  const inputs = [...document.querySelectorAll('#valPage .pe-input:not([disabled])')];
+  const rowsEls = [...document.querySelectorAll('#valPage [data-pe-row]')];
+  const idx = rowsEls.findIndex(el => el.dataset.peRow === id);
+  const next = inputs.find(inp => rowsEls.indexOf(inp.closest('[data-pe-row]')) > idx) || inputs[0];
+  if (next) { next.focus(); next.closest('[data-pe-row]').scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+}
+// Writes ONLY the COST field, so it cannot overwrite a withdraw/receive someone else is doing on the same part.
+async function peWriteCost(r, newCost, logMsg) {
+  const old = r['COST'] ?? '';
+  const { error } = await supabase.from('inventory')
+    .update({ 'COST': newCost, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
+    .eq('id', r._id);
+  if (error) throw error;
+  r['COST'] = newCost;
+  const undo = { action: 'edit', partId: r['Part ID'], itemId: r._id, before: { 'COST': old }, after: { 'COST': newCost } };   // before = COST only: undo from the Log restores just the price
+  await insertLog({
+    type: 'edit', partId: r['Part ID'], msg: logMsg,
+    note: `COST: ${cleanSingleLine(old) || '—'} → ${newCost || '—'}\n__UNDO_DATA__:` + JSON.stringify(undo),
+    undo_data: undo, device: DEVICE_ID, user: getCurrentUserName()
+  });
+  invalidateLogsCache();
+}
+async function peSave(id) {
+  const row = peRowEl(id), r = items.find(x => x._id === id);
+  const input = row?.querySelector('.pe-input');
+  if (!row || !r || !input || row.dataset.busy) return;
+  if (!canPerform('addEdit')) { window.toast('บัญชีนี้ไม่มีสิทธิ์กรอกราคา', 'error'); return; }
+  if (!input.value.trim()) { peFocusNext(id); return; }   // Enter on an empty box = skip this one
+  const n = parseCost(input.value);
+  if (!Number.isFinite(n)) { peSetError(id, 'ใส่ราคาเป็นตัวเลขมากกว่า 0 เช่น 5300 หรือ 5,300.50'); input.setAttribute('aria-invalid', 'true'); input.select(); return; }
+  if (n > PE_HIGH_PRICE && !peConfirmHigh.has(id + '|' + n)) {
+    peConfirmHigh.add(id + '|' + n);
+    peSetError(id, `${fmtBaht(n)} ต่อหน่วย สูงผิดปกติ ถ้าถูกต้องกด Enter อีกครั้งเพื่อยืนยัน`);
+    return;
+  }
+  row.dataset.busy = '1'; input.disabled = true; peSetError(id, '');
+  try {
+    const old = r['COST'] ?? '';
+    await peWriteCost(r, String(n), 'กรอกราคา');
+    peSaved.set(id, { old, now: n });
+    peReplaceRow(id);
+    peFocusNext(id);
+  } catch (err) {
+    console.error('Save price error:', err);
+    delete row.dataset.busy; input.disabled = false;
+    peSetError(id, 'บันทึกไม่สำเร็จ ลองอีกครั้ง' + (err?.message ? ` (${err.message})` : ''));
+    input.focus();
+  }
+}
+async function peUndo(id) {
+  const r = items.find(x => x._id === id), saved = peSaved.get(id), row = peRowEl(id);
+  if (!r || !saved || !row || row.dataset.busy) return;
+  row.dataset.busy = '1';
+  try {
+    await peWriteCost(r, saved.old, 'ยกเลิกการกรอกราคา');
+    peSaved.delete(id);
+    peReplaceRow(id);
+    peRowEl(id)?.querySelector('.pe-input')?.focus();
+  } catch (err) {
+    console.error('Undo price error:', err);
+    delete row.dataset.busy;
+    peSetError(id, 'ยกเลิกไม่สำเร็จ ลองอีกครั้ง');
+  }
+}
+async function peCopy(id) {
+  const r = items.find(x => x._id === id); if (!r) return;
+  const text = peSearchText(r, true);
+  try {
+    if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
+    else throw new Error('no clipboard api');
+  } catch (e) {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand('copy'); } catch (e2) {}
+    ta.remove();
+    if (!ok) { window.toast('คัดลอกไม่สำเร็จ', 'error'); return; }
+  }
+  window.toast('คัดลอกแล้ว: ' + (text.length > 40 ? text.slice(0, 40) + '…' : text), 'success');
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest && e.target.closest('#valPage [data-val-entry],#valPage [data-pe-back],#valPage [data-pe-dept],#valPage [data-pe-more],#valPage [data-pe-copy],#valPage [data-pe-save],#valPage [data-pe-undo]');
+  if (!t) return;
+  const d = t.dataset;
+  if ('valEntry' in d) openPriceEntry();
+  else if ('peBack' in d) { valView = 'overview'; renderValuePage(); window.scrollTo(0, 0); }
+  else if ('peDept' in d) { peDept = d.peDept; peShown = PE_PAGE; renderPriceEntry(); }
+  else if ('peMore' in d) {
+    // Keep what is already typed: append the next page instead of re-rendering the list.
+    const more = peRows().slice(peShown, peShown + PE_PAGE); peShown += PE_PAGE;
+    const left = peRows().length - peShown;
+    t.insertAdjacentHTML('beforebegin', more.map(peRowHtml).join(''));
+    if (left > 0) t.textContent = `แสดงเพิ่ม (เหลืออีก ${left})`; else t.remove();
+    refreshIcons();
+  }
+  else if (d.peCopy) peCopy(d.peCopy);
+  else if (d.peSave) peSave(d.peSave);
+  else if (d.peUndo) peUndo(d.peUndo);
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.matches || !e.target.matches('#valPage .pe-input')) return;
+  e.preventDefault();
+  peSave(e.target.dataset.peInput);
+});
+// Pasted prices arrive as "฿5,300.00", "5,300 บาท", "THB 5300": keep only the number.
+document.addEventListener('paste', e => {
+  if (!e.target.matches || !e.target.matches('#valPage .pe-input')) return;
+  const raw = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+  const n = parseCost(raw);
+  if (!Number.isFinite(n)) return;   // not a clean price: let it paste as-is so the person sees what they got
+  e.preventDefault();
+  e.target.value = String(n);
+  e.target.removeAttribute('aria-invalid');
+  peSetError(e.target.dataset.peInput, '');
+});
+document.addEventListener('input', e => {
+  if (!e.target.matches || !e.target.matches('#valPage .pe-input')) return;
+  e.target.removeAttribute('aria-invalid');
+  peSetError(e.target.dataset.peInput, '');
 });
 function getReorderSuggestion(r) {
   const a = getActualNumber(r?.['Actual']);
