@@ -338,3 +338,9 @@ CREATE TABLE IF NOT EXISTS stock_value_snapshots (
 -- If Row Level Security is enabled on your tables, also run:
 -- ALTER TABLE stock_value_snapshots ENABLE ROW LEVEL SECURITY;
 -- CREATE POLICY "stock_value_snapshots authenticated all" ON stock_value_snapshots FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- C. Where the price came from: NULL/'actual' = real purchase price, 'est' = estimate
+--    (web list price × discount factor, or a sibling model's price). The page marks 'est'
+--    prices with "~ประมาณ" and splits them out of the Stock Value total. Typing a price by
+--    hand clears the flag. Import a CSV with columns `Part ID,COST,COST_SOURCE` (Merge) to set it.
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "COST_SOURCE" text;

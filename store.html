@@ -105,6 +105,8 @@ html { scroll-behavior: smooth; }
 .val-hero-label { font-size: 13px; font-weight: 600; color: var(--text2); }
 .val-hero-num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 38px; font-weight: 700; color: var(--agc-blue); line-height: 1.15; margin: 2px 0 4px; overflow-wrap: anywhere; }
 .val-hero-cov { font-size: 14px; color: var(--text); }
+.val-est { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.est-mark { display: inline-block; font-family: inherit; font-size: 11px; font-weight: 600; font-style: italic; color: var(--warn, #b26b00); border: 1px dashed currentColor; border-radius: 6px; padding: 0 5px; line-height: 1.5; vertical-align: middle; white-space: nowrap; }
 .val-warn { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fef3cd; border: 1.5px solid #e9c46a; color: #6b3d00; font-size: 14px; }
 .val-warn svg { width: 18px; height: 18px; flex-shrink: 0; }
 .val-warn > span { flex: 1; min-width: 180px; }
@@ -3220,7 +3222,7 @@ const CAT_MAP = {
 };
 
 // Columns of the inventory table that the app reads/writes (CSV import and undo only ever touch these).
-const INV_COLUMNS = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','CLASS','imageUrl'];
+const INV_COLUMNS = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','CLASS','imageUrl','COST_SOURCE'];
 
 const SUB_TO_MAIN_CATEGORY = Object.entries(CAT_MAP).reduce((acc,[main,subs]) => {
   subs.forEach(sub => acc[sub.toLowerCase()] = main);
@@ -4918,7 +4920,7 @@ window.saveItem = async () => {
     // Stamp the price date only when the price itself changed (and only once the column exists).
     if (costDateSupported()) {
       const prev = editItemId ? items.find(x => x._id === editItemId) : null;
-      if (cleanSingleLine(prev?.['COST'] ?? '') !== cost) data['COST_UPDATED_AT'] = cost ? new Date().toISOString() : null;
+      if (cleanSingleLine(prev?.['COST'] ?? '') !== cost) { data['COST_UPDATED_AT'] = cost ? new Date().toISOString() : null; Object.assign(data, costSourceReset()); }
     }
     if (editItemId) {
       const oldItem = items.find(x => x._id === editItemId);
@@ -5099,7 +5101,9 @@ function parseCSV(text) {
   const seen = new Set(), dups = new Set();
   out.forEach(r => { const k = r['Part ID'].toLowerCase(); if(seen.has(k)) dups.add(r['Part ID']); seen.add(k); });
   out.skipped = all.length - out.length;                                   // rows dropped for an invalid Part ID
-  out.ignoredCols = headers.filter(h => h && !INV_COLUMNS.includes(h));    // columns that are not imported
+  // COST_SOURCE is optional (schema step C): without the column an upsert carrying it would fail the whole import
+  if (!costSourceSupported()) out.forEach(r => { delete r['COST_SOURCE']; });
+  out.ignoredCols = headers.filter(h => h && (!INV_COLUMNS.includes(h) || (h === 'COST_SOURCE' && !costSourceSupported())));    // columns that are not imported
   out.dups = [...dups];                                                    // Part IDs that appear more than once
   if(!out.length) throw new Error('ไม่พบแถวที่มี Part ID ถูกต้อง');
   return out;
@@ -5743,6 +5747,12 @@ function itemValue(r) {
   return q * parseCost(r?.['COST']);
 }
 function isMissingCost(r) { return onhandQty(r) > 0 && !Number.isFinite(parseCost(r?.['COST'])); }
+// COST_SOURCE (optional column, schema step C): 'est' = estimated price (web search / similar model), anything else = real price.
+function costSourceSupported() { return items.length > 0 && 'COST_SOURCE' in items[0]; }
+function isEstCost(r) { return String(r?.['COST_SOURCE'] || '').trim().toLowerCase() === 'est' && Number.isFinite(parseCost(r?.['COST'])); }
+// Typing a price by hand makes it a real price: clear the estimate flag (only once the column exists).
+function costSourceReset() { return costSourceSupported() ? { 'COST_SOURCE': null } : {}; }
+const EST_MARK = '<span class="est-mark" title="ราคาประมาณ (ยังไม่ใช่ราคาซื้อจริง)">~ประมาณ</span>';
 function fmtBaht(n) { return '฿' + Math.round(n).toLocaleString('en-US'); }
 function fmtBahtShort(n) {
   if (n >= 1e6) return '฿' + (n / 1e6).toFixed(2) + 'M';
@@ -5751,14 +5761,14 @@ function fmtBahtShort(n) {
 }
 // Totals for any list of rows: value is summed over priced rows only, so always show it with `priced/stocked`.
 function stockValueSummary(rows) {
-  let value = 0, stocked = 0, priced = 0;
+  let value = 0, stocked = 0, priced = 0, est = 0, estValue = 0;
   rows.forEach(r => {
     if (!onhandQty(r)) return;
     stocked++;
     const v = itemValue(r);
-    if (Number.isFinite(v)) { priced++; value += v; }
+    if (Number.isFinite(v)) { priced++; value += v; if (isEstCost(r)) { est++; estValue += v; } }
   });
-  return { value, stocked, priced, missing: stocked - priced };
+  return { value, stocked, priced, missing: stocked - priced, est, estValue };
 }
 // ===== STOCK VALUE PAGE =====
 const VAL_DIMS = [
@@ -5786,7 +5796,7 @@ function valItemRow(r, sub) {
   const q = onhandQty(r), c = parseCost(r['COST']);
   return `<button type="button" class="val-item" data-val-detail="${escapeHtml(r._id)}">
     <span class="val-item-main"><span class="val-item-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="val-item-name">${escapeHtml(valItemName(r))}</span>${sub ? `<span class="val-item-sub">${escapeHtml(sub)}</span>` : ''}</span>
-    <span class="val-item-num"><span class="val-item-calc">${q.toLocaleString('en-US')} × ${fmtBaht(c)}</span><span class="val-item-val">${fmtBaht(q * c)}</span></span>
+    <span class="val-item-num"><span class="val-item-calc">${q.toLocaleString('en-US')} × ${fmtBaht(c)}${isEstCost(r) ? ' ' + EST_MARK : ''}</span><span class="val-item-val">${fmtBaht(q * c)}</span></span>
   </button>`;
 }
 function topValueRows(rows, n) {
@@ -5929,6 +5939,7 @@ function renderValuePage() {
       <div class="val-hero-label">มูลค่า on-hand</div>
       <div class="val-hero-num">${fmtBaht(sum.value)}</div>
       <div class="val-hero-cov">คิดจาก <strong>${sum.priced}</strong> / ${sum.stocked} รายการที่มีของ</div>
+      ${sum.est ? `<div class="val-est">ในนี้เป็น<strong>ราคาประมาณ</strong> ${fmtBaht(sum.estValue)} (${sum.value ? (sum.estValue / sum.value * 100).toFixed(0) : 0}%) จาก ${sum.est} รายการ · ราคาจริง ${fmtBaht(sum.value - sum.estValue)}</div>` : ''}
       ${sum.missing ? `<div class="val-warn" id="valMissingBox"><i data-lucide="alert-triangle"></i><span>อีก <strong>${sum.missing}</strong> รายการมีของแต่ยังไม่มีราคา มูลค่าจริงจึงสูงกว่านี้</span><button type="button" class="val-warn-btn" data-val-entry>กรอกราคา <i data-lucide="arrow-right"></i></button></div>` : ''}
       <div class="val-note">มูลค่า = จำนวนคงเหลือ × ราคาต่อหน่วยที่บันทึกไว้ (ไม่ใช่ตัวเลขทางบัญชี)</div>
       ${valCostAgeHtml()}
@@ -5957,7 +5968,7 @@ function valGoInventory(advKey, value) {
   applyFilters();
 }
 function exportValueCSV() {
-  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value', ...(costDateSupported() ? ['COST_UPDATED_AT'] : [])];
+  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value', ...(costDateSupported() ? ['COST_UPDATED_AT'] : []), ...(costSourceSupported() ? ['COST_SOURCE'] : [])];
   const rowsData = items.filter(r => onhandQty(r) > 0).sort((a, b) => (itemValue(b) || 0) - (itemValue(a) || 0));
   const cell = v => { v = cleanCSVValue(v); return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v; };
   const lines = [cols.join(',')];
@@ -6082,7 +6093,10 @@ function peFocusNext(id) {
 async function peWriteCost(r, newCost, logMsg) {
   const old = r['COST'] ?? '';
   const stamp = costDateSupported() ? { 'COST_UPDATED_AT': newCost ? new Date().toISOString() : null } : {};
-  const prevStamp = 'COST_UPDATED_AT' in stamp ? { 'COST_UPDATED_AT': r['COST_UPDATED_AT'] ?? null } : {};
+  Object.assign(stamp, costSourceReset());
+  const prevStamp = {};
+  if ('COST_UPDATED_AT' in stamp) prevStamp['COST_UPDATED_AT'] = r['COST_UPDATED_AT'] ?? null;
+  if ('COST_SOURCE' in stamp) prevStamp['COST_SOURCE'] = r['COST_SOURCE'] ?? null;
   const { data: updRows, error } = await supabase.from('inventory')
     .update({ 'COST': newCost, ...stamp, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
     .eq('id', r._id).select('id');
@@ -6509,7 +6523,7 @@ function renderTable() {
       <td data-col="position">${posCell}${reorder?`<div class="reorder-chip">Order ${reorder}</div>`:''}</td>
       <td data-col="stock"><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
-      <td data-col="value">${!onhandQty(r) ? '—' : isMissingCost(r) ? '<span class="pos-empty needs" title="มีของแต่ยังไม่มีราคา">ไม่มีราคา</span>' : fmtBaht(itemValue(r))}</td>
+      <td data-col="value">${!onhandQty(r) ? '—' : isMissingCost(r) ? '<span class="pos-empty needs" title="มีของแต่ยังไม่มีราคา">ไม่มีราคา</span>' : fmtBaht(itemValue(r)) + (isEstCost(r) ? ' ' + EST_MARK : '')}</td>
       <td data-col="actions"><div class="row-actions">
         <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
         ${reorder ? `<button class="btn-icon quote-btn" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
@@ -6977,7 +6991,7 @@ window.openDetail = (id) => {
       <div class="detail-item"><div class="detail-label">Stock</div><div class="detail-val"><span class="stock-dot ${dot}" style="display:inline-block;margin-right:6px;width:8px;height:8px;border-radius:50%"></span>${escapeHtml(r['Actual']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Min / Max</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Min']||'—')} / ${escapeHtml(r['Max']||'—')}</div></div>
       ${reorder ? `<div class="detail-item"><div class="detail-label">Reorder Suggestion</div><div class="detail-val"><span class="reorder-chip">Suggest order: ${reorder} pcs</span></div></div>` : ''}
-      <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}${r['COST'] && r['COST_UPDATED_AT'] ? ` <span style="font-size:12px;color:var(--text2);font-weight:500">(อัปเดต ${escapeHtml(valDateText(r['COST_UPDATED_AT']))})</span>` : ''}</div></div>
+      <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}${isEstCost(r) ? ' ' + EST_MARK : ''}${r['COST'] && r['COST_UPDATED_AT'] ? ` <span style="font-size:12px;color:var(--text2);font-weight:500">(อัปเดต ${escapeHtml(valDateText(r['COST_UPDATED_AT']))})</span>` : ''}</div></div>
       <div class="detail-item"><div class="detail-label">Vendor</div><div class="detail-val">${escapeHtml(r['VENDOR']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Deliver Time</div><div class="detail-val">${escapeHtml(r['DELIVER TIME']||'—')} ${escapeHtml(r['DELIVER UNIT']||'')}</div></div>
       <div class="detail-item"><div class="detail-label">Install Year</div><div class="detail-val">${escapeHtml(r['Install Year']||'—')}</div></div>
@@ -7026,8 +7040,9 @@ window.executeExportCSV = () => {
 };
 const EXPORT_COLS = ['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
 function downloadInventoryCSV(rowsData, filename) {
-  const rows=[EXPORT_COLS.join(',')];
-  rowsData.forEach(r=>rows.push(EXPORT_COLS.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
+  const cols = costSourceSupported() ? [...EXPORT_COLS, 'COST_SOURCE'] : EXPORT_COLS;
+  const rows=[cols.join(',')];
+  rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));
   a.download=filename;
