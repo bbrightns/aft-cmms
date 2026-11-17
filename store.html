@@ -100,6 +100,51 @@ html { scroll-behavior: smooth; }
 .val-page { padding: 20px; max-width: 720px; margin: 0 auto; font-family: var(--sans); }
 .val-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin: 0 0 16px; color: var(--text); }
 .val-title svg { width: 22px; height: 22px; color: var(--agc-blue); }
+.val-empty { padding: 18px 12px; text-align: center; color: var(--text2); font-size: 14px; }
+.val-hero { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 18px 16px; margin-bottom: 16px; }
+.val-hero-label { font-size: 13px; font-weight: 600; color: var(--text2); }
+.val-hero-num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 38px; font-weight: 700; color: var(--agc-blue); line-height: 1.15; margin: 2px 0 4px; overflow-wrap: anywhere; }
+.val-hero-cov { font-size: 14px; color: var(--text); }
+.val-warn { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fef3cd; border: 1.5px solid #e9c46a; color: #6b3d00; font-size: 14px; }
+.val-warn svg { width: 18px; height: 18px; flex-shrink: 0; }
+.val-warn > span { flex: 1; min-width: 180px; }
+.val-note { margin-top: 10px; font-size: 12px; color: var(--text3); }
+.val-sec { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px 14px 8px; margin-bottom: 16px; }
+.val-sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; margin-bottom: 10px; }
+.val-sec-head h3 { font-size: 15px; font-weight: 700; margin: 0; color: var(--text); }
+.val-sec-meta { font-size: 12px; color: var(--text2); }
+.val-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.val-seg button { font: inherit; font-size: 13px; font-weight: 600; min-height: 36px; padding: 6px 12px; border-radius: 8px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; }
+.val-seg button.active { background: var(--agc-blue); border-color: var(--agc-blue); color: #fff; }
+.val-group { border-top: 1px solid var(--border); }
+.val-group-row { font: inherit; width: 100%; background: none; border: 0; cursor: pointer; text-align: left; color: var(--text); padding: 10px 2px; display: grid; grid-template-columns: minmax(0,1fr) auto 44px 18px; gap: 4px 10px; align-items: center; }
+.val-group-row:hover .val-group-label { color: var(--agc-blue); }
+.val-group-label { font-size: 14px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.val-group-val, .val-group-pct { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700; text-align: right; }
+.val-group-pct { color: var(--text2); font-weight: 600; }
+.val-group-chev { width: 16px; height: 16px; color: var(--text3); transition: transform .15s; }
+.val-group.open .val-group-chev { transform: rotate(180deg); }
+.val-bar { grid-column: 1 / -1; height: 8px; border-radius: 4px; background: var(--bg2); overflow: hidden; }
+.val-bar-fill { display: block; height: 100%; min-width: 2px; border-radius: 4px; background: var(--agc-blue); }
+.val-group-cov { grid-column: 1 / -1; font-size: 12px; color: var(--text2); }
+.val-group-cov.warn { color: var(--warn); }
+.val-group-body { padding: 0 0 10px 10px; border-left: 3px solid var(--agc-blue); margin: 0 0 8px 2px; }
+.val-item { font: inherit; width: 100%; background: none; border: 0; border-top: 1px solid var(--border); cursor: pointer; text-align: left; color: var(--text); padding: 9px 2px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.val-sec > .val-item:first-of-type, .val-group-body > .val-item:first-child { border-top: 0; }
+.val-item:hover { background: var(--surface2); }
+.val-item-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.val-item-id { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text2); }
+.val-item-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.val-item-num { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.val-item-calc { font-size: 12px; color: var(--text2); }
+.val-item-val { font-size: 14px; font-weight: 700; }
+.val-link { font: inherit; font-size: 13px; font-weight: 700; color: var(--agc-blue); background: none; border: 0; cursor: pointer; padding: 10px 2px 2px; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
+.val-link svg { width: 14px; height: 14px; }
+.val-export { font: inherit; font-size: 14px; font-weight: 700; width: 100%; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 24px; }
+.val-export:hover { border-color: var(--agc-blue); color: var(--agc-blue); }
+.val-export svg { width: 18px; height: 18px; }
+.val-page button:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
+@media (max-width: 480px) { .val-page { padding: 16px 14px 32px; } .val-hero-num { font-size: 30px; } }
 .action-title { font-size: 20px; font-weight: 700; display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .action-subtitle { font-size: 13px; color: var(--text2); margin-bottom: 18px; }
 .qa-search-wrap { position: relative; margin-bottom: 10px; }
@@ -3214,6 +3259,7 @@ async function fetchItems(showConflictBanner = false) {
     applyFilters();
     updateStats();
     updateHomeStats();
+    if (document.getElementById('pageValue').style.display !== 'none') renderValuePage();
     setSyncing('live');
   } catch (err) {
     console.error('Fetch items error:', err);
@@ -5572,12 +5618,126 @@ function stockValueSummary(rows) {
   });
   return { value, stocked, priced, missing: stocked - priced };
 }
+// ===== STOCK VALUE PAGE =====
+const VAL_DIMS = [
+  { col: 'Department',    label: 'Dept',     adv: 'dept' },
+  { col: 'Plant',         label: 'Plant',    adv: 'plant' },
+  { col: 'Main Category', label: 'Main Cat', get: r => getDisplayMainCategory(r) },
+  { col: 'CLASS',         label: 'Class' },
+  { col: 'Location',      label: 'Location', adv: 'location' },
+];
+const VAL_NONE = '(ไม่ระบุ)';
+let valDim = 'Department', valOpenGroup = null;
+function valItemName(r) { return [r['Brand'], r['Model']].map(v => String(v || '').trim()).filter(Boolean).join(' ') || String(r['Description'] || '').trim() || '—'; }
+function valGroups(dim) {
+  const map = new Map();
+  items.forEach(r => {
+    if (!onhandQty(r)) return;
+    const key = advNorm(dim.get ? dim.get(r) : r[dim.col]) || VAL_NONE;
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(r);
+  });
+  return [...map.entries()].map(([key, rows]) => ({ key, rows, ...stockValueSummary(rows) }))
+    .sort((a, b) => b.value - a.value || b.stocked - a.stocked);
+}
+function valItemRow(r) {
+  const q = onhandQty(r), c = parseCost(r['COST']);
+  return `<button type="button" class="val-item" data-val-detail="${escapeHtml(r._id)}">
+    <span class="val-item-main"><span class="val-item-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="val-item-name">${escapeHtml(valItemName(r))}</span></span>
+    <span class="val-item-num"><span class="val-item-calc">${q.toLocaleString('en-US')} × ${fmtBaht(c)}</span><span class="val-item-val">${fmtBaht(q * c)}</span></span>
+  </button>`;
+}
+function topValueRows(rows, n) {
+  return rows.filter(r => Number.isFinite(itemValue(r)) && itemValue(r) > 0).sort((a, b) => itemValue(b) - itemValue(a)).slice(0, n);
+}
 function renderValuePage() {
   const box = document.getElementById('valPage');
   if (!box) return;
-  box.innerHTML = '<h2 class="val-title"><i data-lucide="wallet"></i> มูลค่าคลัง</h2>';
+  const head = '<h2 class="val-title"><i data-lucide="wallet"></i> มูลค่าคลัง</h2>';
+  if (!items.length) {
+    box.innerHTML = head + '<div class="val-empty">ยังไม่มีข้อมูลสินค้า</div>';
+    refreshIcons(); return;
+  }
+  const sum = stockValueSummary(items);
+  const dim = VAL_DIMS.find(d => d.col === valDim) || VAL_DIMS[0];
+  const groups = valGroups(dim);
+  const maxVal = Math.max(...groups.map(g => g.value), 1);
+  const top = topValueRows(items, 20);
+  const top10 = top.slice(0, 10).reduce((a, r) => a + itemValue(r), 0);
+
+  const groupHtml = groups.map(g => {
+    const open = valOpenGroup === g.key;
+    const pct = sum.value ? (g.value / sum.value * 100) : 0;
+    const gTop = open ? topValueRows(g.rows, 8) : [];
+    return `<div class="val-group ${open ? 'open' : ''}">
+      <button type="button" class="val-group-row" data-val-group="${escapeHtml(g.key)}" aria-expanded="${open}">
+        <span class="val-group-label">${escapeHtml(g.key)}</span>
+        <span class="val-group-val">${fmtBahtShort(g.value)}</span>
+        <span class="val-group-pct">${pct.toFixed(pct < 10 ? 1 : 0)}%</span>
+        <i data-lucide="chevron-down" class="val-group-chev"></i>
+        <span class="val-bar"><span class="val-bar-fill" style="width:${(g.value / maxVal * 100).toFixed(1)}%"></span></span>
+        <span class="val-group-cov ${g.missing ? 'warn' : ''}">มีราคา ${g.priced}/${g.stocked} รายการ${g.missing ? ` · ยังไม่มีราคา ${g.missing}` : ''}</span>
+      </button>
+      ${open ? `<div class="val-group-body">
+        ${gTop.length ? gTop.map(valItemRow).join('') : '<div class="val-empty">ยังไม่มีรายการที่มีราคาในกลุ่มนี้</div>'}
+        ${dim.adv && g.key !== VAL_NONE ? `<button type="button" class="val-link" data-val-inv="${escapeHtml(g.key)}">เปิดกลุ่มนี้ใน Inventory <i data-lucide="arrow-right"></i></button>` : ''}
+      </div>` : ''}
+    </div>`;
+  }).join('');
+
+  box.innerHTML = head + `
+    <section class="val-hero">
+      <div class="val-hero-label">มูลค่า on-hand</div>
+      <div class="val-hero-num">${fmtBaht(sum.value)}</div>
+      <div class="val-hero-cov">คิดจาก <strong>${sum.priced}</strong> / ${sum.stocked} รายการที่มีของ</div>
+      ${sum.missing ? `<div class="val-warn" id="valMissingBox"><i data-lucide="alert-triangle"></i><span>อีก <strong>${sum.missing}</strong> รายการมีของแต่ยังไม่มีราคา มูลค่าจริงจึงสูงกว่านี้</span></div>` : ''}
+      <div class="val-note">มูลค่า = จำนวนคงเหลือ × ราคาต่อหน่วยที่บันทึกไว้ (ไม่ใช่ตัวเลขทางบัญชี)</div>
+    </section>
+    <section class="val-sec">
+      <div class="val-sec-head"><h3>แยกตาม</h3>
+        <div class="val-seg" role="group" aria-label="เลือกมิติ">${VAL_DIMS.map(d => `<button type="button" class="${d.col === dim.col ? 'active' : ''}" data-val-dim="${d.col}" aria-pressed="${d.col === dim.col}">${d.label}</button>`).join('')}</div>
+      </div>
+      ${groupHtml || '<div class="val-empty">ไม่มีรายการที่มีของ</div>'}
+    </section>
+    <section class="val-sec">
+      <div class="val-sec-head"><h3>Top ${top.length} มูลค่าสูงสุด</h3>${sum.value && top.length >= 10 ? `<span class="val-sec-meta">10 อันดับแรก = ${(top10 / sum.value * 100).toFixed(0)}% ของมูลค่ารวม</span>` : ''}</div>
+      ${top.length ? top.map(valItemRow).join('') : '<div class="val-empty">ยังไม่มีรายการที่มีราคา</div>'}
+    </section>
+    <button type="button" class="val-export" data-val-export><i data-lucide="download"></i> Export CSV (พร้อมคอลัมน์ Value)</button>`;
   refreshIcons();
 }
+function valGoInventory(advKey, value) {
+  goInventoryWithFilters('ok', null);
+  advSel[advKey].add(value);
+  applyFilters();
+}
+function exportValueCSV() {
+  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value'];
+  const rowsData = items.filter(r => onhandQty(r) > 0).sort((a, b) => (itemValue(b) || 0) - (itemValue(a) || 0));
+  const cell = v => { v = cleanCSVValue(v); return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v; };
+  const lines = [cols.join(',')];
+  rowsData.forEach(r => lines.push(cols.map(c => {
+    if (c === 'Main Category') return cell(getDisplayMainCategory(r));
+    if (c === 'COST') { const n = parseCost(r['COST']); return Number.isFinite(n) ? String(n) : ''; }   // numeric or blank, so the sheet can sum it
+    if (c === 'Value') { const v = itemValue(r); return Number.isFinite(v) ? String(v) : ''; }
+    return cell(r[c]);
+  }).join(',')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' }));
+  a.download = `SPFL_Store_Value_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  window.toast(`Export ${rowsData.length} รายการ`, 'success');
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest && e.target.closest('#valPage [data-val-dim],#valPage [data-val-group],#valPage [data-val-detail],#valPage [data-val-inv],#valPage [data-val-export]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.valDim) { valDim = d.valDim; valOpenGroup = null; renderValuePage(); }
+  else if (d.valGroup != null && 'valGroup' in d) { valOpenGroup = valOpenGroup === d.valGroup ? null : d.valGroup; renderValuePage(); }
+  else if (d.valDetail) openDetail(d.valDetail);
+  else if (d.valInv) { const dim = VAL_DIMS.find(x => x.col === valDim); if (dim && dim.adv) valGoInventory(dim.adv, d.valInv); }
+  else if ('valExport' in d) exportValueCSV();
+});
 function getReorderSuggestion(r) {
   const a = getActualNumber(r?.['Actual']);
   const m = getActualNumber(r?.['Min']);
