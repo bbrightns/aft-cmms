@@ -354,6 +354,9 @@ table.hc-class [data-col="class"] { display: none; }
 table.hc-location [data-col="location"] { display: none; }
 table.hc-position [data-col="position"] { display: none; }
 table.hc-minmax [data-col="minmax"] { display: none; }
+table.hc-value [data-col="value"] { display: none; }
+td[data-col="value"] { font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+th[data-col="value"] { text-align: right; }
 td[data-col="model"] { max-width: 260px; }
 td[data-col="desc"] { max-width: 300px; }
 #tabInventory table th:first-child, #tabInventory table td:first-child { position: sticky; left: 0; background: var(--bg); box-shadow: 1px 0 0 var(--border); }
@@ -2602,6 +2605,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
           <th data-col="position" onclick="sortBy('Position')">Position <span class="sort-icon">↕</span></th>
           <th data-col="stock" onclick="sortBy('Actual')">Stock <span class="sort-icon">↕</span></th>
           <th data-col="minmax">Min/Max</th>
+          <th data-col="value" onclick="sortBy('Value')" title="จำนวนคงเหลือ × ราคาต่อหน่วย">Value <span class="sort-icon">↕</span></th>
           <th data-col="actions">Actions</th>
         </tr></thead><tbody id="tableBody"></tbody></table>
         <div id="emptyState" class="empty" style="display:none"><div class="empty-icon"><i data-lucide="package-search" style="width:36px;height:36px"></i></div><p>ไม่พบรายการที่ตรงกัน</p></div>
@@ -3528,6 +3532,16 @@ function updateFilterSelectStyles() {
 }
 
 function doSort() {
+  if (sortCol === 'Value') {
+    // Rows without a value (no stock / no price) always sink to the bottom, whichever direction.
+    const val = r => { const v = itemValue(r); return Number.isFinite(v) && v > 0 ? v : null; };
+    filteredItems.sort((a, b) => {
+      const av = val(a), bv = val(b);
+      if (av == null || bv == null) return (av == null) - (bv == null);
+      return sortAsc ? av - bv : bv - av;
+    });
+    return;
+  }
   filteredItems.sort((a,b) => {
     let av = a[sortCol]||'', bv = b[sortCol]||'';
     if (sortCol === 'Actual') { av = parseFloat(av)||-1; bv = parseFloat(bv)||-1; }
@@ -3540,14 +3554,19 @@ function doSort() {
 // ===== INVENTORY COLUMN PICKER =====
 const INV_COLS = [
   ['dept','Dept'],['subcat','Sub Cat'],['brand','Brand'],['model','Model'],['desc','Description'],
-  ['plant','Plant'],['area','Area'],['class','Class'],['location','Location'],['position','Position'],['minmax','Min/Max']
+  ['plant','Plant'],['area','Area'],['class','Class'],['location','Location'],['position','Position'],['minmax','Min/Max'],['value','Value']
 ];
-const INV_COLS_DEFAULT_HIDDEN = ['subcat','area','class'];
+const INV_COLS_DEFAULT_HIDDEN = ['subcat','area','class','value'];
 const INV_COLS_KEY = 'aft_inv_hidden_cols_v1';
 let invHiddenCols = (() => {
   try {
     const saved = JSON.parse(localStorage.getItem(INV_COLS_KEY));
-    if (Array.isArray(saved)) return saved.filter(k => INV_COLS.some(c => c[0] === k));
+    if (Array.isArray(saved)) {
+      // Value was added later: keep it hidden for people who saved their column choice before it existed.
+      if (!localStorage.getItem(INV_COLS_KEY + '_value')) { localStorage.setItem(INV_COLS_KEY + '_value', '1'); if (!saved.includes('value')) saved.push('value'); localStorage.setItem(INV_COLS_KEY, JSON.stringify(saved)); }
+      return saved.filter(k => INV_COLS.some(c => c[0] === k));
+    }
+    localStorage.setItem(INV_COLS_KEY + '_value', '1');
   } catch (e) {}
   return INV_COLS_DEFAULT_HIDDEN.slice();
 })();
@@ -3608,7 +3627,7 @@ document.addEventListener('DOMContentLoaded', applyColumnVisibility);
 applyColumnVisibility();
 
 window.sortBy = (col) => {
-  if (sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+  if (sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc = col !== 'Value'; }   // Value: biggest first
   doSort(); renderTable(); renderCards();
 };
 
@@ -5709,6 +5728,8 @@ function renderValuePage() {
 function valGoInventory(advKey, value) {
   goInventoryWithFilters('ok', null);
   advSel[advKey].add(value);
+  sortCol = 'Value'; sortAsc = false;
+  if (invHiddenCols.includes('value')) { invHiddenCols = invHiddenCols.filter(k => k !== 'value'); saveColumnVisibility(); }   // they came here to look at value
   applyFilters();
 }
 function exportValueCSV() {
@@ -6053,6 +6074,7 @@ function renderTable() {
       <td data-col="position">${posCell}${reorder?`<div class="reorder-chip">Order ${reorder}</div>`:''}</td>
       <td data-col="stock"><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
+      <td data-col="value">${!onhandQty(r) ? '—' : isMissingCost(r) ? '<span class="pos-empty needs" title="มีของแต่ยังไม่มีราคา">ไม่มีราคา</span>' : fmtBaht(itemValue(r))}</td>
       <td data-col="actions"><div class="row-actions">
         <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
         ${reorder ? `<button class="btn-icon quote-btn" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
