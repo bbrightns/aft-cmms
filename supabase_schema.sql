@@ -1,5 +1,14 @@
 -- Supabase Migration Schema
 -- Copy and paste this script into your Supabase SQL Editor (Dashboard > SQL Editor > New Query) and click Run.
+-- The whole script can be run again at any time: every statement is written to be safe on an existing database.
+
+-- Adds a table to the realtime publication unless it is already there (a plain ALTER PUBLICATION fails on a second run).
+CREATE OR REPLACE FUNCTION pg_temp.add_to_realtime(tbl text) RETURNS void LANGUAGE plpgsql AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = tbl) THEN
+    EXECUTE format('ALTER PUBLICATION supabase_realtime ADD TABLE public.%I', tbl);
+  END IF;
+END $$;
 
 -- 1. Create inventory table
 CREATE TABLE IF NOT EXISTS inventory (
@@ -33,7 +42,7 @@ CREATE TABLE IF NOT EXISTS inventory (
 );
 
 -- Enable Realtime for inventory table
-alter publication supabase_realtime add table inventory;
+SELECT pg_temp.add_to_realtime('inventory');
 
 -- 2. Create logs table
 CREATE TABLE IF NOT EXISTS logs (
@@ -52,7 +61,7 @@ CREATE TABLE IF NOT EXISTS logs (
 -- ALTER TABLE logs ADD COLUMN IF NOT EXISTS undo_data jsonb;
 
 -- Enable Realtime for logs table
-alter publication supabase_realtime add table logs;
+SELECT pg_temp.add_to_realtime('logs');
 
 -- 3. Create store_meta table for ID Counter
 CREATE TABLE IF NOT EXISTS store_meta (
@@ -65,7 +74,7 @@ INSERT INTO store_meta (key, current)
 VALUES ('partIdCounter', 0)
 ON CONFLICT (key) DO NOTHING;
 
--- 4. Atomic Function to generate next Part ID (replaces Firestore Transaction safety)
+-- 3a. Atomic Function to generate next Part ID (replaces Firestore Transaction safety)
 CREATE OR REPLACE FUNCTION get_next_part_id()
 RETURNS integer
 LANGUAGE plpgsql
@@ -95,7 +104,7 @@ BEGIN
 END;
 $$;
 
--- 5. Atomic Function to adjust stock (replaces Firestore Transaction safety)
+-- 3b. Atomic Function to adjust stock (replaces Firestore Transaction safety)
 CREATE OR REPLACE FUNCTION adjust_stock_v2(
   item_id text,
   qty double precision,
@@ -111,9 +120,15 @@ AS $$
 DECLARE
   current_actual double precision;
   new_actual double precision;
+  raw_actual text;
 BEGIN
+  -- the page only ever sends 0 or a positive quantity; a negative one would turn "in" into an unchecked withdrawal
+  IF qty IS NULL OR qty < 0 THEN
+    RAISE EXCEPTION 'Quantity must be zero or more';
+  END IF;
+
   -- Lock row for concurrency safety
-  SELECT CAST(COALESCE(NULLIF("Actual", ''), '0') AS double precision) INTO current_actual
+  SELECT btrim(COALESCE("Actual", '')) INTO raw_actual
   FROM inventory
   WHERE id = item_id
   FOR UPDATE;
@@ -121,6 +136,9 @@ BEGIN
   IF NOT FOUND THEN
     RAISE EXCEPTION 'Item not found';
   END IF;
+
+  -- "Actual" is text and a CSV import can put anything in it: treat a non-number as 0 instead of failing the cast
+  current_actual := CASE WHEN raw_actual ~ '^-?[0-9]+(\.[0-9]+)?$' THEN raw_actual::double precision ELSE 0 END;
   
   IF qty = 0 THEN
     new_actual := current_actual;
@@ -193,7 +211,7 @@ CREATE TABLE IF NOT EXISTS pr_import_logs (
   device text
 );
 
-alter publication supabase_realtime add table pr_records;
+SELECT pg_temp.add_to_realtime('pr_records');
 
 -- If RLS is enabled on this project, mirror the policies used for inventory/logs:
 -- ALTER TABLE pr_records ENABLE ROW LEVEL SECURITY;
@@ -210,8 +228,11 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES ('pr-docs', 'pr-docs', false, 10485760, ARRAY['application/pdf', 'image/jpeg', 'image/png'])
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "pr-docs read" ON storage.objects;
 CREATE POLICY "pr-docs read"   ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'pr-docs');
+DROP POLICY IF EXISTS "pr-docs upload" ON storage.objects;
 CREATE POLICY "pr-docs upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'pr-docs');
+DROP POLICY IF EXISTS "pr-docs delete" ON storage.objects;
 CREATE POLICY "pr-docs delete" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'pr-docs');
 
 -- 6. Purchase Request: justification for out-of-plan requests over 50,000 THB (run after section 5)
@@ -250,8 +271,10 @@ CREATE TABLE IF NOT EXISTS pr_approval_log (
 );
 
 ALTER TABLE approval_roles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "approval_roles read" ON approval_roles;
 CREATE POLICY "approval_roles read" ON approval_roles FOR SELECT TO authenticated USING (true);
 ALTER TABLE pr_approval_log ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "pr_approval_log read" ON pr_approval_log;
 CREATE POLICY "pr_approval_log read" ON pr_approval_log FOR SELECT TO authenticated USING (true);
 -- no insert/update/delete policies on purpose: only the trigger below (SECURITY DEFINER) writes the log,
 -- and roles are edited from the Supabase SQL editor.
