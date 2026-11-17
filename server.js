@@ -2,7 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;   // env vars are strings: "3000" + 1 would be "30001"
 const ROOT = __dirname;
 
 const MIME_TYPES = {
@@ -21,10 +21,24 @@ const MIME_TYPES = {
 const server = http.createServer((req, res) => {
   let reqUrl = req.url.split('?')[0];
   if (reqUrl === '/') {
-    reqUrl = '/store.html';
+    reqUrl = '/login.html';   // same as vercel.json
   }
 
-  let filePath = path.join(ROOT, decodeURIComponent(reqUrl));
+  let filePath;
+  try {
+    filePath = path.join(ROOT, decodeURIComponent(reqUrl));
+  } catch (e) {   // malformed %-escape
+    res.writeHead(400, { 'Content-Type': 'text/html; charset=UTF-8' });
+    res.end('<h1>400 Bad Request</h1>');
+    return;
+  }
+  // stay inside the project folder (no /../..) and never serve dot-files such as .git
+  const rel = path.relative(ROOT, filePath);
+  if (rel.startsWith('..') || path.isAbsolute(rel) || rel.split(path.sep).some(s => s.startsWith('.'))) {
+    res.writeHead(404, { 'Content-Type': 'text/html; charset=UTF-8' });
+    res.end('<h1>404 Not Found</h1>');
+    return;
+  }
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
