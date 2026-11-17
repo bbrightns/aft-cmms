@@ -138,6 +138,17 @@ html { scroll-behavior: smooth; }
 .val-item-num { flex-shrink: 0; display: flex; flex-direction: column; align-items: flex-end; font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .val-item-calc { font-size: 12px; color: var(--text2); }
 .val-item-val { font-size: 14px; font-weight: 700; }
+.val-item-sub { font-size: 12px; color: var(--text2); }
+.val-dead-sum { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+.val-dead-num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 24px; font-weight: 700; color: var(--text); }
+.val-sec .val-warn { margin: 0 0 8px; }
+.val-sec .val-note { margin: 8px 0; }
+.val-trend-row { display: grid; grid-template-columns: 64px minmax(0,1fr) 78px 110px; align-items: center; gap: 10px; padding: 7px 2px; border-top: 1px solid var(--border); font-size: 13px; }
+.val-trend-row .val-bar { grid-column: auto; }
+.val-trend-month { font-weight: 700; color: var(--text); }
+.val-trend-val { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; text-align: right; }
+.val-trend-cov { font-size: 12px; color: var(--text2); text-align: right; white-space: nowrap; }
+@media (max-width: 480px) { .val-trend-row { grid-template-columns: 56px minmax(0,1fr) 70px; } .val-trend-cov { grid-column: 2 / -1; } }
 .val-link { font: inherit; font-size: 13px; font-weight: 700; color: var(--agc-blue); background: none; border: 0; cursor: pointer; padding: 10px 2px 2px; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; }
 .val-link svg { width: 14px; height: 14px; }
 .val-export { font: inherit; font-size: 14px; font-weight: 700; width: 100%; min-height: 48px; border-radius: 12px; border: 1.5px solid var(--border-strong); background: var(--surface); color: var(--text); cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 24px; }
@@ -4849,6 +4860,11 @@ window.saveItem = async () => {
     };
 
     tx.step(txId, 'กำลังบันทึกข้อมูล...');
+    // Stamp the price date only when the price itself changed (and only once the column exists).
+    if (costDateSupported()) {
+      const prev = editItemId ? items.find(x => x._id === editItemId) : null;
+      if (cleanSingleLine(prev?.['COST'] ?? '') !== cost) data['COST_UPDATED_AT'] = cost ? new Date().toISOString() : null;
+    }
     if (editItemId) {
       const oldItem = items.find(x => x._id === editItemId);
       const changeNote = getItemChangeSummary(oldItem, data);
@@ -5714,15 +5730,110 @@ function valGroups(dim) {
   return [...map.entries()].map(([key, rows]) => ({ key, rows, ...stockValueSummary(rows) }))
     .sort((a, b) => b.value - a.value || b.stocked - a.stocked);
 }
-function valItemRow(r) {
+function valItemRow(r, sub) {
   const q = onhandQty(r), c = parseCost(r['COST']);
   return `<button type="button" class="val-item" data-val-detail="${escapeHtml(r._id)}">
-    <span class="val-item-main"><span class="val-item-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="val-item-name">${escapeHtml(valItemName(r))}</span></span>
+    <span class="val-item-main"><span class="val-item-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="val-item-name">${escapeHtml(valItemName(r))}</span>${sub ? `<span class="val-item-sub">${escapeHtml(sub)}</span>` : ''}</span>
     <span class="val-item-num"><span class="val-item-calc">${q.toLocaleString('en-US')} × ${fmtBaht(c)}</span><span class="val-item-val">${fmtBaht(q * c)}</span></span>
   </button>`;
 }
 function topValueRows(rows, n) {
   return rows.filter(r => Number.isFinite(itemValue(r)) && itemValue(r) > 0).sort((a, b) => itemValue(b) - itemValue(a)).slice(0, n);
+}
+// --- Optional DB extras: detected / loaded lazily, the page degrades without them ---
+function costDateSupported() { return items.length > 0 && 'COST_UPDATED_AT' in items[0]; }   // select('*') returns the column once the migration has run
+const VAL_CACHE_MS = 5 * 60 * 1000;
+const valPageVisible = () => document.getElementById('pageValue').style.display !== 'none' && valView === 'overview';
+function valMonthsAgo(n) { const d = new Date(); d.setMonth(d.getMonth() - n); return d; }
+function valDateText(v) { const d = new Date(v); return isNaN(d) ? '—' : d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }); }
+
+// Movement = last withdraw per part, read from the log. The log is the only history there is,
+// so "never withdrawn" really means "not withdrawn since the log began" (valMove.since).
+let valMove = null, valMoveLoading = false, valDeadMonths = 12;
+async function loadMovement() {
+  if (valMoveLoading || (valMove && Date.now() - valMove.loadedAt < VAL_CACHE_MS)) return;
+  valMoveLoading = true;
+  try {
+    const lastOut = new Map(), PAGE = 1000;
+    for (let from = 0; from < 50000; from += PAGE) {
+      const { data, error } = await supabase.from('logs').select('partId,ts').eq('type', 'out').not('msg', 'ilike', '%Undo%').order('ts', { ascending: false }).range(from, from + PAGE - 1);
+      if (error) throw error;
+      data.forEach(l => { if (l.partId && !lastOut.has(l.partId)) lastOut.set(l.partId, l.ts); });
+      if (data.length < PAGE) break;
+    }
+    const { data: first, error: e2 } = await supabase.from('logs').select('ts').order('ts', { ascending: true }).limit(1);
+    if (e2) throw e2;
+    valMove = { lastOut, since: first && first[0] && first[0].ts ? new Date(first[0].ts) : null, loadedAt: Date.now() };
+  } catch (err) {
+    console.error('Load movement error:', err);
+    valMove = { error: true, loadedAt: Date.now() };
+  }
+  valMoveLoading = false;
+  if (valPageVisible()) renderValuePage();
+}
+function valDeadHtml() {
+  const seg = `<div class="val-seg" role="group" aria-label="ช่วงเวลา">${[6, 12, 24].map(m => `<button type="button" class="${valDeadMonths === m ? 'active' : ''}" data-val-dead="${m}" aria-pressed="${valDeadMonths === m}">${m} เดือน</button>`).join('')}</div>`;
+  const head = `<div class="val-sec-head"><h3>ของไม่เคลื่อนไหว</h3>${seg}</div>`;
+  if (!valMove) return head + '<div class="val-empty">กำลังอ่านประวัติการเบิก…</div>';
+  if (valMove.error) return head + '<div class="val-empty">อ่านประวัติการเบิกไม่สำเร็จ <button type="button" class="val-link" data-val-retry="move">ลองอีกครั้ง</button></div>';
+  const cutoff = valMonthsAgo(valDeadMonths);
+  const last = r => valMove.lastOut.get(r['Part ID']);
+  const dead = items.filter(r => onhandQty(r) > 0 && !(last(r) && new Date(last(r)) >= cutoff));
+  const sum = stockValueSummary(dead), total = stockValueSummary(items);
+  const top = topValueRows(dead, 15);
+  const shortHistory = !valMove.since || valMove.since > cutoff;
+  return head + `
+    <div class="val-dead-sum"><span class="val-dead-num">${fmtBaht(sum.value)}</span><span>${total.value ? (sum.value / total.value * 100).toFixed(0) + '% ของมูลค่ารวม · ' : ''}${sum.stocked} รายการไม่มีการเบิกใน ${valDeadMonths} เดือน${sum.missing ? ` (ยังไม่มีราคา ${sum.missing})` : ''}</span></div>
+    ${shortHistory ? `<div class="val-warn"><i data-lucide="alert-triangle"></i><span>${valMove.since ? `ประวัติ log เริ่มวันที่ ${valDateText(valMove.since)} ยังไม่ครบ ${valDeadMonths} เดือน` : 'ยังไม่มีประวัติ log'} ตัวเลขนี้จึงรวมของที่อาจแค่ยังไม่ถึงรอบเบิก</span></div>` : ''}
+    ${top.map(r => valItemRow(r, last(r) ? 'เบิกล่าสุด ' + valDateText(last(r)) : 'ไม่เคยเบิก' + (valMove.since ? 'ตั้งแต่ ' + valDateText(valMove.since) : ''))).join('') || '<div class="val-empty">ไม่มีรายการที่มีราคาในกลุ่มนี้</div>'}
+    <div class="val-note">อิงจาก log การเบิกเท่านั้น ของที่เพิ่งรับเข้าหรือเป็นอะไหล่สำรองฉุกเฉินก็จะขึ้นในรายการนี้ด้วย</div>`;
+}
+
+// Monthly snapshot: the current month's row is refreshed whenever someone opens this page.
+let valTrend = null, valTrendLoading = false;
+async function loadTrend() {
+  if (valTrendLoading || (valTrend && Date.now() - valTrend.loadedAt < VAL_CACHE_MS) || !items.length) return;
+  valTrendLoading = true;
+  try {
+    const sum = stockValueSummary(items), now = new Date();
+    const month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+    const { error } = await supabase.from('stock_value_snapshots').upsert({ month, value: Math.round(sum.value), stocked: sum.stocked, priced: sum.priced, updated_at: now.toISOString() });
+    if (error) throw error;
+    const { data, error: e2 } = await supabase.from('stock_value_snapshots').select('*').order('month', { ascending: false }).limit(12);
+    if (e2) throw e2;
+    valTrend = { rows: data || [], loadedAt: Date.now() };
+  } catch (err) {
+    console.warn('Stock value trend unavailable:', err && err.message);
+    valTrend = { unavailable: true, loadedAt: Date.now() };
+  }
+  valTrendLoading = false;
+  if (valPageVisible()) renderValuePage();
+}
+function valTrendHtml() {
+  const head = '<div class="val-sec-head"><h3>แนวโน้มรายเดือน</h3></div>';
+  if (!valTrend) return head + '<div class="val-empty">กำลังโหลด…</div>';
+  if (valTrend.unavailable) return head + '<div class="val-note" style="margin:0 0 8px">ยังไม่เปิดใช้: ต้องรัน SQL ส่วน “Stock Value extras” ท้ายไฟล์ supabase_schema.sql ใน Supabase ก่อน</div>';
+  const rows = valTrend.rows, max = Math.max(...rows.map(r => Number(r.value) || 0), 1);
+  const monthText = m => { const d = new Date(m + '-01T00:00:00'); return isNaN(d) ? m : d.toLocaleDateString('th-TH', { month: 'short', year: '2-digit' }); };
+  return head + rows.map(r => `<div class="val-trend-row">
+      <span class="val-trend-month">${escapeHtml(monthText(r.month))}</span>
+      <span class="val-bar"><span class="val-bar-fill" style="width:${((Number(r.value) || 0) / max * 100).toFixed(1)}%"></span></span>
+      <span class="val-trend-val">${fmtBahtShort(Number(r.value) || 0)}</span>
+      <span class="val-trend-cov">มีราคา ${r.priced}/${r.stocked}</span>
+    </div>`).join('') +
+    `<div class="val-note">${rows.length < 2 ? 'เริ่มเก็บเดือนนี้ จะเห็นแนวโน้มเมื่อมีข้อมูล 2 เดือนขึ้นไป · ' : ''}บันทึกเมื่อมีคนเปิดหน้านี้ เดือนที่ไม่มีใครเปิดจะไม่มีข้อมูล · มูลค่าที่เพิ่มอาจมาจากการกรอกราคาเพิ่ม ให้ดูจำนวน “มีราคา” ประกอบ</div>`;
+}
+function valCostAgeHtml() {
+  if (!costDateSupported()) return '';
+  const cutoff = valMonthsAgo(12);
+  let undated = 0, old = 0;
+  items.forEach(r => {
+    if (!onhandQty(r) || !Number.isFinite(parseCost(r['COST']))) return;
+    const t = r['COST_UPDATED_AT'];
+    if (!t) undated++; else if (new Date(t) < cutoff) old++;
+  });
+  if (!undated && !old) return '';
+  return `<div class="val-note">อายุราคา: ${[old ? `เก่ากว่า 12 เดือน ${old} รายการ` : '', undated ? `ไม่ทราบวันที่ ${undated} รายการ (กรอกก่อนเริ่มเก็บวันที่)` : ''].filter(Boolean).join(' · ')}</div>`;
 }
 function renderValuePage() {
   const box = document.getElementById('valPage');
@@ -5755,7 +5866,7 @@ function renderValuePage() {
         <span class="val-group-cov ${g.missing ? 'warn' : ''}">มีราคา ${g.priced}/${g.stocked} รายการ${g.missing ? ` · ยังไม่มีราคา ${g.missing}` : ''}</span>
       </button>
       ${open ? `<div class="val-group-body">
-        ${gTop.length ? gTop.map(valItemRow).join('') : '<div class="val-empty">ยังไม่มีรายการที่มีราคาในกลุ่มนี้</div>'}
+        ${gTop.length ? gTop.map(r => valItemRow(r)).join('') : '<div class="val-empty">ยังไม่มีรายการที่มีราคาในกลุ่มนี้</div>'}
         ${dim.adv && g.key !== VAL_NONE ? `<button type="button" class="val-link" data-val-inv="${escapeHtml(g.key)}">เปิดกลุ่มนี้ใน Inventory <i data-lucide="arrow-right"></i></button>` : ''}
       </div>` : ''}
     </div>`;
@@ -5768,6 +5879,7 @@ function renderValuePage() {
       <div class="val-hero-cov">คิดจาก <strong>${sum.priced}</strong> / ${sum.stocked} รายการที่มีของ</div>
       ${sum.missing ? `<div class="val-warn" id="valMissingBox"><i data-lucide="alert-triangle"></i><span>อีก <strong>${sum.missing}</strong> รายการมีของแต่ยังไม่มีราคา มูลค่าจริงจึงสูงกว่านี้</span><button type="button" class="val-warn-btn" data-val-entry>กรอกราคา <i data-lucide="arrow-right"></i></button></div>` : ''}
       <div class="val-note">มูลค่า = จำนวนคงเหลือ × ราคาต่อหน่วยที่บันทึกไว้ (ไม่ใช่ตัวเลขทางบัญชี)</div>
+      ${valCostAgeHtml()}
     </section>
     <section class="val-sec">
       <div class="val-sec-head"><h3>แยกตาม</h3>
@@ -5777,10 +5889,13 @@ function renderValuePage() {
     </section>
     <section class="val-sec">
       <div class="val-sec-head"><h3>Top ${top.length} มูลค่าสูงสุด</h3>${sum.value && top.length >= 10 ? `<span class="val-sec-meta">10 อันดับแรก = ${(top10 / sum.value * 100).toFixed(0)}% ของมูลค่ารวม</span>` : ''}</div>
-      ${top.length ? top.map(valItemRow).join('') : '<div class="val-empty">ยังไม่มีรายการที่มีราคา</div>'}
+      ${top.length ? top.map(r => valItemRow(r)).join('') : '<div class="val-empty">ยังไม่มีรายการที่มีราคา</div>'}
     </section>
+    <section class="val-sec">${valDeadHtml()}</section>
+    <section class="val-sec">${valTrendHtml()}</section>
     <button type="button" class="val-export" data-val-export><i data-lucide="download"></i> Export CSV (พร้อมคอลัมน์ Value)</button>`;
   refreshIcons();
+  loadMovement(); loadTrend();   // both no-op while cached or in flight
 }
 function valGoInventory(advKey, value) {
   goInventoryWithFilters('ok', null);
@@ -5790,7 +5905,7 @@ function valGoInventory(advKey, value) {
   applyFilters();
 }
 function exportValueCSV() {
-  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value'];
+  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value', ...(costDateSupported() ? ['COST_UPDATED_AT'] : [])];
   const rowsData = items.filter(r => onhandQty(r) > 0).sort((a, b) => (itemValue(b) || 0) - (itemValue(a) || 0));
   const cell = v => { v = cleanCSVValue(v); return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v; };
   const lines = [cols.join(',')];
@@ -5807,10 +5922,12 @@ function exportValueCSV() {
   window.toast(`Export ${rowsData.length} รายการ`, 'success');
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest && e.target.closest('#valPage [data-val-dim],#valPage [data-val-group],#valPage [data-val-detail],#valPage [data-val-inv],#valPage [data-val-export]');
+  const t = e.target.closest && e.target.closest('#valPage [data-val-dead],#valPage [data-val-retry],#valPage [data-val-dim],#valPage [data-val-group],#valPage [data-val-detail],#valPage [data-val-inv],#valPage [data-val-export]');
   if (!t) return;
   const d = t.dataset;
-  if (d.valDim) { valDim = d.valDim; valOpenGroup = null; renderValuePage(); }
+  if (d.valDead) { valDeadMonths = Number(d.valDead); renderValuePage(); }
+  else if (d.valRetry) { valMove = null; renderValuePage(); }
+  else if (d.valDim) { valDim = d.valDim; valOpenGroup = null; renderValuePage(); }
   else if (d.valGroup != null && 'valGroup' in d) { valOpenGroup = valOpenGroup === d.valGroup ? null : d.valGroup; renderValuePage(); }
   else if (d.valDetail) openDetail(d.valDetail);
   else if (d.valInv) { const dim = VAL_DIMS.find(x => x.col === valDim); if (dim && dim.adv) valGoInventory(dim.adv, d.valInv); }
@@ -5912,11 +6029,12 @@ function peFocusNext(id) {
 // Writes ONLY the COST field, so it cannot overwrite a withdraw/receive someone else is doing on the same part.
 async function peWriteCost(r, newCost, logMsg) {
   const old = r['COST'] ?? '';
+  const stamp = costDateSupported() ? { 'COST_UPDATED_AT': newCost ? new Date().toISOString() : null } : {};
   const { error } = await supabase.from('inventory')
-    .update({ 'COST': newCost, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
+    .update({ 'COST': newCost, ...stamp, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
     .eq('id', r._id);
   if (error) throw error;
-  r['COST'] = newCost;
+  Object.assign(r, { 'COST': newCost }, stamp);
   const undo = { action: 'edit', partId: r['Part ID'], itemId: r._id, before: { 'COST': old }, after: { 'COST': newCost } };   // before = COST only: undo from the Log restores just the price
   await insertLog({
     type: 'edit', partId: r['Part ID'], msg: logMsg,
@@ -5987,7 +6105,7 @@ document.addEventListener('click', e => {
   if (!t) return;
   const d = t.dataset;
   if ('valEntry' in d) openPriceEntry();
-  else if ('peBack' in d) { valView = 'overview'; renderValuePage(); window.scrollTo(0, 0); }
+  else if ('peBack' in d) { valView = 'overview'; if (peSaved.size) valTrend = null; renderValuePage(); window.scrollTo(0, 0); }
   else if ('peDept' in d) { peDept = d.peDept; peShown = PE_PAGE; renderPriceEntry(); }
   else if ('peMore' in d) {
     // Keep what is already typed: append the next page instead of re-rendering the list.
@@ -6800,7 +6918,7 @@ window.openDetail = (id) => {
       <div class="detail-item"><div class="detail-label">Stock</div><div class="detail-val"><span class="stock-dot ${dot}" style="display:inline-block;margin-right:6px;width:8px;height:8px;border-radius:50%"></span>${escapeHtml(r['Actual']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Min / Max</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Min']||'—')} / ${escapeHtml(r['Max']||'—')}</div></div>
       ${reorder ? `<div class="detail-item"><div class="detail-label">Reorder Suggestion</div><div class="detail-val"><span class="reorder-chip">Suggest order: ${reorder} pcs</span></div></div>` : ''}
-      <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}</div></div>
+      <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}${r['COST'] && r['COST_UPDATED_AT'] ? ` <span style="font-size:12px;color:var(--text2);font-weight:500">(อัปเดต ${escapeHtml(valDateText(r['COST_UPDATED_AT']))})</span>` : ''}</div></div>
       <div class="detail-item"><div class="detail-label">Vendor</div><div class="detail-val">${escapeHtml(r['VENDOR']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Deliver Time</div><div class="detail-val">${escapeHtml(r['DELIVER TIME']||'—')} ${escapeHtml(r['DELIVER UNIT']||'')}</div></div>
       <div class="detail-item"><div class="detail-label">Install Year</div><div class="detail-val">${escapeHtml(r['Install Year']||'—')}</div></div>

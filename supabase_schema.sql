@@ -295,3 +295,23 @@ END $$;
 DROP TRIGGER IF EXISTS pr_approval_guard_trg ON pr_records;
 CREATE TRIGGER pr_approval_guard_trg BEFORE INSERT OR UPDATE ON pr_records
   FOR EACH ROW EXECUTE FUNCTION pr_approval_guard();
+
+-- ============================================================
+-- Stock Value extras (store.html > มูลค่าคลัง). Both are optional:
+-- the page works without them and simply hides what it cannot show.
+-- ============================================================
+
+-- A. When was each price last entered/changed (lets the page flag old or undated prices)
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "COST_UPDATED_AT" timestamp with time zone;
+
+-- B. One row per month with the on-hand value at the last time someone opened the Stock Value page
+CREATE TABLE IF NOT EXISTS stock_value_snapshots (
+  month text PRIMARY KEY,             -- 'YYYY-MM'
+  value numeric NOT NULL DEFAULT 0,   -- sum of qty × COST over priced items
+  stocked integer NOT NULL DEFAULT 0, -- items with qty > 0
+  priced integer NOT NULL DEFAULT 0,  -- of those, items that have a price
+  updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
+);
+-- If Row Level Security is enabled on your tables, also run:
+-- ALTER TABLE stock_value_snapshots ENABLE ROW LEVEL SECURITY;
+-- CREATE POLICY "stock_value_snapshots authenticated all" ON stock_value_snapshots FOR ALL TO authenticated USING (true) WITH CHECK (true);
