@@ -4544,8 +4544,12 @@ function getPreviewNextPartId() {
   return `SPFL-C-${String(max + 1).padStart(4, '0')}`;
 }
 
+// Stock as the edit form showed it when it opened. Saving with this value untouched must not write Stock at all,
+// otherwise an edit of e.g. the description overwrites every เบิก/รับ made while the form was open.
+let _editOrigActual = null;
 window.openAddModal = () => {
   editItemId=null;
+  _editOrigActual = null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class','vendor','deliver_unit'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_partid').value = getPreviewNextPartId();
@@ -4595,6 +4599,7 @@ window.openEdit = (id) => {
   setLocationValue(r['Location']||'');
   setPositionValue(r['Position']||'');
   document.getElementById('f_actual').value=r['Actual']||'';
+  _editOrigActual = cleanSingleLine(document.getElementById('f_actual').value);
   document.getElementById('f_min').value=r['Min']||'';
   document.getElementById('f_max').value=r['Max']||'';
   document.getElementById('f_cost').value=r['COST']||'';
@@ -4653,6 +4658,10 @@ window.saveItem = async () => {
     if(!partId){ document.getElementById('err_partid').textContent='จำเป็นต้องระบุ Part ID'; hasError=true; }
   }
   if(!department){ document.getElementById('err_department').textContent='จำเป็นต้องระบุ แผนก'; hasError=true; }
+  const stockTouched = !editItemId || actual !== _editOrigActual;
+  if(stockTouched && actual!=='' && (isNaN(parseFloat(actual))||parseFloat(actual)<0)){
+    document.getElementById('err_actual').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
+  }
   if(min!=='' && (isNaN(parseFloat(min))||parseFloat(min)<0)){
     document.getElementById('err_min').textContent='ต้องเป็นตัวเลข ≥ 0'; hasError=true;
   }
@@ -4742,6 +4751,8 @@ window.saveItem = async () => {
       'imageUrl': uploadedUrl,
       _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName()
     };
+
+    if (!stockTouched) delete data['Actual'];   // Stock was not edited in this form: keep whatever the database has now
 
     tx.step(txId, 'กำลังบันทึกข้อมูล...');
     if (editItemId) {
@@ -4908,15 +4919,25 @@ function parseCSV(text) {
   while(rows.length && rows[rows.length-1].every(v=>!v.trim())) rows.pop();
   if(rows.length < 2) throw new Error('CSV ไม่มีข้อมูล');
   const headers = rows[0].map(h=>h.trim());
-  return rows.slice(1).map(vals => {
+  if(!headers.includes('Part ID')) throw new Error('ไม่พบคอลัมน์ "Part ID" — ไฟล์นี้ไม่ใช่ไฟล์ Export ของ Store');
+  // Only known inventory columns are imported: an extra header (or an "id" column) used to go straight to the database.
+  const all = rows.slice(1).filter(vals => vals.some(v => v.trim())).map(vals => {
     const obj = {};
-    headers.forEach((h,i)=> obj[h] = (vals[i]||'').trim());
+    headers.forEach((h,i)=> { if(INV_COLUMNS.includes(h)) obj[h] = (vals[i]||'').trim(); });
     return obj;
-  }).filter(r => {
+  });
+  const out = all.filter(r => {
     const pid = (r['Part ID']||'').trim();
     // Valid Part ID: non-empty, no whitespace, has at least one digit (filters out anomalies like "Cable side")
     return pid && !/\s/.test(pid) && /\d/.test(pid);
   });
+  const seen = new Set(), dups = new Set();
+  out.forEach(r => { const k = r['Part ID'].toLowerCase(); if(seen.has(k)) dups.add(r['Part ID']); seen.add(k); });
+  out.skipped = all.length - out.length;                                   // rows dropped for an invalid Part ID
+  out.ignoredCols = headers.filter(h => h && !INV_COLUMNS.includes(h));    // columns that are not imported
+  out.dups = [...dups];                                                    // Part IDs that appear more than once
+  if(!out.length) throw new Error('ไม่พบแถวที่มี Part ID ถูกต้อง');
+  return out;
 }
 
 window.handleCSVUpload = (e) => {
@@ -4928,6 +4949,9 @@ window.handleCSVUpload = (e) => {
       document.getElementById('csvPreview').innerHTML = `
         <p style="font-weight:700;margin-bottom:8px">ตรวจพบ <span style="color:var(--agc-blue)">${csvParsedData.length} รายการ</span> จากไฟล์ <span style="font-family:var(--mono)">${escapeHtml(file.name)}</span></p>
         <p>ตัวอย่างแถวแรก: <strong>${escapeHtml((csvParsedData[0]['Brand']||'') + ' ' + (csvParsedData[0]['Model']||''))}</strong> (${escapeHtml(csvParsedData[0]['Part ID']||'')})</p>
+        ${csvParsedData.skipped ? `<p style="color:var(--warn);margin-top:6px">ข้าม ${csvParsedData.skipped} แถว เพราะ Part ID ว่าง / มีช่องว่าง / ไม่มีตัวเลข</p>` : ''}
+        ${csvParsedData.ignoredCols.length ? `<p style="color:var(--text3);margin-top:6px">คอลัมน์ที่ไม่นำเข้า: ${escapeHtml(csvParsedData.ignoredCols.join(', '))}</p>` : ''}
+        ${csvParsedData.dups.length ? `<p style="color:var(--danger);font-weight:700;margin-top:6px">Part ID ซ้ำในไฟล์ ${csvParsedData.dups.length} รายการ (${escapeHtml(csvParsedData.dups.slice(0,5).join(', '))}${csvParsedData.dups.length>5?', ...':''}) — แก้ไฟล์ก่อนจึงจะอัปโหลดได้</p>` : ''}
       `;
       document.getElementById('csvModal').style.display='flex';
       document.querySelector('input[name="csvUploadMode"][value="merge"]')?.click();
@@ -4942,6 +4966,7 @@ window.handleCSVUpload = (e) => {
 
 window.confirmCSVUpload = async () => {
   if(!csvParsedData) return;
+  if(csvParsedData.dups && csvParsedData.dups.length) { toast('ไฟล์มี Part ID ซ้ำ กรุณาแก้ไฟล์ก่อน', 'error'); return; }
   const mode = document.querySelector('input[name="csvUploadMode"]:checked')?.value || 'merge';
   if(mode === 'replace' && cleanSingleLine(document.getElementById('csvReplaceConfirmInput')?.value || '') !== 'REPLACE') {
     toast('กรุณาพิมพ์ REPLACE เพื่อยืนยัน Replace All', 'error');
@@ -4954,67 +4979,40 @@ window.confirmCSVUpload = async () => {
   document.getElementById('loadingOverlay').style.display='flex';
   setSyncing('syncing');
   try {
+    // Both modes write the new rows FIRST, matched to the existing rows by Part ID (ids, photos and history stay attached).
+    // Replace then removes what is not in the file. If anything fails on the way, the old data is still there.
+    const existing = await fetchAllRows('inventory', 'id, "Part ID"');   // the quotes matter: unquoted, the client strips the space
+    const byPartId = new Map();
+    existing.forEach(d => {
+      const pid = (d['Part ID']||'').trim().toLowerCase();
+      if(pid) byPartId.set(pid, d.id);
+    });
+    const stamp = { _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() };
+    const keepIds = new Set();
+    const toUpsert = csvParsedData.map(row => {
+      const id = byPartId.get(row['Part ID'].trim().toLowerCase()) || (crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15));
+      keepIds.add(id);
+      return { id, ...cleanItemRowData(row), ...stamp };
+    });
+
+    if(mode === 'replace' && items.length) {
+      // a copy of what is about to be replaced, saved to this device
+      downloadInventoryCSV(items, `SPFL_Store_Backup_before_replace_${new Date().toISOString().slice(0,19).replace(/[T:]/g,'-')}.csv`);
+    }
+
+    for (let i = 0; i < toUpsert.length; i += 500) {
+      const { error: upsertErr } = await supabase.from('inventory').upsert(toUpsert.slice(i, i + 500));
+      if (upsertErr) throw upsertErr;
+    }
+
     if(mode === 'replace') {
-      // Delete all existing rows
-      const { error: delErr } = await supabase.from('inventory').delete().neq('id', 'dummy_nonexistent');
-      if (delErr) throw delErr;
-
-      // Insert new rows in chunks
-      const chunks = [];
-      for (let i = 0; i < csvParsedData.length; i += 500) {
-        chunks.push(csvParsedData.slice(i, i + 500));
-      }
-      for (const chunk of chunks) {
-        const rows = chunk.map(row => {
-          const newId = crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15);
-          return {
-            id: newId,
-            ...cleanItemRowData(row),
-            _updatedAt: new Date().toISOString(),
-            _device: DEVICE_ID,
-            _updatedBy: getCurrentUserName()
-          };
-        });
-        const { error: insertErr } = await supabase.from('inventory').insert(rows);
-        if (insertErr) throw insertErr;
-      }
-    } else {
-      // Merge: get existing ids
-      const { data: existing, error: getErr } = await supabase.from('inventory').select('id, Part ID');
-      if (getErr) throw getErr;
-
-      const byPartId = new Map();
-      existing.forEach(d => {
-        const pid = (d['Part ID']||'').trim().toLowerCase();
-        if(pid) byPartId.set(pid, d.id);
-      });
-
-      const toUpsert = [];
-      for (const row of csvParsedData) {
-        const pid = (row['Part ID']||'').trim().toLowerCase();
-        if(!pid) continue;
-        const existingId = byPartId.get(pid);
-        const newId = existingId || (crypto.randomUUID ? crypto.randomUUID() : 'id_' + Math.random().toString(36).substring(2, 15));
-        toUpsert.push({
-          id: newId,
-          ...cleanItemRowData(row),
-          _updatedAt: new Date().toISOString(),
-          _device: DEVICE_ID,
-          _updatedBy: getCurrentUserName()
-        });
-      }
-
-      // Upsert in chunks
-      const chunks = [];
-      for (let i = 0; i < toUpsert.length; i += 500) {
-        chunks.push(toUpsert.slice(i, i + 500));
-      }
-      for (const chunk of chunks) {
-        const { error: upsertErr } = await supabase.from('inventory').upsert(chunk);
-        if (upsertErr) throw upsertErr;
+      const removeIds = existing.map(d => d.id).filter(id => !keepIds.has(id));
+      for (let i = 0; i < removeIds.length; i += 100) {
+        const { error: delErr } = await supabase.from('inventory').delete().in('id', removeIds.slice(i, i + 100));
+        if (delErr) throw delErr;
       }
     }
-    
+
     const csvUndoPayload = { action: 'csv_upload', mode, count: csvParsedData.length };
     await insertLog({
       type: 'add',
@@ -5030,7 +5028,10 @@ window.confirmCSVUpload = async () => {
     localStorage.setItem('csvUploaded','1');
     await fetchItems(false);
     toast(`${mode==='replace'?'แทนที่':'Merge'} ${csvParsedData.length} รายการสำเร็จ`,'success');
-  } catch(e){ toast('Upload Error: '+e.message,'error'); setSyncing('error'); }
+  } catch(e){
+    toast('Upload Error: '+e.message+' — ข้อมูลเดิมไม่ถูกลบ ตรวจสอบรายการแล้วลองใหม่','error'); setSyncing('error');
+    fetchItems(false).catch(() => {});   // show whatever was written before the failure
+  }
   finally { document.getElementById('loadingOverlay').style.display='none'; btn.classList.remove('btn-loading'); }
 };
 
@@ -6384,7 +6385,7 @@ function updateCSVUploadConfirmState() {
   const input = document.getElementById('csvReplaceConfirmInput');
   const btn = document.getElementById('csvConfirmBtn');
   if(box) box.classList.toggle('show', mode === 'replace');
-  if(btn) btn.disabled = mode === 'replace' && cleanSingleLine(input?.value || '') !== 'REPLACE';
+  if(btn) btn.disabled = !!(csvParsedData && csvParsedData.dups && csvParsedData.dups.length) || (mode === 'replace' && cleanSingleLine(input?.value || '') !== 'REPLACE');
   if (window.lucide) lucide.createIcons();
 }
 window.updateCSVUploadConfirmState = updateCSVUploadConfirmState;
@@ -6408,15 +6409,19 @@ window.executeExportCSV = () => {
   exportRowsToCSV(rowsData, mode);
   closeModal('exportModal');
 };
-function exportRowsToCSV(rowsData, mode='all') {
-  const cols=['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
-  const rows=[cols.join(',')];
-  rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
+const EXPORT_COLS = ['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
+function downloadInventoryCSV(rowsData, filename) {
+  const rows=[EXPORT_COLS.join(',')];
+  rowsData.forEach(r=>rows.push(EXPORT_COLS.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob(['\uFEFF'+rows.join('\n')],{type:'text/csv;charset=utf-8;'}));
+  a.download=filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+function exportRowsToCSV(rowsData, mode='all') {
   const suffix = mode==='filtered'?'Filtered':mode==='low'?'LowStock':'All';
-  a.download=`SPFL_Store_${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
-  a.click();
+  downloadInventoryCSV(rowsData, `SPFL_Store_${suffix}_${new Date().toISOString().slice(0,10)}.csv`);
   
   // Log export action to database
   insertLog({

@@ -2486,11 +2486,28 @@ window.confirmImport = async () => {
   if (!csvParsed || !csvParsed.length) return;
   const mode = document.querySelector('input[name=importMode]:checked').value;
   const n = csvParsed.length;
+  const now = new Date().toISOString();
+  const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
+  let skippedDup = 0;
+  if (mode === 'replace') {
+    // everything is checked BEFORE anything is deleted
+    const seen = new Set(), dup = new Set();
+    rows.forEach(r => { const k = r['PR No.']; if (!k) return; if (seen.has(k)) dup.add(k); seen.add(k); });
+    if (dup.size) { toast(`The file has ${dup.size} duplicate PR No. (${[...dup].slice(0, 5).join(', ')}${dup.size > 5 ? ', …' : ''}). Fix the file first. Nothing was changed`, 'error'); return; }
+    // the CSV carries no items, attachments, justification or approval: replacing drops them
+    const inApp = prRecords.filter(r => r['Approval'] || (Array.isArray(r['Items']) && r['Items'].length) || (Array.isArray(r['Attachments']) && r['Attachments'].length)).length;
+    if (inApp && !await confirmDialog({ title: `Replace will lose ${inApp} request${inApp > 1 ? 's' : ''} created in this app`,
+      message: 'Their item lines, attached files, justification and approval status are not part of a CSV and cannot be re-imported.\n\nA full backup file is downloaded to this device first.', okText: 'Replace anyway', tone: 'danger' })) return;
+    if (prRecords.length) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(new Blob([JSON.stringify(prRecords)], { type: 'application/json' }));
+      a.download = `PR_backup_before_replace_${now.slice(0, 19).replace(/[T:]/g, '-')}.json`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    }
+  }
   const txId = tx.begin(mode === 'replace' ? 'del' : 'edit', 'Importing CSV', `Reading ${n.toLocaleString()} rows…`);
   setSync('syncing');
   try {
-    const now = new Date().toISOString();
-    const rows = csvParsed.map(rec => ({ ...toRow(rec), importedAt: now }));
     tx.step(txId, mode === 'replace' ? 'Clearing existing requests…' : 'Merging rows…');
     if (mode === 'replace') {
       const { error: delErr } = await supabase.from(PR_COL).delete().neq('id', '');
@@ -2503,7 +2520,16 @@ window.confirmImport = async () => {
     } else {
       // merge: upsert by PR No. (last row wins inside one CSV); rows without a PR No. are always inserted
       const byNo = new Map(); const noKey = [];
-      rows.forEach(r => { if (r['PR No.']) byNo.set(r['PR No.'], r); else noKey.push(r); });
+      // A request that is still waiting for its PR No. has no key to merge on. Re-importing an export used to add it
+      // again every time, so skip the ones that already exist (same title, requester, post date and amount).
+      const sig = r => [r['PR Title'], r['Creator'], r['Post Date'], Number(r['PR Amount']) || 0].map(v => String(v ?? '').trim().toLowerCase()).join('|');
+      const have = new Set(prRecords.filter(r => !hasPRNo(r)).map(sig));
+      rows.forEach(r => {
+        if (r['PR No.']) { byNo.set(r['PR No.'], r); return; }
+        const s = sig(r);
+        if (have.has(s)) { skippedDup++; return; }
+        have.add(s); noKey.push(r);
+      });
       for (const chunk of chunkBatch([...byNo.values()], 400)) {
         const { error } = await supabase.from(PR_COL).upsert(chunk, { onConflict: 'PR No.' });
         if (error) throw error;
@@ -2516,7 +2542,7 @@ window.confirmImport = async () => {
     await supabase.from(PR_LOG_COL).insert([{ mode, count: csvParsed.length, device: DEVICE_ID }]);
     tx.step(txId, 'Refreshing the list…');
     await loadFromSupabase(); closeImportModal(); applyFilters(); setSync('live');
-    tx.success(txId, { title: 'Import complete', sub: `${n.toLocaleString()} rows · ${mode}` });
+    tx.success(txId, { title: 'Import complete', sub: `${(n - skippedDup).toLocaleString()} rows · ${mode}${skippedDup ? ` · ${skippedDup} already here, skipped` : ''}` });
   } catch(e){ console.error(e); setSync('error'); tx.fail(txId, { title: 'Import failed', msg: explainError(e) }); }   // no retry: a half-finished import must be checked first
   finally { onImportModeChange(); }
 };
