@@ -10,7 +10,7 @@
 --   guest  = the "Guest" button on login.html (no Supabase session, role anon). READ-ONLY: while guest mode
 --            is on, a guest can view inventory, logs and the stock value trend. No withdraw, receive, add,
 --            edit, delete, import or clear.
---   anyone else (an anonymous sign-in, a random Google account) = nothing.
+--   anyone else (an anonymous sign-in, a Google account outside app_allowlist) = nothing.
 --
 -- BEFORE RUNNING: see "Step 0" at the bottom of this file, to list who would lose write access.
 -- AFTER RUNNING: Dashboard > Authentication > Sign In / Providers > turn OFF "Anonymous sign-ins".
