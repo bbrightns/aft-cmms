@@ -5677,6 +5677,8 @@ async function boot() {
 const ROLES = ['Viewer','Operator','Engineer','Admin'];
 if(!localStorage.getItem('storeUserRole')) localStorage.setItem('storeUserRole','Admin');
 window.canPerform = (action) => {
+  // a guest is read-only; the database enforces this too (supabase_security.sql), this only hides the buttons' effect
+  if (currentUser?.isGuest || localStorage.getItem('isGuest') === 'true') return action === 'view';
   const role = localStorage.getItem('storeUserRole') || 'Admin';
   const map = {
     Viewer: ['view'],

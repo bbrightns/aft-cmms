@@ -4,24 +4,26 @@
 --
 -- Who may do what after this script:
 --   staff  = a signed-in, email-confirmed, NON-anonymous user whose email or domain is in app_allowlist
---            (seeded with '@agc.com'). Staff can read and write everything, as before.
---   guest  = the "Guest" button on login.html (no Supabase session, role anon). While guest mode is on,
---            a guest can read inventory/logs, withdraw/receive through adjust_stock_v2 and write a log row.
---            A guest can no longer edit, add, delete, import or clear anything.
+--            (seeded with '@gmail.com'). Staff can read and write everything, as before.
+--            WARNING: '@gmail.com' means ANY Gmail account in the world is staff and can delete all data.
+--            To narrow it later: add each person's email, then DELETE FROM app_allowlist WHERE email = '@gmail.com';
+--   guest  = the "Guest" button on login.html (no Supabase session, role anon). READ-ONLY: while guest mode
+--            is on, a guest can view inventory, logs and the stock value trend. No withdraw, receive, add,
+--            edit, delete, import or clear.
 --   anyone else (an anonymous sign-in, a random Google account) = nothing.
 --
 -- BEFORE RUNNING: see "Step 0" at the bottom of this file, to list who would lose write access.
 -- AFTER RUNNING: Dashboard > Authentication > Sign In / Providers > turn OFF "Anonymous sign-ins".
 -- ============================================================
 
--- 1. Allowlist: a full email ('someone@gmail.com') or a whole domain ('@agc.com').
+-- 1. Allowlist: a full email ('someone@gmail.com') or a whole domain ('@gmail.com').
 --    RLS on with no policies: only the SQL editor can read or change it.
 CREATE TABLE IF NOT EXISTS app_allowlist (
   email text PRIMARY KEY CHECK (email = lower(email)),
   note text
 );
 ALTER TABLE app_allowlist ENABLE ROW LEVEL SECURITY;
-INSERT INTO app_allowlist (email, note) VALUES ('@agc.com', 'every AGC Google account')
+INSERT INTO app_allowlist (email, note) VALUES ('@gmail.com', 'every Gmail account (temporary, see header)')
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. Guest mode switch: 1 = on, 0 = off. Turning it off is a data edit:
@@ -36,7 +38,7 @@ LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, auth AS $$
     SELECT 1 FROM auth.users u
     WHERE u.id = auth.uid()
       AND coalesce(u.is_anonymous, false) = false
-      AND u.email_confirmed_at IS NOT NULL          -- an unconfirmed email/password sign-up cannot claim @agc.com
+      AND u.email_confirmed_at IS NOT NULL          -- an unconfirmed email/password sign-up cannot claim an allowlisted email
       AND EXISTS (
         SELECT 1 FROM public.app_allowlist a
         WHERE a.email = lower(u.email)
@@ -81,17 +83,17 @@ ALTER TABLE pr_approval_log       ENABLE ROW LEVEL SECURITY;
 
 -- (SELECT fn()) instead of fn() makes Postgres evaluate it once per query, not once per row.
 
--- inventory: staff do everything; a guest only reads (stock changes go through adjust_stock_v2)
+-- inventory: staff do everything; a guest only reads
 CREATE POLICY inventory_read  ON inventory FOR SELECT TO anon, authenticated
   USING ((SELECT public.is_staff()) OR (SELECT public.is_guest()));
 CREATE POLICY inventory_write ON inventory FOR ALL TO authenticated
   USING ((SELECT public.is_staff())) WITH CHECK ((SELECT public.is_staff()));
 
--- logs: a guest reads and adds rows (every withdraw/receive writes one); only staff edit or clear
+-- logs: a guest only reads; staff add, edit and clear
 CREATE POLICY logs_read   ON logs FOR SELECT TO anon, authenticated
   USING ((SELECT public.is_staff()) OR (SELECT public.is_guest()));
-CREATE POLICY logs_insert ON logs FOR INSERT TO anon, authenticated
-  WITH CHECK ((SELECT public.is_staff()) OR (SELECT public.is_guest()));
+CREATE POLICY logs_insert ON logs FOR INSERT TO authenticated
+  WITH CHECK ((SELECT public.is_staff()));
 CREATE POLICY logs_staff_update ON logs FOR UPDATE TO authenticated
   USING ((SELECT public.is_staff())) WITH CHECK ((SELECT public.is_staff()));
 CREATE POLICY logs_staff_delete ON logs FOR DELETE TO authenticated
@@ -128,7 +130,6 @@ CREATE POLICY "pr-docs delete" ON storage.objects FOR DELETE TO authenticated
 -- 5. Table privileges: RLS is the fence, grants are the second fence.
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 GRANT SELECT ON inventory, logs, store_meta, stock_value_snapshots TO anon;
-GRANT INSERT ON logs TO anon;
 REVOKE TRUNCATE, REFERENCES, TRIGGER ON ALL TABLES IN SCHEMA public FROM authenticated;
 
 -- 6. Stock functions: same logic as before, now SECURITY DEFINER with a permission check at the top.
@@ -178,7 +179,7 @@ DECLARE
   new_actual double precision;
   raw_actual text;
 BEGIN
-  IF NOT (public.is_staff() OR public.is_guest()) THEN
+  IF NOT public.is_staff() THEN
     RAISE EXCEPTION 'NOT_ALLOWED';
   END IF;
 
@@ -229,17 +230,18 @@ $$;
 REVOKE EXECUTE ON FUNCTION get_next_part_id() FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION get_next_part_id() TO authenticated;
 REVOKE EXECUTE ON FUNCTION adjust_stock_v2(text, double precision, text, text, text, text, text) FROM PUBLIC;
-GRANT  EXECUTE ON FUNCTION adjust_stock_v2(text, double precision, text, text, text, text, text) TO anon, authenticated;
+REVOKE EXECUTE ON FUNCTION adjust_stock_v2(text, double precision, text, text, text, text, text) FROM anon;
+GRANT  EXECUTE ON FUNCTION adjust_stock_v2(text, double precision, text, text, text, text, text) TO authenticated;
 GRANT  EXECUTE ON FUNCTION public.is_staff(), public.guest_mode(), public.is_guest() TO anon, authenticated;
 
 -- ============================================================
 -- Step 0 (read-only, run BEFORE the script above):
--- people who have signed in with a non-AGC email. Anyone listed here who really uses the app
+-- people who have signed in with a non-Gmail email. Anyone listed here who really uses the app
 -- needs a row in app_allowlist, or they lose write access:
 --
 --   SELECT email, last_sign_in_at FROM auth.users
 --   WHERE NOT coalesce(is_anonymous, false)
---     AND split_part(lower(email), '@', 2) <> 'agc.com'
+--     AND split_part(lower(email), '@', 2) <> 'gmail.com'
 --   ORDER BY last_sign_in_at DESC NULLS LAST;
 --
 --   INSERT INTO app_allowlist (email, note) VALUES ('someone@gmail.com', 'why') ON CONFLICT DO NOTHING;
@@ -250,6 +252,6 @@ GRANT  EXECUTE ON FUNCTION public.is_staff(), public.guest_mode(), public.is_gue
 --   DELETE FROM auth.users WHERE is_anonymous;
 --
 -- Emergency switches if the factory floor is blocked after rollout:
---   guest withdraw/receive stopped  -> UPDATE store_meta SET current = 1 WHERE key = 'guestMode';
+--   guests cannot even view stock   -> UPDATE store_meta SET current = 1 WHERE key = 'guestMode';
 --   a staff member cannot save      -> INSERT INTO app_allowlist (email) VALUES ('their@email');
 -- ============================================================
