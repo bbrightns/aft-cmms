@@ -6,8 +6,8 @@
 <title>Coating Store System - AGC</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8" type="text/javascript"></script>
+<script src="vendor/lucide-1.73.0.min.js"></script>
+<script src="vendor/html5-qrcode-2.3.8.min.js" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
 <script src="boot-guard.js"></script>
 <style>
@@ -3242,7 +3242,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 
 <!-- Supabase -->
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+import { createClient } from "./vendor/supabase-js-2.119.0.esm.js";
 window.__supabaseLoaded = true;   // read by boot-guard.js: the import above succeeded
 
 const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";

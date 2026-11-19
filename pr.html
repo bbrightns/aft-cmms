@@ -6,7 +6,7 @@
 <title>AFT-CMMS — Purchase Request</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
+<script src="vendor/lucide-1.73.0.min.js"></script>
 <link rel="stylesheet" href="shared.css">
 <script src="boot-guard.js"></script>
 <style>
@@ -944,7 +944,7 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
 <div class="toast-container" id="toastContainer" role="region" aria-label="Notifications"></div>
 
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+import { createClient } from "./vendor/supabase-js-2.119.0.esm.js";
 window.__supabaseLoaded = true;   // read by boot-guard.js: the import above succeeded
 
 // Same Supabase project as store.html (shared login session)

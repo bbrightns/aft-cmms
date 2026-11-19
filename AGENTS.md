@@ -19,3 +19,9 @@
   variables: `npm run test:db`. Never point it at the real Supabase database.
 - CI (`.github/workflows/ci.yml`) runs both on every pull request. When a change touches permissions or a page flow,
   add or update a test next to the existing ones. Any change to `supabase_security.sql` must keep the file safe to re-run.
+
+# Libraries
+
+- Pages load no script from a CDN: supabase-js, lucide, html5-qrcode and qrcodejs live in `vendor/` with the version in
+  the file name, built from `package-lock.json` by `npm run vendor`. To change a version: `npm i -D --save-exact <pkg>@<x>`,
+  `npm run vendor`, update the `<script>`/`import` paths in the pages, run the tests. CI fails if `vendor/` is stale.

@@ -1,4 +1,4 @@
-// Shared test setup: serves the CDN libraries from node_modules and answers the Supabase API from memory.
+// Shared test setup: answers the Supabase API from memory and blocks every CDN (the pages must not need one).
 const fs = require('fs');
 const path = require('path');
 
@@ -27,21 +27,22 @@ const DEFAULT_ROWS = [
  * Mock everything the pages talk to. Call before page.goto().
  * opts.who:   'user' (signed in) | 'guest' | 'none'
  * opts.role:  what my_role returns ('viewer' | 'staff' | 'admin'); opts.roleFails makes my_role error
- * opts.cdn:   'ok' | 'blocked'  (supabase-js on cdn.jsdelivr.net)
+ * opts.lib:   'ok' | 'blocked'  (vendor/supabase-js fails to load)
  * opts.db:    'ok' | 'hang' | 'error'  (inventory requests)
- * Returns a log of what the page sent: { rpc: [{fn, body}], logPosts: [] } and a `state` object tests may change.
+ * Returns what the page sent: { rpc: [{fn, body}], logPosts: [], thirdParty: [urls] } and a `state` tests may change.
  */
 async function mockBackend(context, opts = {}) {
   const state = { db: 'ok', ...opts };
-  const sent = { rpc: [], logPosts: [], state };
+  const sent = { rpc: [], logPosts: [], thirdParty: [], state };
   const rows = opts.rows || DEFAULT_ROWS;
 
-  await context.route('**/cdn.jsdelivr.net/**', (r) => (state.cdn === 'blocked'
-    ? r.abort('blockedbyclient')
-    : r.fulfill({ contentType: 'application/javascript', body: file('tests/.vendor/supabase.esm.js') })));
-  await context.route('**/unpkg.com/lucide@*/**', (r) => r.fulfill({ contentType: 'application/javascript', body: file('node_modules/lucide/dist/umd/lucide.js') }));
-  await context.route('**/unpkg.com/html5-qrcode@*', (r) => r.fulfill({ contentType: 'application/javascript', body: file('node_modules/html5-qrcode/html5-qrcode.min.js') }));
-  await context.route('**/cdnjs.cloudflare.com/ajax/libs/qrcodejs/**', (r) => r.fulfill({ contentType: 'application/javascript', body: file('node_modules/qrcodejs/qrcode.min.js') }));
+  // The pages must not need any CDN: every script comes from vendor/. Fail the test if one is requested anyway.
+  for (const host of ['cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com']) {
+    await context.route(`**://${host}/**`, (r) => { sent.thirdParty.push(r.request().url()); return r.abort('blockedbyclient'); });
+  }
+  if (state.lib === 'blocked') {   // supabase-js fails to load (connection dropped mid-load, file blocked)
+    await context.route('**/vendor/supabase-js-*', (r) => r.abort('connectionreset'));
+  }
   await context.route('**/fonts.googleapis.com/**', (r) => r.fulfill({ contentType: 'text/css', body: '' }));
   await context.route('**/*.supabase.co/**', (r) => {
     const req = r.request();

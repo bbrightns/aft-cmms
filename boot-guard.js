@@ -1,6 +1,6 @@
-// Boot guard, shared by every page that loads supabase-js from the CDN.
+// Boot guard, shared by every page that loads supabase-js (vendor/).
 // Each page's <script type="module"> sets window.__supabaseLoaded = true on the line after its import.
-// If that import is blocked (factory network, CDN outage) the module never runs at all: the loading
+// If that import fails (connection dropped mid-load, file blocked) the module never runs at all: the loading
 // spinner would turn forever and buttons wired up by the module would do nothing.
 // This classic script runs first and does not depend on anything else loading.
 (function () {
@@ -9,8 +9,8 @@
   function reason() {
     if (!navigator.onLine) return 'อุปกรณ์นี้ไม่ได้เชื่อมต่ออินเทอร์เน็ต';
     if (!window.__supabaseLoaded) {
-      return 'โหลดส่วนประกอบของระบบ (cdn.jsdelivr.net) ไม่ได้ เครือข่ายอาจบล็อกอยู่ ' +
-             'ลองสลับไปใช้ 4G หรือแจ้งผู้ดูแลระบบ';
+      return 'โหลดส่วนประกอบของระบบไม่ครบ สัญญาณอาจหลุดระหว่างโหลด ' +
+             'กดลองใหม่ หรือสลับไปใช้ 4G';
     }
     return 'ฐานข้อมูลตอบช้าหรือไม่ตอบกลับ ตรวจสัญญาณ Wi-Fi แล้วลองใหม่';
   }

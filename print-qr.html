@@ -10,10 +10,10 @@
   
   <!-- Font and Icon libraries -->
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
+  <script src="vendor/lucide-1.73.0.min.js"></script>
   
   <!-- QR Code Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="vendor/qrcodejs-1.0.0.min.js"></script>
 
   <style>
     /* Page Specific Premium CSS */
@@ -432,7 +432,7 @@
 
   <!-- Supabase Integration -->
   <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+    import { createClient } from "./vendor/supabase-js-2.119.0.esm.js";
     window.__supabaseLoaded = true;   // read by boot-guard.js: the import above succeeded
 
     const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";

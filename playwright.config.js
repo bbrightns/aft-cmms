@@ -5,7 +5,6 @@ const { defineConfig, devices } = require('@playwright/test');
 const PORT = 4173;
 module.exports = defineConfig({
   testDir: 'tests/e2e',
-  globalSetup: require.resolve('./tests/e2e/global-setup.js'),
   timeout: 60_000,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

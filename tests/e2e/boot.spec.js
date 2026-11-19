@@ -6,24 +6,26 @@ const h = require('./helpers');
 const PAGES = [['store.html', 'guest'], ['pr.html', 'user'], ['print-qr.html', 'guest']];
 
 for (const [file, who] of PAGES) {
-  test(`${file} loads the pinned supabase-js and starts`, async ({ page, context }) => {
+  test(`${file} starts with no CDN: every script from vendor/`, async ({ page, context }) => {
     const errors = h.watchErrors(page);
-    await h.mockBackend(context, { who, role: 'staff' });
+    const sent = await h.mockBackend(context, { who, role: 'staff' });
     const libs = [];
-    page.on('request', (r) => { if (r.url().includes('supabase-js')) libs.push(r.url()); });
+    page.on('request', (r) => { if (r.resourceType() === 'script') libs.push(new URL(r.url()).pathname); });
     await page.goto(`/${file}`);
     await expect(page.locator('#loadingOverlay')).toBeHidden({ timeout: 15_000 });
-    expect(libs.length).toBeGreaterThan(0);
-    for (const url of libs) expect(url).toMatch(/supabase-js@\d+\.\d+\.\d+\//);   // exact version, never a range
+    expect(libs).toContain('/vendor/supabase-js-2.119.0.esm.js');   // exact version in the file name
+    expect(sent.thirdParty).toEqual([]);
+    expect(await page.evaluate(() => typeof window.lucide)).toBe('object');   // icons library loaded
+    if (file === 'store.html') expect(await page.evaluate(() => typeof window.Html5Qrcode)).toBe('function');   // QR scanner
     expect(await h.noHorizontalScroll(page)).toBe(true);
     expect(errors).toEqual([]);
   });
 
-  test(`${file} explains a blocked CDN and offers a retry`, async ({ page, context }) => {
-    await h.mockBackend(context, { who, cdn: 'blocked' });
+  test(`${file} explains a failed library load and offers a retry`, async ({ page, context }) => {
+    await h.mockBackend(context, { who, lib: 'blocked' });
     await page.goto(`/${file}`);
     await expect(page.locator('.boot-fail')).toBeVisible({ timeout: 20_000 });
-    await expect(page.locator('.boot-fail-detail')).toContainText('cdn.jsdelivr.net');
+    await expect(page.locator('.boot-fail-detail')).toContainText('โหลดส่วนประกอบของระบบไม่ครบ');
     await expect(page.locator('.boot-fail-step')).toContainText('ขั้นตอนล่าสุด');
     const retry = page.locator('.boot-fail-retry');
     expect((await retry.boundingBox()).height).toBeGreaterThanOrEqual(44);
@@ -64,13 +66,13 @@ test('store: a database error shows the retry card at once', async ({ page, cont
   await expect(page.locator('#syncText')).toHaveText('Error');
 });
 
-test('login: a blocked CDN makes the buttons say why', async ({ page, context }) => {
-  await h.mockBackend(context, { who: 'none', cdn: 'blocked' });
+test('login: a failed library load makes the buttons say why', async ({ page, context }) => {
+  await h.mockBackend(context, { who: 'none', lib: 'blocked' });
   await page.goto('/login.html');
   await page.waitForTimeout(1000);
   await page.locator('#btnGoogle').click();
   await expect(page.locator('#loadingIndicator')).toBeVisible();
-  await expect(page.locator('#loadingIndicator')).toContainText('cdn.jsdelivr.net');
+  await expect(page.locator('#loadingIndicator')).toContainText('โหลดส่วนประกอบของระบบไม่ครบ');
 });
 
 test('login: Google sign-in goes to the Supabase authorize page', async ({ page, context }) => {
@@ -79,4 +81,13 @@ test('login: Google sign-in goes to the Supabase authorize page', async ({ page,
   await page.waitForFunction(() => window.__supabaseLoaded === true);
   await page.locator('#btnGoogle').click();
   await page.waitForURL(/\/auth\/v1\/authorize/);
+});
+
+test('print-qr draws QR codes with the vendored library', async ({ page, context }) => {
+  const errors = h.watchErrors(page);
+  await h.mockBackend(context, { who: 'guest' });
+  await page.goto('/print-qr.html');
+  await expect(page.locator('#loadingOverlay')).toBeHidden({ timeout: 15_000 });
+  await expect(page.locator('.label-qr canvas, .label-qr img').first()).toBeAttached();
+  expect(errors).toEqual([]);
 });
