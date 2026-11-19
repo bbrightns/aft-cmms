@@ -9,3 +9,13 @@
   4. **Wait for CI** on the pull request. Release only when it is green; if it fails, fix it or stop and report. If the repository has no CI checks, say so in the report and continue.
   5. **Merge the pull request into `main`.**
   The word `ship` is the explicit request for the push, the pull request and the merge. Without it, "Commit but No Push" still applies.
+
+# Tests
+
+- **Browser tests** (`tests/e2e`, Playwright, desktop + phone, Supabase API mocked): `npm ci` once, then `npm test`.
+  In a cloud session where Chromium is pre-installed, do not run `playwright install`.
+- **Database tests** (`tests/db/run.sh`): apply `supabase_schema.sql` + `supabase_security.sql` to a throwaway Postgres
+  that imitates Supabase and check what each kind of user may do. Needs psql and a superuser connection in `PG*`
+  variables: `npm run test:db`. Never point it at the real Supabase database.
+- CI (`.github/workflows/ci.yml`) runs both on every pull request. When a change touches permissions or a page flow,
+  add or update a test next to the existing ones. Any change to `supabase_security.sql` must keep the file safe to re-run.

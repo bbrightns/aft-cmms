@@ -5,9 +5,19 @@
   "main": "server.js",
   "scripts": {
     "dev": "node server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "playwright test",
+    "test:db": "bash tests/db/run.sh"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@supabase/supabase-js": "2.119.0",
+    "esbuild": "0.25.12",
+    "html5-qrcode": "2.3.8",
+    "lucide": "1.73.0",
+    "qrcodejs": "1.0.0"
+  }
 }
