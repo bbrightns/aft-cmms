@@ -2583,7 +2583,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.26.0</div>
+    <div class="home-version">v1.27.0</div>
 
 
     <!-- Compat stubs -->
@@ -3624,14 +3624,19 @@ window.qaExecute = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    const { data: finalActual, error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
+    // stock change and its log row are one database transaction; the database records who did it
+    const undoPayload = { action: qaMode, qty: parseFloat(qaQty), partId: qaSelectedItem['Part ID'], itemId: qaSelectedItem._id };
+    const { data: finalActual, error: rpcErr } = await supabase.rpc('adjust_stock_v3', {
       item_id: qaSelectedItem._id,
       qty: parseFloat(qaQty),
       mode: qaMode,
       new_loc: null,
       new_pos: null,
       device_id: DEVICE_ID,
-      user_name: getCurrentUserName()
+      log_type: qaMode,
+      log_msg: `${qaMode === 'out' ? '📤 เบิก' : '📥 รับ'} ${qaQty} pcs`,
+      log_note: note,
+      log_undo: undoPayload
     });
     if (rpcErr) {
       if (rpcErr.message.includes('OVER_STOCK')) throw new Error('OVER_STOCK');
@@ -3640,18 +3645,6 @@ window.qaExecute = async () => {
     }
 
     rpcDone = true;
-    tx.step(txId, 'กำลังบันทึกประวัติ...');
-    const undoPayload = { action: qaMode, qty: parseFloat(qaQty), partId: qaSelectedItem['Part ID'], itemId: qaSelectedItem._id };
-    await insertLog({
-      type: qaMode,
-      partId: qaSelectedItem['Part ID'],
-      msg: `${qaMode === 'out' ? '📤 เบิก' : '📥 รับ'} ${qaQty} pcs`,
-      note: (note ? note + '\n' : '') + '__UNDO_DATA__:' + JSON.stringify(undoPayload),
-      undo_data: undoPayload,
-      device: DEVICE_ID,
-      user: getCurrentUserName()
-    });
-
     tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
     await fetchItems(false);
     invalidateLogsCache();
@@ -4279,7 +4272,7 @@ function logRowHtml(l, idx) {
       ${sub ? `<div class="lg-sub">${sub}</div>` : ''}${note}${detail}
     </div>
     <div class="lg-side">
-      <div><div class="lg-who">${escapeHtml(user)}</div><div class="lg-time">${escapeHtml(when.time)}</div></div>
+      <div><div class="lg-who"${l.user_email ? ` title="${escapeHtml(l.user_email)}"` : ''}>${escapeHtml(user)}</div><div class="lg-time">${escapeHtml(when.time)}</div></div>
       ${undoBlockReason(l) ? (_undoneIds.has(String(l.id)) ? '<span style="font-size:11px;color:var(--text3);white-space:nowrap">ย้อนกลับแล้ว</span>' : '')
         : `<button type="button" class="lg-undo" data-id="${escapeHtml(String(l.id))}" onclick="confirmUndoLog(this.dataset.id)" aria-label="ย้อนกลับรายการ ${escapeHtml(l.partId || '')}"><i data-lucide="rotate-ccw"></i> ย้อนกลับ</button>`}
     </div>
@@ -4365,7 +4358,7 @@ window.confirmUndoLog = (logId) => {
       <div style="font-weight:700;color:var(--text);margin-bottom:4px;">Part ID: ${escapeHtml(partId)}</div>
       <div style="color:var(--text2);">รายการเดิม: <strong>${escapeHtml(log.msg || '')}</strong></div>
       ${cleanNote ? `<div style="font-size:12px;color:var(--text3);margin-top:4px;">${escapeHtml(cleanNote)}</div>` : ''}
-      <div style="font-size:11px;color:var(--text3);margin-top:6px;">บันทึกโดย: ${escapeHtml(log.user || 'System')} (${formatLogTime(log.ts)})</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:6px;">บันทึกโดย: ${escapeHtml(log.user || 'System')}${log.user_email ? ' · ' + escapeHtml(log.user_email) : ''} (${formatLogTime(log.ts)})</div>
     `;
   }
 
@@ -4451,14 +4444,18 @@ window.executeUndoLog = async () => {
       if (!item) throw new Error(`ไม่พบ Part ID: ${partId} ในระบบ`);
       const back = type === 'out' ? 'in' : 'out';
 
-      const { error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
+      // the reverse movement and its undo log row commit together
+      const { error: rpcErr } = await supabase.rpc('adjust_stock_v3', {
         item_id: item._id,
         qty,
         mode: back,
         new_loc: null,
         new_pos: null,
         device_id: DEVICE_ID,
-        user_name: getCurrentUserName()
+        log_type: back,
+        log_msg: back === 'in' ? `↩️ Undo: คืน Stock เบิกของ ${qty} pcs` : `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
+        log_note: `ย้อนกลับจาก Log #${log.id} (${log.msg})`,
+        log_undo: { action: back, qty, partId, itemId: item._id, undoOf: String(log.id) }
       });
       if (rpcErr) {
         // Not enough stock left to take the received quantity back out (some was withdrawn since).
@@ -4466,11 +4463,6 @@ window.executeUndoLog = async () => {
         if (/OVER_STOCK|ZERO_STOCK/.test(rpcErr.message || '')) throw new Error(`Stock ปัจจุบันเหลือน้อยกว่า ${qty} pcs (มีการเบิกหลังจากรับของรายการนี้) จึงย้อนกลับไม่ได้`);
         throw rpcErr;
       }
-
-      await writeUndoLog(back, partId,
-        back === 'in' ? `↩️ Undo: คืน Stock เบิกของ ${qty} pcs` : `↩️ Undo: ยกเลิกรับของ ${qty} pcs`,
-        `ย้อนกลับจาก Log #${log.id} (${log.msg})`,
-        { action: back, qty, partId, itemId: item._id });
 
     } else if (type === 'edit') {
       const item = items.find(x => x['Part ID'] === partId);
@@ -7038,25 +7030,6 @@ window.confirmAdjust = async () => {
   btn.classList.add('btn-loading');
   setSyncing('syncing');
   try {
-    const { data: finalActual, error: rpcErr } = await supabase.rpc('adjust_stock_v2', {
-      item_id: adjustItem._id,
-      qty: parseFloat(adjustQty),
-      mode: adjustMode,
-      new_loc: locChanged ? newLocation : null,
-      new_pos: posChanged ? newPosition : null,
-      device_id: DEVICE_ID,
-      user_name: getCurrentUserName()
-    });
-    if (rpcErr) {
-      if (rpcErr.message.includes('ZERO_STOCK')) throw new Error('ZERO_STOCK');
-      if (rpcErr.message.includes('OVER_STOCK')) throw new Error('OVER_STOCK');
-      throw rpcErr;
-    }
-
-    rpcDone = true;
-    tx.step(txId, 'กำลังบันทึกประวัติ...');
-    const srvStock = parseFloat(finalActual);   // the server's number: `next` was computed from what this screen last saw
-    const actionText = adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ ${Number.isFinite(srvStock) ? srvStock : next})`;
     const adjUndoPayload = {
       action: adjustQty===0 ? 'position' : adjustMode,
       qty: parseFloat(adjustQty),
@@ -7067,17 +7040,26 @@ window.confirmAdjust = async () => {
       newLocation: newLocation,
       newPosition: newPosition
     };
-    
-    await insertLog({
-      type: adjustQty===0 ? 'edit' : (adjustMode==='in' ? 'in' : 'out'),
-      partId: adjustItem['Part ID'],
-      msg: actionText,
-      note: (finalNote ? finalNote + '\n' : '') + '__UNDO_DATA__:' + JSON.stringify(adjUndoPayload),
-      undo_data: adjUndoPayload,
-      device: DEVICE_ID,
-      user: getCurrentUserName()
+    // stock change and its log row are one database transaction; {stock} becomes the stock after the change
+    const { data: finalActual, error: rpcErr } = await supabase.rpc('adjust_stock_v3', {
+      item_id: adjustItem._id,
+      qty: parseFloat(adjustQty),
+      mode: adjustMode,
+      new_loc: locChanged ? newLocation : null,
+      new_pos: posChanged ? newPosition : null,
+      device_id: DEVICE_ID,
+      log_type: adjustQty===0 ? 'edit' : adjustMode,
+      log_msg: adjustQty===0 ? 'อัปเดตตำแหน่ง' : `${adjustMode==='in'?'รับ':'เบิก'} ${adjustQty} pcs (คงเหลือ {stock})`,
+      log_note: finalNote,
+      log_undo: adjUndoPayload
     });
+    if (rpcErr) {
+      if (rpcErr.message.includes('ZERO_STOCK')) throw new Error('ZERO_STOCK');
+      if (rpcErr.message.includes('OVER_STOCK')) throw new Error('OVER_STOCK');
+      throw rpcErr;
+    }
 
+    rpcDone = true;
     tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
     await fetchItems(false);
     invalidateLogsCache();
