@@ -1,6 +1,8 @@
 -- Supabase Migration Schema
 -- Copy and paste this script into your Supabase SQL Editor (Dashboard > SQL Editor > New Query) and click Run.
 -- The whole script can be run again at any time: every statement is written to be safe on an existing database.
+-- SECURITY: this file creates the stock functions and some policies in their old, open form.
+-- ALWAYS run supabase_security.sql right after this file, or anyone with the public key can edit and delete data.
 
 -- Adds a table to the realtime publication unless it is already there (a plain ALTER PUBLICATION fails on a second run).
 CREATE OR REPLACE FUNCTION pg_temp.add_to_realtime(tbl text) RETURNS void LANGUAGE plpgsql AS $$
@@ -213,11 +215,7 @@ CREATE TABLE IF NOT EXISTS pr_import_logs (
 
 SELECT pg_temp.add_to_realtime('pr_records');
 
--- If RLS is enabled on this project, mirror the policies used for inventory/logs:
--- ALTER TABLE pr_records ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "pr_records authenticated all" ON pr_records FOR ALL TO authenticated USING (true) WITH CHECK (true);
--- ALTER TABLE pr_import_logs ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "pr_import_logs authenticated all" ON pr_import_logs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- RLS and policies for pr_records / pr_import_logs: see supabase_security.sql (do not use a USING (true) policy here).
 
 -- 5. Purchase Request: quotation files (run after section 4)
 -- Files live in a PRIVATE bucket and are opened through short-lived signed links; the PR row keeps
@@ -335,9 +333,7 @@ CREATE TABLE IF NOT EXISTS stock_value_snapshots (
   priced integer NOT NULL DEFAULT 0,  -- of those, items that have a price
   updated_at timestamp with time zone DEFAULT timezone('utc'::text, now())
 );
--- If Row Level Security is enabled on your tables, also run:
--- ALTER TABLE stock_value_snapshots ENABLE ROW LEVEL SECURITY;
--- CREATE POLICY "stock_value_snapshots authenticated all" ON stock_value_snapshots FOR ALL TO authenticated USING (true) WITH CHECK (true);
+-- RLS and policies for this table: see supabase_security.sql (do not use a USING (true) policy here).
 
 -- C. Where the price came from: NULL/'actual' = real purchase price, 'est' = estimate
 --    (web list price × discount factor, or a sibling model's price). The page marks 'est'
