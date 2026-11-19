@@ -22,6 +22,6 @@
 
 # Libraries
 
-- Pages load no script from a CDN: supabase-js, lucide, html5-qrcode and qrcodejs live in `vendor/` with the version in
-  the file name, built from `package-lock.json` by `npm run vendor`. To change a version: `npm i -D --save-exact <pkg>@<x>`,
+- Pages load no script or font from a CDN: supabase-js, lucide, html5-qrcode, qrcodejs and the fonts (Google Sans,
+  Google Sans Code) live in `vendor/` with the version in the file name, built from `package-lock.json` by `npm run vendor`. To change a version: `npm i -D --save-exact <pkg>@<x>`,
   `npm run vendor`, update the `<script>`/`import` paths in the pages, run the tests. CI fails if `vendor/` is stale.

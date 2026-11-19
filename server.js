@@ -15,6 +15,7 @@ const MIME_TYPES = {
   '.jpeg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.woff2': 'font/woff2',
   '.sql': 'text/plain; charset=UTF-8'
 };
 

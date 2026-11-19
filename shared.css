@@ -38,8 +38,8 @@
   --icon-placeholder: #94a3b8;
 
   /* Typography Fonts */
-  --mono: 'IBM Plex Mono', 'Consolas', 'Cascadia Code', 'Segoe UI Mono', monospace;
-  --sans: 'Inter', 'Noto Sans Thai', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  --mono: 'Google Sans Code', 'Consolas', 'Cascadia Code', 'Segoe UI Mono', monospace;
+  --sans: 'Google Sans', 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Noto Sans Thai', Tahoma, Roboto, sans-serif;
 
   /* Spacing Scale (8pt grid) */
   --space-1: 4px;
