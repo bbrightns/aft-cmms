@@ -3421,6 +3421,7 @@ window.goHome = () => { showPage('pageHome'); updateHomeStats(); };
 window.goValue = () => { valView = 'overview'; showPage('pageValue'); renderValuePage(); window.scrollTo(0, 0); };
 
 window.goAction = (mode) => {
+  if (guestBlocked()) return;
   qaMode = mode; qaSelectedItem = null; qaQty = 1;
   document.getElementById('qaSearch').value = '';
   document.getElementById('qaClear').classList.remove('visible');
@@ -4263,6 +4264,7 @@ function renderLog(logs) {
 let pendingUndoLogId = null;
 
 window.confirmUndoLog = (logId) => {
+  if (guestBlocked()) return;
   const log = (_logsCacheData || []).find(x => String(x.id) === String(logId));
   if (!log) {
     toast('ไม่พบข้อมูล Log นี้', 'error');
@@ -4567,6 +4569,7 @@ function setAdjustPositionValue(val) {
 
 let _adjInitLoc = '', _adjInitPos = '';
 window.openAdjust = (id, initialMode = 'in') => {
+  if (guestBlocked()) return;
   adjustItem=items.find(x=>x._id===id); if(!adjustItem) return;
   adjustQty=1; adjustMode=initialMode;
   document.getElementById('adjustTitle').textContent=(adjustItem['Brand']||'')+' '+(adjustItem['Model']||'');
@@ -4713,6 +4716,7 @@ function getPreviewNextPartId() {
 // otherwise an edit of e.g. the description overwrites every เบิก/รับ made while the form was open.
 let _editOrigActual = null;
 window.openAddModal = () => {
+  if (guestBlocked()) return;
   editItemId=null;
   _editOrigActual = null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
@@ -4748,6 +4752,7 @@ window.openAddModal = () => {
 };
 
 window.openEdit = (id) => {
+  if (guestBlocked()) return;
   const r=items.find(x=>x._id===id); if(!r) return;
   editItemId=id;
   document.getElementById('editModalTitle').textContent='แก้ไขรายการ';
@@ -5008,6 +5013,7 @@ window.saveItem = async () => {
 };
 
 window.openDelete = (id) => {
+  if (guestBlocked()) return;
   const r=items.find(x=>x._id===id); if(!r) return;
   deleteItemId=id;
   document.getElementById('deleteItemName').textContent=(r['Part ID']||'')+' — '+(r['Brand']||'')+' '+(r['Model']||'');
@@ -5218,6 +5224,7 @@ window.syncTypedConfirm = (inputId, btnId, word) => {
 };
 let scanChoiceItemId = null;
 window.openScanChoice = (item) => {
+  if (guestBlocked()) return;
   scanChoiceItemId = item._id;
   document.getElementById('scanChoiceName').textContent = ((item['Brand'] || '') + ' ' + (item['Model'] || '')).trim() || item['Part ID'];
   document.getElementById('scanChoiceMeta').textContent = [item['Part ID'], 'Stock ' + (item['Actual'] !== '' && item['Actual'] != null ? item['Actual'] : '—'), [item['Location'], item['Position']].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
@@ -5687,6 +5694,13 @@ window.canPerform = (action) => {
     Admin: ['view','adjust','addEdit','uploadCSV','clearData']
   };
   return (map[role] || map.Admin).includes(action);
+};
+// A guest is read-only. Stop at the button, before a form is filled in, instead of at the database's refusal.
+window.guestBlocked = () => {
+  if (canPerform('adjust')) return false;
+  if (!(currentUser?.isGuest || localStorage.getItem('isGuest') === 'true')) return false;
+  window.toast('Guest ดูข้อมูลได้อย่างเดียว กรุณาเข้าสู่ระบบเพื่อเบิก/รับ/แก้ไข', 'error');
+  return true;
 };
 function getCurrentUserName() {
   let name = currentUser?.user_metadata?.display_name || 
