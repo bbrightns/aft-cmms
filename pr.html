@@ -818,8 +818,8 @@ tr.row-new td { animation: rowFlash 2.2s ease-out; }
     <div class="modal-body" id="detailBody"></div>
     <div class="modal-footer">
       <button class="btn btn-danger footer-left" id="deletePRBtn" onclick="deletePR()"><i data-lucide="trash-2"></i> Delete</button>
-      <button class="btn btn-ghost" onclick="openNumbers()"><i data-lucide="hash"></i> Edit No.</button>
-      <button class="btn btn-ghost" onclick="duplicatePR()"><i data-lucide="copy"></i> Duplicate</button>
+      <button class="btn btn-ghost" id="prNumbersBtn" onclick="openNumbers()"><i data-lucide="hash"></i> Edit No.</button>
+      <button class="btn btn-ghost" id="prDuplicateBtn" onclick="duplicatePR()"><i data-lucide="copy"></i> Duplicate</button>
       <button class="btn btn-primary hide-mobile" onclick="closeDetailModal()">Close</button>
     </div>
   </div>
@@ -1761,6 +1761,9 @@ function budgetType(code, cat){
 window.openDetail = (id) => {
   const r = prRecords.find(x => x._id === id); if (!r) return;
   openPRId = id;
+  $('deletePRBtn').classList.toggle('hidden', !canAdmin());
+  $('prDuplicateBtn').classList.toggle('hidden', !canStaff());
+  $('prNumbersBtn').classList.toggle('hidden', !(canStaff() || myRoles.has('clerk')));
   const ccy = escapeHtml(r['Currency Key'] || 'THB');
   $('detailTitle').textContent = r['PR Title'] || '(untitled)';
   $('detailSub').textContent = [r['Section'], r['PR_Vendor']].filter(Boolean).join('  ·  ');
@@ -1844,6 +1847,7 @@ window.openDetail = (id) => {
 window.closeDetailModal = () => { hideModal('detailModal'); openPRId = null; };
 
 window.deletePR = async () => {
+  if (prBlocked('admin', 'deleting a request')) return;
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
   const ok = await confirmDialog({ title: hasPRNo(r) ? `Delete PR ${r['PR No.']}?` : 'Delete this request?', message: `${r['PR Title'] || ''}\n\nThis removes it for everyone and cannot be undone.`, okText: 'Delete', tone: 'danger' });
   if (!ok) return;
@@ -1862,6 +1866,7 @@ window.deletePR = async () => {
 
 // Start a new PR pre-filled from the open one (same vendor, budget, items) — common for repeat orders
 window.duplicatePR = () => {
+  if (prBlocked('staff', 'creating a request')) return;
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
   closeDetailModal();
   openCreateModal();
@@ -1945,6 +1950,28 @@ window.openAttachment = async (i) => {
 
 /* ===== APPROVAL FLOW ===== */
 // roles come from approval_roles; this only decides what to show. The DB trigger pr_approval_guard is what enforces it.
+// App role (viewer / staff / admin) from the database, which enforces it (supabase_security.sql).
+// The page mirrors it only so buttons say why straight away instead of failing at the database.
+let myAppRole = 'viewer';
+const APP_ROLE_LABEL = { viewer: 'Viewer', staff: 'Staff', admin: 'Admin' };
+async function loadMyRole(){
+  try {
+    const { data, error } = await supabase.rpc('my_role');
+    if (error) throw error;
+    if (APP_ROLE_LABEL[data]) myAppRole = data;
+  } catch(e){ console.warn('Role unavailable, treating this account as Viewer:', e && e.message); myAppRole = 'viewer'; }
+}
+const canStaff = () => myAppRole === 'staff' || myAppRole === 'admin';
+const canAdmin = () => myAppRole === 'admin';
+function prBlocked(need, what){
+  if (need === 'admin' ? canAdmin() : canStaff()) return false;
+  toast(`Your account is ${APP_ROLE_LABEL[myAppRole]}: ${what} needs ${need === 'admin' ? 'Admin' : 'Staff or Admin'}. Ask an Admin for access.`, 'error');
+  return true;
+}
+function applyPrRoleUI(){
+  $('hdrNew').classList.toggle('hidden', !canStaff());
+  $('hdrImport').classList.toggle('hidden', !canAdmin());
+}
 async function loadRoles(){
   try {
     const { data, error } = await supabase.from('approval_roles').select('role,email');
@@ -2027,6 +2054,7 @@ $('d_note').addEventListener('input', () => $('d_note').classList.remove('input-
 
 /* ===== EDIT PR / PO NUMBERS (the clerk fills these in) ===== */
 window.openNumbers = () => {
+  if (!myRoles.has('clerk') && prBlocked('staff', 'editing PR/PO numbers')) return;
   const r = prRecords.find(x => x._id === openPRId); if (!r) return;
   $('numbersSub').textContent = r['PR Title'] || '';
   $('e_prNo').value = hasPRNo(r) ? r['PR No.'] : '';
@@ -2103,6 +2131,7 @@ function prefillCreator(){
   if (opt && !$('f_creator').value) $('f_creator').value = opt.value;
 }
 window.openCreateModal = () => {
+  if (prBlocked('staff', 'creating a request')) return;
   window._activeDraftId = null; resetForm();
   $('createTitle').textContent = 'New Purchase Request';
   $('createSub').textContent = 'PR No. is assigned by the clerk after submit';
@@ -2361,6 +2390,7 @@ window.deleteDraft = async (id) => {
 
 /* ===== SUBMIT ===== */
 window.submitPR = async () => {
+  if (prBlocked('staff', 'submitting a request')) return;
   const f = readForm();
   clearFormErrors();
   const miss = [];
@@ -2429,6 +2459,7 @@ window.submitPR = async () => {
 
 /* ===== IMPORT ===== */
 window.openImportModal = () => {
+  if (prBlocked('admin', 'importing CSV')) return;
   csvParsed = null; $('importPreview').classList.add('hidden');
   $('importConfirmBtn').disabled = true; $('csvInput').value = '';
   $('csvFileName').textContent = 'UTF-8 · same columns as Export';
@@ -2485,6 +2516,7 @@ function parseCSV(text){
 function chunkBatch(arr, size){ const out = []; for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i+size)); return out; }
 
 window.confirmImport = async () => {
+  if (prBlocked('admin', 'importing CSV')) return;
   if (!csvParsed || !csvParsed.length) return;
   const mode = document.querySelector('input[name=importMode]:checked').value;
   const n = csvParsed.length;
@@ -2574,6 +2606,7 @@ async function init(){
   if (userName) { $('userDisplayNameText').textContent = userName; $('userProfileMenu').style.display = 'flex'; }
 
   await loadRoles();
+  await loadMyRole(); applyPrRoleUI();
   restoreFilters(); applyColumnVisibility();
   if (loadCache()) { $('loadingOverlay').style.display = 'none'; $('prPage').classList.remove('hidden'); applyFilters(); }
   updateDrafts(); refreshIcons();

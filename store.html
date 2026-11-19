@@ -2325,6 +2325,18 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 .settings-group-title { font-size: 13px; font-weight: 800; color: var(--text2); }
 .settings-danger { padding: 12px; border: 1.5px solid var(--agc-red); border-radius: 12px; background: #fff; margin-bottom: 0; }
 .settings-danger .settings-group-title { color: var(--danger-text); }
+.users-help { margin: 0 0 12px; padding-left: 18px; font-size: 13px; line-height: 1.6; color: var(--text2); }
+.users-filter { width: 100%; min-height: 44px; margin-bottom: 10px; }
+.users-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
+.users-empty { padding: 16px; text-align: center; color: var(--text2); font-size: 14px; }
+.user-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 10px; }
+.user-info { flex: 1 1 auto; min-width: 0; }
+.user-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.user-me { font-weight: 500; color: var(--text2); }
+.user-email { font-size: 12px; color: var(--text2); overflow-wrap: anywhere; }
+.user-meta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.user-role-select { flex: 0 0 112px; width: 112px; max-width: 112px; min-height: 44px; padding: 0 10px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; font-size: 14px; font-weight: 600; }
+.user-role-select:disabled { opacity: 0.6; }
 .settings-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 10px 14px; background: var(--bg2); border: 1.5px solid var(--border-strong); border-radius: 10px; cursor: pointer; text-align: left; font-family: var(--sans); color: var(--text); }
 .settings-row:hover { border-color: var(--agc-blue); }
 .settings-row strong { display: block; font-size: 14px; font-weight: 700; }
@@ -2431,6 +2443,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="form-group" style="margin-bottom:14px">
         <label style="font-weight:600;font-size:13px;color:var(--text)">อีเมล:</label>
         <div id="profileEmail" style="color:var(--text);font-family:var(--sans);font-size:15px;font-weight:500;padding:4px 0 8px 0"></div>
+        <div style="font-size:13px;color:var(--text2)">สิทธิ์: <strong id="profileRole" style="color:var(--text)">Viewer</strong></div>
       </div>
       <div class="form-group">
         <label for="profileDisplayName" style="font-weight:600;font-size:13px;color:var(--text)">ชื่อผู้ใช้งาน (ที่จะบันทึกในประวัติ):</label>
@@ -2562,8 +2575,8 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
         <i data-lucide="help-circle" style="width:14px;height:14px"></i>
         คู่มือการใช้งาน
       </button>
-      <div class="home-footer-dot"></div>
-      <button class="home-footer-btn" onclick="openSettings()">
+      <div class="home-footer-dot" id="homeSettingsDot" style="display:none"></div>
+      <button class="home-footer-btn" id="homeSettingsBtn" style="display:none" onclick="openSettings()">
         <i data-lucide="settings" style="width:16px;height:16px"></i>
         ตั้งค่า / ผู้ดูแลระบบ
       </button>
@@ -3010,6 +3023,13 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     <div class="modal-header"><div class="modal-title"><i data-lucide="settings"></i> ตั้งค่า / ผู้ดูแลระบบ</div><button class="close-btn" onclick="closeModal('settingsModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
     <div class="modal-body">
       <div class="settings-group">
+        <div class="settings-group-title">ผู้ใช้</div>
+        <button class="settings-row" onclick="closeModal('settingsModal');openUsersModal()">
+          <i data-lucide="users"></i>
+          <span><strong>จัดการผู้ใช้และสิทธิ์</strong><small>กำหนด Viewer / Staff / Admin ให้แต่ละคน</small></span>
+        </button>
+      </div>
+      <div class="settings-group">
         <div class="settings-group-title">ข้อมูล</div>
         <button class="settings-row" onclick="closeModal('settingsModal');settingsUploadCSV()">
           <i data-lucide="upload-cloud"></i>
@@ -3027,6 +3047,21 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
           <span><strong>ล้างข้อมูลทั้งหมด</strong><small>ลบรายการอะไหล่ทั้งหมดออกจากฐานข้อมูล</small></span>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="usersModal" style="display:none" onclick="closeOnOverlay(event,'usersModal')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header"><div class="modal-title"><i data-lucide="users"></i> จัดการผู้ใช้และสิทธิ์</div><button class="close-btn" onclick="closeModal('usersModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button></div>
+    <div class="modal-body">
+      <ul class="users-help">
+        <li><strong>Viewer</strong> ดูข้อมูลได้อย่างเดียว (คนที่เพิ่ง login ครั้งแรกจะเป็น Viewer)</li>
+        <li><strong>Staff</strong> เบิก/รับ เพิ่ม และแก้ไขรายการ สร้างและแก้ไข PR</li>
+        <li><strong>Admin</strong> ทำได้ทุกอย่าง รวมถึงลบ นำเข้า CSV ล้างข้อมูล และจัดการผู้ใช้</li>
+      </ul>
+      <input type="search" id="usersFilter" class="form-control users-filter" placeholder="ค้นหาชื่อหรืออีเมล" aria-label="ค้นหาผู้ใช้" oninput="renderUsers()" autocomplete="off">
+      <div id="usersList" class="users-list" aria-live="polite"></div>
     </div>
   </div>
 </div>
@@ -3464,7 +3499,7 @@ window.goHome = () => { showPage('pageHome'); updateHomeStats(); };
 window.goValue = () => { valView = 'overview'; showPage('pageValue'); renderValuePage(); window.scrollTo(0, 0); };
 
 window.goAction = (mode) => {
-  if (guestBlocked()) return;
+  if (roleBlocked('adjust')) return;
   qaMode = mode; qaSelectedItem = null; qaQty = 1;
   document.getElementById('qaSearch').value = '';
   document.getElementById('qaClear').classList.remove('visible');
@@ -4307,7 +4342,7 @@ function renderLog(logs) {
 let pendingUndoLogId = null;
 
 window.confirmUndoLog = (logId) => {
-  if (guestBlocked()) return;
+  if (roleBlocked('addEdit')) return;
   const log = (_logsCacheData || []).find(x => String(x.id) === String(logId));
   if (!log) {
     toast('ไม่พบข้อมูล Log นี้', 'error');
@@ -4612,7 +4647,7 @@ function setAdjustPositionValue(val) {
 
 let _adjInitLoc = '', _adjInitPos = '';
 window.openAdjust = (id, initialMode = 'in') => {
-  if (guestBlocked()) return;
+  if (roleBlocked('adjust')) return;
   adjustItem=items.find(x=>x._id===id); if(!adjustItem) return;
   adjustQty=1; adjustMode=initialMode;
   document.getElementById('adjustTitle').textContent=(adjustItem['Brand']||'')+' '+(adjustItem['Model']||'');
@@ -4759,7 +4794,7 @@ function getPreviewNextPartId() {
 // otherwise an edit of e.g. the description overwrites every เบิก/รับ made while the form was open.
 let _editOrigActual = null;
 window.openAddModal = () => {
-  if (guestBlocked()) return;
+  if (roleBlocked('addEdit')) return;
   editItemId=null;
   _editOrigActual = null;
   document.getElementById('editModalTitle').textContent='เพิ่มรายการ';
@@ -4795,7 +4830,7 @@ window.openAddModal = () => {
 };
 
 window.openEdit = (id) => {
-  if (guestBlocked()) return;
+  if (roleBlocked('addEdit')) return;
   const r=items.find(x=>x._id===id); if(!r) return;
   editItemId=id;
   document.getElementById('editModalTitle').textContent='แก้ไขรายการ';
@@ -5056,7 +5091,7 @@ window.saveItem = async () => {
 };
 
 window.openDelete = (id) => {
-  if (guestBlocked()) return;
+  if (roleBlocked('delete')) return;
   const r=items.find(x=>x._id===id); if(!r) return;
   deleteItemId=id;
   document.getElementById('deleteItemName').textContent=(r['Part ID']||'')+' — '+(r['Brand']||'')+' '+(r['Model']||'');
@@ -5267,7 +5302,7 @@ window.syncTypedConfirm = (inputId, btnId, word) => {
 };
 let scanChoiceItemId = null;
 window.openScanChoice = (item) => {
-  if (guestBlocked()) return;
+  if (roleBlocked('adjust')) return;
   scanChoiceItemId = item._id;
   document.getElementById('scanChoiceName').textContent = ((item['Brand'] || '') + ' ' + (item['Model'] || '')).trim() || item['Part ID'];
   document.getElementById('scanChoiceMeta').textContent = [item['Part ID'], 'Stock ' + (item['Actual'] !== '' && item['Actual'] != null ? item['Actual'] : '—'), [item['Location'], item['Position']].filter(Boolean).join(' ')].filter(Boolean).join(' · ');
@@ -5280,6 +5315,7 @@ window.scanChoose = (mode) => {
   if (id) window.openAdjust(id, mode);
 };
 window.openSettings = () => {
+  if (!canPerform('manageRoles')) { toast('หน้าตั้งค่าใช้ได้เฉพาะ Admin', 'error'); return; }
   document.getElementById('settingsModal').style.display = 'flex';
   refreshIcons();
 };
@@ -5654,11 +5690,13 @@ async function boot() {
         // Redirect to login.html if there is no session
         window.location.replace("login.html");
       }
+      loadMyRole();   // not awaited: the page opens as Viewer and unlocks buttons when the role arrives
 
       // Listen for auth changes
       supabase.auth.onAuthStateChange((event, session) => {
         if (session) {
           currentUser = session.user;
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED') setTimeout(loadMyRole, 0);   // never call Supabase inside this callback: it can deadlock
           document.getElementById('userProfileMenu').style.display = 'flex';
           
           const header = document.querySelector('.header');
@@ -5724,27 +5762,111 @@ async function boot() {
 
 // ===== R12 OPERATION SAFETY / UX LAYER =====
 
-const ROLES = ['Viewer','Operator','Engineer','Admin'];
-if(!localStorage.getItem('storeUserRole')) localStorage.setItem('storeUserRole','Admin');
-window.canPerform = (action) => {
-  // a guest is read-only; the database enforces this too (supabase_security.sql), this only hides the buttons' effect
-  if (currentUser?.isGuest || localStorage.getItem('isGuest') === 'true') return action === 'view';
-  const role = localStorage.getItem('storeUserRole') || 'Admin';
-  const map = {
-    Viewer: ['view'],
-    Operator: ['view','adjust'],
-    Engineer: ['view','adjust','addEdit'],
-    Admin: ['view','adjust','addEdit','uploadCSV','clearData']
-  };
-  return (map[role] || map.Admin).includes(action);
+// Roles live in the database (app_roles, see supabase_security.sql), which is what really enforces them.
+// The page mirrors the role only so a button says "no" straight away instead of failing at the database.
+let currentRole = 'viewer';   // 'viewer' | 'staff' | 'admin' until my_role answers; a guest stays viewer
+const ROLE_ACTIONS = {
+  viewer: ['view'],
+  staff:  ['view', 'adjust', 'addEdit'],
+  admin:  ['view', 'adjust', 'addEdit', 'delete', 'uploadCSV', 'clearData', 'manageRoles']
 };
-// A guest is read-only. Stop at the button, before a form is filled in, instead of at the database's refusal.
-window.guestBlocked = () => {
-  if (canPerform('adjust')) return false;
-  if (!(currentUser?.isGuest || localStorage.getItem('isGuest') === 'true')) return false;
-  window.toast('Guest ดูข้อมูลได้อย่างเดียว กรุณาเข้าสู่ระบบเพื่อเบิก/รับ/แก้ไข', 'error');
+const ROLE_LABEL = { viewer: 'Viewer', staff: 'Staff', admin: 'Admin' };
+const ACTION_TEXT = {
+  adjust: 'เบิก/รับของ', addEdit: 'เพิ่มหรือแก้ไขข้อมูล', delete: 'ลบรายการ',
+  uploadCSV: 'นำเข้า CSV', clearData: 'ล้างข้อมูล', manageRoles: 'จัดการผู้ใช้'
+};
+const isGuestSession = () => !!currentUser?.isGuest || localStorage.getItem('isGuest') === 'true';
+window.canPerform = (action) => {
+  if (isGuestSession()) return action === 'view';
+  return (ROLE_ACTIONS[currentRole] || ROLE_ACTIONS.viewer).includes(action);
+};
+// Stop at the button, before a form is filled in, with a message that says why.
+window.roleBlocked = (action) => {
+  if (canPerform(action)) return false;
+  if (isGuestSession()) {
+    window.toast('Guest ดูข้อมูลได้อย่างเดียว กรุณาเข้าสู่ระบบเพื่อเบิก/รับ/แก้ไข', 'error');
+  } else {
+    window.toast(`บัญชีนี้เป็น ${ROLE_LABEL[currentRole] || 'Viewer'} จึง${ACTION_TEXT[action] || 'ทำรายการนี้'}ไม่ได้ ติดต่อ Admin เพื่อขอสิทธิ์`, 'error');
+  }
   return true;
 };
+async function loadMyRole() {
+  let role = 'viewer';
+  if (!isGuestSession()) {
+    try {
+      const { data, error } = await supabase.rpc('my_role');
+      if (error) throw error;
+      if (ROLE_ACTIONS[data]) role = data;
+    } catch (e) { console.warn('Role unavailable, treating this account as Viewer:', e && e.message); }
+  }
+  currentRole = role;
+  applyRoleUI();
+}
+function applyRoleUI() {
+  const label = isGuestSession() ? 'Guest' : (ROLE_LABEL[currentRole] || 'Viewer');
+  const roleEl = document.getElementById('profileRole');
+  if (roleEl) roleEl.textContent = label;
+  const isAdmin = canPerform('manageRoles');
+  ['homeSettingsBtn', 'homeSettingsDot'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isAdmin ? '' : 'none'; });
+  if (itemsLoaded) { applyFilters(); updateStats(); }   // buttons inside rows depend on the role
+  updateHomeStats();
+}
+// ===== USERS & ROLES (admin) =====
+let _appUsers = [];
+window.openUsersModal = async () => {
+  if (roleBlocked('manageRoles')) return;
+  document.getElementById('usersFilter').value = '';
+  document.getElementById('usersList').innerHTML = '<div class="users-empty">กำลังโหลด…</div>';
+  openModal('usersModal');
+  try {
+    const { data, error } = await supabase.rpc('list_app_users');
+    if (error) throw error;
+    _appUsers = data || [];
+    renderUsers();
+  } catch (e) {
+    document.getElementById('usersList').innerHTML = `<div class="users-empty">โหลดรายชื่อไม่สำเร็จ: ${escapeHtml((e && e.message) || '')}</div>`;
+  }
+};
+window.renderUsers = () => {
+  const q = (document.getElementById('usersFilter').value || '').trim().toLowerCase();
+  const me = (currentUser?.email || '').toLowerCase();
+  const rows = _appUsers.filter(u => !q || `${u.user_email} ${u.user_name}`.toLowerCase().includes(q));
+  document.getElementById('usersList').innerHTML = rows.length ? rows.map(u => {
+    const isMe = u.user_email === me;
+    const last = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '—';
+    const email = escapeHtml(u.user_email);
+    return `<div class="user-row">
+      <div class="user-info">
+        <div class="user-name">${escapeHtml(u.user_name || u.user_email.split('@')[0])}${isMe ? ' <span class="user-me">(คุณ)</span>' : ''}</div>
+        <div class="user-email">${email}</div>
+        <div class="user-meta">เข้าใช้ล่าสุด ${last}</div>
+      </div>
+      <select class="user-role-select" data-email="${email}" aria-label="สิทธิ์ของ ${email}" ${isMe ? 'disabled title="เปลี่ยนสิทธิ์ของตัวเองไม่ได้"' : ''} onchange="changeUserRole(this)">
+        ${['viewer', 'staff', 'admin'].map(r => `<option value="${r}"${u.user_role === r ? ' selected' : ''}>${ROLE_LABEL[r]}</option>`).join('')}
+      </select>
+    </div>`;
+  }).join('') : '<div class="users-empty">ไม่พบผู้ใช้</div>';
+};
+window.changeUserRole = async (sel) => {
+  const email = sel.dataset.email, role = sel.value;
+  const u = _appUsers.find(x => x.user_email === email);
+  const prev = u ? u.user_role : 'viewer';
+  sel.disabled = true;
+  try {
+    const { error } = await supabase.rpc('set_user_role', { target_email: email, new_role: role });
+    if (error) throw error;
+    if (u) u.user_role = role;
+    toast(`${email} เป็น ${ROLE_LABEL[role]} แล้ว`, 'success');
+  } catch (e) {
+    sel.value = prev;
+    const msg = (e && e.message) || '';
+    toast('เปลี่ยนสิทธิ์ไม่สำเร็จ: ' + (/CANNOT_CHANGE_OWN_ROLE/.test(msg) ? 'เปลี่ยนสิทธิ์ของตัวเองไม่ได้'
+      : /NOT_ALLOWED/.test(msg) ? 'บัญชีนี้ไม่ได้เป็น Admin แล้ว' : msg), 'error');
+  } finally {
+    sel.disabled = false;
+  }
+};
+
 function getCurrentUserName() {
   let name = currentUser?.user_metadata?.display_name || 
              currentUser?.user_metadata?.full_name || 
@@ -5934,8 +6056,10 @@ async function loadTrend() {
   try {
     const sum = stockValueSummary(items), now = new Date();
     const month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-    const { error } = await supabase.from('stock_value_snapshots').upsert({ month, value: Math.round(sum.value), stocked: sum.stocked, priced: sum.priced, updated_at: now.toISOString() });
-    if (error) throw error;
+    if (canPerform('addEdit')) {   // the database lets staff and admin refresh the snapshot; viewers only read it
+      const { error } = await supabase.from('stock_value_snapshots').upsert({ month, value: Math.round(sum.value), stocked: sum.stocked, priced: sum.priced, updated_at: now.toISOString() });
+      if (error) throw error;
+    }
     const { data, error: e2 } = await supabase.from('stock_value_snapshots').select('*').order('month', { ascending: false }).limit(12);
     if (e2) throw e2;
     valTrend = { rows: data || [], loadedAt: Date.now() };
@@ -7364,7 +7488,7 @@ function handleHomeScan(code) {
     setTimeout(() => { const i = document.getElementById('searchInput'); if (i) { i.value = code; window.onSearchInput(); } }, 120);
     return;
   }
-  if (!canPerform('adjust')) { window.toast('บัญชีนี้ไม่มีสิทธิ์เบิก/รับของ', 'error'); return; }
+  if (roleBlocked('adjust')) return;
   window.openScanChoice(match);   // never guess the direction: the user picks เบิก or รับ
 }
 function onScanSuccess(decodedText, decodedResult) {
