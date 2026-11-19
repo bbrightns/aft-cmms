@@ -102,3 +102,56 @@ for (const c of PR_CASES) {
     expect(errors).toEqual([]);
   });
 }
+
+// What a read-only account sees: locked home cards with a note, no write buttons, and no undo it cannot do.
+const LOGS = [
+  { id: 1, type: 'out', partId: 'SPFL-C-0001', msg: '📤 เบิก 1 pcs', note: '', ts: new Date().toISOString(), user: 'Golf', undo_data: { action: 'out', qty: 1 } },
+  { id: 2, type: 'add', partId: 'SPFL-C-0003', msg: '➕ เพิ่มรายการ', note: '', ts: new Date().toISOString(), user: 'Golf', undo_data: { action: 'add', itemId: 'a3' } },
+];
+const VIEW_CASES = [
+  { name: 'viewer', opts: { role: 'viewer' }, locked: true, note: /Viewer ดูข้อมูลได้อย่างเดียว/, adjustBtns: false, delBtns: false, undoOut: false, undoAdd: false },
+  { name: 'guest', opts: { who: 'guest' }, locked: true, note: /Guest ดูข้อมูลได้อย่างเดียว/, adjustBtns: false, delBtns: false, undoOut: false, undoAdd: false },
+  { name: 'staff', opts: { role: 'staff' }, locked: false, adjustBtns: true, delBtns: false, undoOut: true, undoAdd: false },
+  { name: 'admin', opts: { role: 'admin' }, locked: false, adjustBtns: true, delBtns: true, undoOut: true, undoAdd: true },
+];
+for (const c of VIEW_CASES) {
+  test(`what ${c.name} sees: cards, row buttons, undo`, async ({ page, context }, info) => {
+    const errors = h.watchErrors(page);
+    await h.mockBackend(context, { who: 'user', ...c.opts, logs: LOGS });
+    await h.openStore(page);
+    await h.waitForStockLoaded(page);
+    await expect(page.locator('#profileRole')).toHaveText(c.name === 'guest' ? 'Guest' : c.name[0].toUpperCase() + c.name.slice(1));
+
+    for (const card of await page.locator('.home-action-card').all()) {
+      if (c.locked) await expect(card).toHaveClass(/is-locked/); else await expect(card).not.toHaveClass(/is-locked/);
+    }
+    await expect(page.locator('.home-scan-text span')).toHaveText(c.locked ? /เพื่อดูข้อมูล/ : /เลือกเบิกหรือรับ/);
+    if (c.note) await expect(page.locator('#homeReadOnlyNote')).toHaveText(c.note);
+    else await expect(page.locator('#homeReadOnlyNote')).toBeHidden();
+
+    await page.evaluate(() => goInventory());
+    await expect(page.locator('#headerAddBtn')).toBeVisible({ visible: c.adjustBtns });   // staff and admin may add
+    const adjustBtns = page.locator('#pageInventory [onclick*="openAdjust("]');
+    if (c.adjustBtns) expect(await adjustBtns.count()).toBeGreaterThan(0); else await expect(adjustBtns).toHaveCount(0);
+    if (info.project.name === 'desktop') {   // the delete button lives in the desktop table
+      const delBtns = page.locator('#pageInventory .btn-icon.del');
+      if (c.delBtns) expect(await delBtns.count()).toBeGreaterThan(0); else await expect(delBtns).toHaveCount(0);
+    }
+    await page.evaluate(() => openDetail('a1'));
+    await expect(page.locator('#detailAdjustBtn')).toBeVisible({ visible: c.adjustBtns });
+    await expect(page.locator('#detailEditBtn')).toBeVisible({ visible: c.adjustBtns });
+    await page.evaluate(() => closeModal('detailModal'));
+
+    await page.evaluate(() => goTransactionLog());
+    await expect(page.locator('.lg-row')).toHaveCount(2);
+    await expect(page.locator('.lg-undo[data-id="1"]')).toHaveCount(c.undoOut ? 1 : 0);
+    await expect(page.locator('.lg-undo[data-id="2"]')).toHaveCount(c.undoAdd ? 1 : 0);   // undoing an add deletes: admin only
+    if (c.name === 'staff') {
+      await h.clearToasts(page);
+      await page.evaluate(() => confirmUndoLog('2'));
+      await expect(page.locator('#toastContainer')).toContainText('ทำได้เฉพาะ Admin');
+    }
+    expect(await h.noHorizontalScroll(page)).toBe(true);
+    expect(errors).toEqual([]);
+  });
+}
