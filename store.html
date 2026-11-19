@@ -9,6 +9,7 @@
 <script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
 <script src="https://unpkg.com/html5-qrcode@2.3.8" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
+<script src="boot-guard.js"></script>
 <style>
 html { scroll-behavior: smooth; }
 
@@ -39,6 +40,10 @@ html { scroll-behavior: smooth; }
 
 /* Stats */
 .home-stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.home-stats-fail { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; background: var(--surface); border: 1.5px solid var(--border); border-left: 4px solid var(--danger-text); border-radius: 12px; }
+.home-stats-fail-title { font-size: 15px; font-weight: 800; color: var(--danger-text); }
+.home-stats-fail-why { font-size: 13px; line-height: 1.45; color: var(--text2); margin-top: 2px; }
+.home-stats-fail-retry { flex-shrink: 0; min-height: 44px; padding: 0 18px; border: none; border-radius: 8px; background: var(--agc-blue); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
 .home-stat { background: var(--surface); border-radius: 12px; border: 1.5px solid var(--border); box-shadow: var(--shadow); padding: 14px 10px; text-align: center; transition: all 0.18s; }
 .home-stat-val { font-family: var(--mono); font-size: 22px; font-weight: 700; line-height: 1; margin-bottom: 5px; display: flex; align-items: center; justify-content: center; gap: 4px; }
 .home-stat-label { font-size: 9px; font-weight: 700; color: var(--text3); text-transform: uppercase; letter-spacing: 1px; font-family: var(--sans); }
@@ -2565,7 +2570,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.25.1</div>
+    <div class="home-version">v1.25.2</div>
 
 
     <!-- Compat stubs -->
@@ -3199,7 +3204,8 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 
 <!-- Supabase -->
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+window.__supabaseLoaded = true;   // read by boot-guard.js: the import above succeeded
 
 const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybHhlYWlnaHBmZ3NkdXFjY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNjg0MDgsImV4cCI6MjA5ODY0NDQwOH0.ep0JJO2Scb7PGUIxtx1t7cHMxuEmc-Jhxjl_12U46O0";
@@ -3282,10 +3288,13 @@ function setSyncing(state) {
   const dot = document.getElementById('syncDot');
   const txt = document.getElementById('syncText');
   isSyncing = state === 'syncing';
-  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
-  txt.textContent = state === 'syncing' ? 'กำลังบันทึก...' : state === 'error' ? 'Error' : 'Live';
+  dot.className = 'sync-dot' + (state === 'syncing' || state === 'loading' ? ' syncing' : state === 'error' ? ' error' : '');
+  txt.textContent = state === 'syncing' ? 'กำลังบันทึก...' : state === 'loading' ? 'กำลังโหลด...' : state === 'error' ? 'Error' : 'Live';
 }
-window.addEventListener('online', () => { setSyncing('live'); fetchItems(false); });   // data may have changed while we were offline
+window.addEventListener('online', () => {   // data may have changed while we were offline
+  if (!itemsLoaded) { window.retryItems(); return; }   // never loaded yet: show "loading", not "Live"
+  setSyncing('live'); fetchItems(false);
+});
 window.addEventListener('offline', () => setSyncing('error'));
 
 window.goLowStock = () => {
@@ -3312,6 +3321,35 @@ async function fetchAllRows(table, columns = '*') {
   return all;
 }
 
+// Until the first fetch succeeds the counts are unknown, not zero: "0 items" would read as an empty store.
+let itemsLoaded = false, itemsLoadFailed = false, _firstLoadTimer = null;
+const FIRST_LOAD_TIMEOUT_MS = 15000;
+function homeStatsUnknownHtml() {
+  if (itemsLoadFailed) {
+    const why = window.bootGuard ? window.bootGuard.reason() : 'ลองใหม่อีกครั้ง';
+    return `<div class="home-stats-fail" role="alert"><div><div class="home-stats-fail-title">โหลดข้อมูลคลังไม่สำเร็จ</div><div class="home-stats-fail-why">${escapeHtml(why)}</div></div><button type="button" class="home-stats-fail-retry" onclick="retryItems()">ลองใหม่</button></div>`;
+  }
+  return ['Total items', 'Low stock', 'No stock'].map(l =>
+    `<div class="home-stat"><div class="home-stat-val" style="color:var(--text3)">—</div><div class="home-stat-label">${l}</div></div>`).join('');
+}
+function markItemsUnavailable() {
+  if (itemsLoaded) return;
+  itemsLoadFailed = true;
+  setSyncing('error');
+  updateHomeStats();
+}
+function armFirstLoadTimer() {
+  clearTimeout(_firstLoadTimer);
+  _firstLoadTimer = setTimeout(markItemsUnavailable, FIRST_LOAD_TIMEOUT_MS);   // a request that never answers
+}
+window.retryItems = () => {
+  itemsLoadFailed = false;
+  updateHomeStats();
+  setSyncing('loading');
+  armFirstLoadTimer();
+  fetchItems(false);
+};
+
 let _fetchSeq = 0;
 async function fetchItems(showConflictBanner = false) {
   const seq = ++_fetchSeq;
@@ -3328,6 +3366,8 @@ async function fetchItems(showConflictBanner = false) {
     }
 
     items = newItems;
+    itemsLoaded = true; itemsLoadFailed = false;
+    clearTimeout(_firstLoadTimer);
 
     if (qaSelectedItem) {
       const updatedQa = items.find(x => x._id === qaSelectedItem._id);
@@ -3359,11 +3399,14 @@ async function fetchItems(showConflictBanner = false) {
     console.error('Fetch items error:', err);
     if (seq !== _fetchSeq) return;
     setSyncing('error');
+    markItemsUnavailable();   // only matters before the first load; afterwards the last good data stays on screen
   }
 }
 
 let _rtTimer = null, _rtExternal = false;
 function startRealtimeSync() {
+  setSyncing('loading');
+  armFirstLoadTimer();
   fetchItems(false);
 
   // Subscribe to changes
@@ -5662,7 +5705,7 @@ async function boot() {
         updateStats();
         updateHomeStats();
         if (typeof updateFilterSelectStyles === 'function') updateFilterSelectStyles();
-        setSyncing('live');
+        if (itemsLoaded) setSyncing('live');   // otherwise fetchItems / the first-load timer set the status
       } catch(innerErr){
         console.error('Boot render error:', innerErr);
         toast('Boot warning: ' + innerErr.message, 'warn');
@@ -6325,6 +6368,7 @@ function updateHomeStats() {
     <button type="button" class="home-stat home-stat-clickable ${low>0?'alert':''}" onclick="goInventoryWithFilters('low', null)" aria-label="Low stock ${low} รายการ แตะเพื่อดูรายการ"><div class="home-stat-val" style="color:var(--danger-text);display:flex;align-items:center;justify-content:center;gap:6px"><i data-lucide="alert-triangle" style="width:18px;height:18px"></i>${low}</div><div class="home-stat-label">Low stock <i data-lucide="chevron-right" class="home-stat-go"></i></div></button>
     <button type="button" class="home-stat home-stat-clickable home-stat-quiet" onclick="goInventory();setTimeout(()=>setQuickFilter('nostock'),80)" aria-label="No stock ${noStock} รายการ แตะเพื่อดูรายการ"><div class="home-stat-val" style="color:var(--text)">${noStock}</div><div class="home-stat-label">No stock <i data-lucide="chevron-right" class="home-stat-go"></i></div></button>
   `;
+  if (!itemsLoaded) document.getElementById('homeStats').innerHTML = homeStatsUnknownHtml();
   if (window.lucide) lucide.createIcons();
   const uploadZoneEl = document.getElementById('uploadZone');
   const homeLogEl = document.getElementById('homeLogSection');

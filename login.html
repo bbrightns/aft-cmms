@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared.css">
+<script src="boot-guard.js"></script>
 <style>
 /* Auth page specific styles */
 .login-overlay {
@@ -155,8 +156,24 @@
   </div>
 </div>
 
+<script>
+// Stand-ins until the module below loads and replaces them. If supabase-js is blocked the module never
+// runs, and without these the buttons would do nothing when tapped.
+(function () {
+  function notReady() {
+    var el = document.getElementById('loadingIndicator');
+    if (!el) return;
+    el.textContent = window.bootGuard ? window.bootGuard.reason() : 'ระบบยังโหลดไม่เสร็จ ลองใหม่อีกครั้ง';
+    el.style.color = 'var(--danger-text)';
+    el.style.display = 'block';
+  }
+  window.signInWithGoogle = notReady;
+  window.loginAsGuest = notReady;
+})();
+</script>
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+window.__supabaseLoaded = true;   // read by boot-guard.js: the import above succeeded
 
 const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNybHhlYWlnaHBmZ3NkdXFjY2RnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMwNjg0MDgsImV4cCI6MjA5ODY0NDQwOH0.ep0JJO2Scb7PGUIxtx1t7cHMxuEmc-Jhxjl_12U46O0";
