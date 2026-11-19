@@ -26,7 +26,8 @@ html { scroll-behavior: smooth; }
 @media (min-width: 1100px) {
   .home-layout { display: flex; justify-content: center; align-items: flex-start; gap: 28px; padding: 0 24px; }
   .home-layout .home-page { margin: 0; flex: 0 1 640px; min-width: 0; }
-  .home-side { display: flex; flex-direction: column; gap: 16px; flex: 0 0 380px; padding-top: 24px; position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; }
+  /* scrolls with the page: a sticky, height-capped column clipped its cards and grew its own scrollbar */
+  .home-side { display: flex; flex-direction: column; gap: 16px; flex: 0 0 380px; padding: 24px 0 48px; }
 }
 .side-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; }
 .side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }

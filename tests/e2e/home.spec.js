@@ -64,3 +64,46 @@ test('desktop side column: what needs attention and the latest movements', async
   expect(await h.noHorizontalScroll(page)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('desktop side column is never cut off or scrolled inside itself, even when full', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'desktop', 'the side column only exists on wide screens');
+  await page.setViewportSize({ width: 1820, height: 885 });   // the size the bug was reported at
+  const rows = Array.from({ length: 12 }, (_, i) => ({
+    id: `x${i}`, 'Part ID': `SPFL-C-${String(100 + i).padStart(4, '0')}`, Brand: 'OMADA', Model: `EAP211-BRIDGE KIT ${i}`,
+    Actual: '0', Min: '2', Location: 'A', Position: '1',
+  }));
+  const logs = Array.from({ length: 12 }, (_, i) => ({
+    id: 100 + i, type: i % 2 ? 'in' : 'out', partId: rows[i].id && rows[i]['Part ID'], msg: 'x', user: 'Golf',
+    ts: new Date(Date.now() - i * 864e5).toISOString(), undo_data: { qty: i + 1 },
+  }));
+  await h.mockBackend(context, { role: 'staff', rows, logs });
+  await h.openStore(page);
+  await expect(page.locator('#sideRecentList .side-row')).toHaveCount(8);
+  await expect(page.locator('#sideLowList .side-row')).toHaveCount(8);
+
+  for (const scroll of [0, 99999]) {   // top of the page, then scrolled to the bottom
+    await page.evaluate((y) => window.scrollTo(0, y), scroll);
+    await page.waitForTimeout(200);
+    const side = await page.evaluate(() => {
+      const el = document.getElementById('homeSide');
+      return { inner: el.scrollHeight - el.clientHeight, overflowY: getComputedStyle(el).overflowY };
+    });
+    expect(side.inner, 'no scrollbar inside the side column').toBeLessThanOrEqual(1);
+    // every card is drawn whole: nothing clipped by an ancestor
+    for (const card of await page.locator('#homeSide .side-card').all()) {
+      const clipped = await card.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+          const s = getComputedStyle(p);
+          if (s.overflowY !== 'visible' || s.overflowX !== 'visible') {
+            const pr = p.getBoundingClientRect();
+            if (r.top < pr.top - 1 || r.bottom > pr.bottom + 1) return true;
+          }
+        }
+        return false;
+      });
+      expect(clipped).toBe(false);
+    }
+  }
+  expect(await h.noHorizontalScroll(page)).toBe(true);
+});
