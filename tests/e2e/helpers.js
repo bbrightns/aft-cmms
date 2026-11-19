@@ -33,17 +33,16 @@ const DEFAULT_ROWS = [
  */
 async function mockBackend(context, opts = {}) {
   const state = { db: 'ok', ...opts };
-  const sent = { rpc: [], logPosts: [], thirdParty: [], state };
+  const sent = { rpc: [], logPosts: [], logGets: 0, thirdParty: [], state };
   const rows = opts.rows || DEFAULT_ROWS;
 
-  // The pages must not need any CDN: every script comes from vendor/. Fail the test if one is requested anyway.
-  for (const host of ['cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com']) {
+  // The pages must not need any CDN: every script and font comes from vendor/. Tests fail if one is requested anyway.
+  for (const host of ['cdn.jsdelivr.net', 'unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com']) {
     await context.route(`**://${host}/**`, (r) => { sent.thirdParty.push(r.request().url()); return r.abort('blockedbyclient'); });
   }
   if (state.lib === 'blocked') {   // supabase-js fails to load (connection dropped mid-load, file blocked)
     await context.route('**/vendor/supabase-js-*', (r) => r.abort('connectionreset'));
   }
-  await context.route('**/fonts.googleapis.com/**', (r) => r.fulfill({ contentType: 'text/css', body: '' }));
   await context.route('**/*.supabase.co/**', (r) => {
     const req = r.request();
     const u = new URL(req.url());
@@ -67,6 +66,7 @@ async function mockBackend(context, opts = {}) {
     }
     if (u.pathname === '/rest/v1/logs' && method === 'POST') { sent.logPosts.push(req.postDataJSON()); return json([], 201); }
     if (u.pathname === '/rest/v1/logs' && method === 'GET') {
+      sent.logGets += 1;
       // the plain list gets the logs; a filtered query (e.g. "was log #77 already undone?") finds nothing
       const filtered = [...u.searchParams.keys()].some((k) => !['select', 'order', 'limit', 'offset'].includes(k));
       return json(filtered ? [] : (state.logs || []));

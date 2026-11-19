@@ -19,18 +19,18 @@ colors:
   text-light: "#6b6b83"
 typography:
   display:
-    fontFamily: "Inter, Noto Sans Thai, sans-serif"
+    fontFamily: "Google Sans, sans-serif"
     fontSize: "42px"
-    fontWeight: 800
+    fontWeight: 700
     lineHeight: 1
     letterSpacing: "-1px"
   body:
-    fontFamily: "Inter, Noto Sans Thai, sans-serif"
+    fontFamily: "Google Sans, sans-serif"
     fontSize: "13px"
     fontWeight: 400
     lineHeight: 1.5
   mono:
-    fontFamily: "IBM Plex Mono, monospace"
+    fontFamily: "Google Sans Code, monospace"
     fontSize: "11px"
     fontWeight: 700
 rounded:
@@ -71,8 +71,8 @@ The palette uses high-contrast warm-gray backgrounds and white surfaces, contras
 
 ## Typography
 Dual-font system to support multilingual Thai and English interfaces.
-- **Display & UI Sans**: `'Inter'`, `'Noto Sans Thai'`, sans-serif. Highly readable at all scales.
-- **Code & Tech Mono**: `'IBM Plex Mono'`, monospace. Used for status indicators, counts, QR codes, IDs, and secondary metadata tags.
+- **Display & UI Sans**: `'Google Sans'` for both Thai and Latin (one family, matching shapes), sans-serif. Weights 400-700 only: 800 renders as 700.
+- **Code & Tech Mono**: `'Google Sans Code'`, monospace. Used for status indicators, counts, QR codes, IDs, and secondary metadata tags.
 
 ## Elevation
 The system relies on solid outlines rather than soft SaaS-style drop shadows.

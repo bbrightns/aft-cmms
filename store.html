@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Coating Store System - AGC</title>
 <link rel="icon" type="image/png" href="favicon.png">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="vendor/fonts/fonts.css">
 <script src="vendor/lucide-1.73.0.min.js"></script>
 <script src="vendor/html5-qrcode-2.3.8.min.js" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
@@ -21,6 +21,33 @@ html { scroll-behavior: smooth; }
 
 /* HOME */
 .home-page { padding: 24px 20px 48px; max-width: 640px; margin: 0 auto; font-family: var(--sans); }
+/* Desktop: a side column with what needs attention and the latest movements; phones keep the single column */
+.home-side { display: none; }
+@media (min-width: 1100px) {
+  .home-layout { display: flex; justify-content: center; align-items: flex-start; gap: 28px; padding: 0 24px; }
+  .home-layout .home-page { margin: 0; flex: 0 1 640px; min-width: 0; }
+  .home-side { display: flex; flex-direction: column; gap: 16px; flex: 0 0 380px; padding-top: 24px; position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; }
+}
+.side-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; }
+.side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.side-head h3 { margin: 0; font-size: 16px; font-weight: 800; color: var(--agc-blue); }
+.side-count { font-size: 13px; font-weight: 700; color: var(--danger-text); }
+.side-hint { margin: 2px 0 10px; font-size: 13px; color: var(--text2); }
+.side-list { display: flex; flex-direction: column; }
+.side-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 8px 6px; border: none; border-top: 1px solid var(--border); background: none; text-align: left; font: inherit; color: var(--text); cursor: pointer; }
+.side-row:first-child { border-top: none; }
+.side-row:hover { background: var(--bg2); }
+.side-main { min-width: 0; display: flex; flex-direction: column; }
+.side-pid { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text2); }
+.side-name { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-meta { font-size: 12px; color: var(--text2); }
+.side-val { flex-shrink: 0; text-align: right; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.side-val.low { color: var(--danger-text); }
+.side-val.out { color: #be185d; }
+.side-val.in { color: #047857; }
+.side-empty { padding: 12px 6px; font-size: 14px; color: var(--text2); }
+.side-more { margin-top: 10px; width: 100%; min-height: 40px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--agc-blue); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.side-more:hover { background: var(--bg2); }
 
 /* Greeting — shared style with index.html */
 .home-greeting { margin-bottom: 28px; }
@@ -61,11 +88,7 @@ html { scroll-behavior: smooth; }
 .hac-icon-list { background: #eff6ff; color: #3b82f6; }
 .home-action-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
 .home-action-card p { font-size: 12px; color: var(--text2); line-height: 1.5; }
-.hac-chevron { margin-top: 10px; color: var(--border2); transition: color 0.2s; }
-.home-action-card.card-out:hover .hac-chevron { color: #ec4899; }
-.home-action-card.card-in:hover .hac-chevron { color: #10b981; }
-.home-action-card.card-list-full:hover .hac-chevron { color: #3b82f6; }
-
+.home-action-card.card-out:hover .home-action-card.card-in:hover .home-action-card.card-list-full:hover 
 /* Full-width card */
 .home-full-card { width: 100%; background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow); padding: 20px 16px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.2s ease; margin-bottom: 20px; font-family: var(--sans); }
 .home-full-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
@@ -633,7 +656,7 @@ textarea { resize: vertical; min-height: 60px; }
 .qty-stepper-input { width: 100px; height: 56px; text-align: center; font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--agc-blue); background: var(--surface); border: 2px solid var(--border2); border-radius: 12px; -moz-appearance: textfield; appearance: textfield; }
 .qty-stepper-input::-webkit-outer-spin-button, .qty-stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .qty-stepper-input:focus { outline: none; border-color: var(--agc-blue); box-shadow: 0 0 0 3px rgba(0,31,107,0.12); }
-/* Force IBM Plex Mono on every visible number */
+/* Force the mono font (Google Sans Code) on every visible number */
 .home-stat-val, .stat-val, .qty-num, .qty-stepper-input, .inv-card-stock, .stock-cell, td .badge, .qa-item-stock, .pos-chip { font-family: var(--mono); font-variant-numeric: tabular-nums; }
 /* Clickable Home stat (Low Stock filter shortcut) */
 .home-stat.home-stat-clickable { cursor: pointer; transition: all 0.15s; }
@@ -2310,7 +2333,7 @@ html body #pageInventory.log-view #searchResultMeta, html body #pageInventory.lo
 
 /* ===== HOME: priority, readable type, safer footer ===== */
 .home-stat-label { font-size: 12px; font-weight: 600; text-transform: none; letter-spacing: 0; color: var(--text2); display: flex; align-items: center; justify-content: center; gap: 2px; }
-.home-sec-sub { font-size: 12px; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text2); }
+.home-sec-sub { font-size: 13px; line-height: 1.4; text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--text2); }
 button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px; }
 .home-stat-go { width: 14px; height: 14px; color: var(--text3); }
 .home-stat.home-stat-quiet { background: var(--surface); }
@@ -2465,6 +2488,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 
 <!-- HOME -->
 <div id="pageHome" style="display:none">
+ <div class="home-layout">
   <div class="home-page">
 
     <!-- Greeting -->
@@ -2488,14 +2512,12 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <button class="home-action-card card-out" onclick="goAction('out')">
         <div class="hac-icon hac-icon-out"><i data-lucide="log-out" style="width:32px;height:32px"></i></div>
         <h2 style="color:#db2777">เบิกของ</h2>
-        <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
 
       <!--รับของ-->
       <button class="home-action-card card-in" onclick="goAction('in')">
         <div class="hac-icon hac-icon-in"><i data-lucide="log-in" style="width:32px;height:32px"></i></div>
         <h2 style="color:#059669">รับของ</h2>
-        <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
     </div>
     <p class="home-readonly-note" id="homeReadOnlyNote" role="note" hidden></p>
@@ -2511,7 +2533,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="search" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">ค้นหาพาร์ทอะไหล่</div>
-        <div class="home-sec-sub">SEARCH ALL INVENTORY ITEMS</div>
+        <div class="home-sec-sub">ค้นจาก Part ID, ยี่ห้อ, รุ่น หรือตำแหน่ง</div>
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
@@ -2521,7 +2543,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="clipboard-clock" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">ประวัติการแก้ไขข้อมูล</div>
-        <div class="home-sec-sub">LOG SYSTEM ACTIVITIES</div>
+        <div class="home-sec-sub">ใครเบิก รับ แก้ไขอะไร เมื่อไหร่</div>
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
@@ -2531,7 +2553,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="home-sec-icon" style="background:#f0fdf4;color:#16a34a"><i data-lucide="printer" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">พิมพ์บาร์โค้ด QR Code</div>
-        <div class="home-sec-sub">BATCH QR CODE LABEL PRINTING</div>
+        <div class="home-sec-sub">พิมพ์ป้าย QR ทีละหลายรายการ</div>
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
@@ -2541,7 +2563,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="home-sec-icon" style="background:#fff7ed;color:#ea580c"><i data-lucide="shopping-cart" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">Purchase Request (PR)</div>
-        <div class="home-sec-sub">PURCHASE REQUEST TRACKING</div>
+        <div class="home-sec-sub">สร้างและติดตามใบขอซื้อ</div>
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
@@ -2551,7 +2573,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="home-sec-icon" style="background:#eff6ff;color:#001F6B"><i data-lucide="wallet" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">มูลค่าคลัง</div>
-        <div class="home-sec-sub">ON-HAND STOCK VALUE</div>
+        <div class="home-sec-sub">มูลค่าของที่อยู่ในคลังตอนนี้ (บาท)</div>
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
@@ -2594,6 +2616,22 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     <div id="dataActions" style="display:none"></div>
 
   </div>
+
+  <!-- Desktop only (>= 1100px): what a supervisor checks first, without opening other pages -->
+  <aside class="home-side" id="homeSide" aria-label="ภาพรวม">
+    <section class="side-card">
+      <div class="side-head"><h3>ต้องดูแล</h3><span class="side-count" id="sideLowCount"></span></div>
+      <p class="side-hint">ของที่เหลือต่ำกว่า Min เรียงจากขาดมากที่สุด</p>
+      <div class="side-list" id="sideLowList"><div class="side-empty">กำลังโหลด…</div></div>
+      <button type="button" class="side-more" id="sideLowMore" onclick="goInventoryWithFilters('low', null)" hidden>ดูทั้งหมด</button>
+    </section>
+    <section class="side-card">
+      <div class="side-head"><h3>เบิก/รับล่าสุด</h3></div>
+      <div class="side-list" id="sideRecentList"><div class="side-empty">กำลังโหลด…</div></div>
+      <button type="button" class="side-more" onclick="goTransactionLog()">ดูประวัติทั้งหมด</button>
+    </section>
+  </aside>
+ </div>
 </div>
 
 <!-- ACTION PAGE -->
@@ -3476,9 +3514,12 @@ async function loadLogs(force = false) {
       .limit(200);
     if (error) throw error;
     _logsCacheData = data;
+    _sideLogsFailed = false;
     _logsCacheTs = now;
     renderLog(data);
+    renderHomeSide();   // after the timestamp: it would otherwise see a stale cache and wait forever
   } catch (err) {
+    _sideLogsFailed = true;
     console.error('Load logs error:', err);
   }
 }
@@ -6497,6 +6538,53 @@ window.goInventoryWithFilters = (stockFilter='all', deptFilter=null) => {
   updateStats();
 };
 
+// ===== HOME SIDE COLUMN (desktop) =====
+const SIDE_ROWS = 8;
+let _sideLogsLoading = false, _sideLogsFailed = false;
+const isWideHome = () => window.matchMedia('(min-width: 1100px)').matches;
+function renderHomeSide() {
+  if (!isWideHome()) return;   // phones never show it: no work, no log download
+  const lowBox = document.getElementById('sideLowList'), recentBox = document.getElementById('sideRecentList');
+  if (!lowBox || !recentBox) return;
+  const nameOf = r => ((r['Brand'] || '') + ' ' + (r['Model'] || '')).trim() || r['Description'] || '';
+  if (!itemsLoaded) {
+    lowBox.innerHTML = `<div class="side-empty">${itemsLoadFailed ? 'โหลดข้อมูลไม่สำเร็จ' : 'กำลังโหลด…'}</div>`;
+  } else {
+    const low = items.filter(isLowStockItem)
+      .map(r => ({ r, a: getActualNumber(r['Actual']), m: getActualNumber(r['Min']) }))
+      .sort((x, y) => (y.m - y.a) - (x.m - x.a) || x.a - y.a);
+    document.getElementById('sideLowCount').textContent = low.length ? `${low.length} รายการ` : '';
+    document.getElementById('sideLowMore').hidden = low.length <= SIDE_ROWS;
+    lowBox.innerHTML = low.length ? low.slice(0, SIDE_ROWS).map(({ r, a, m }) => `
+      <button type="button" class="side-row" onclick="openDetail('${escapeHtml(r._id)}')">
+        <span class="side-main"><span class="side-pid">${escapeHtml(r['Part ID'] || '')}</span><span class="side-name">${escapeHtml(nameOf(r))}</span></span>
+        <span class="side-val low">เหลือ ${escapeHtml(String(a))} / Min ${escapeHtml(String(m))}</span>
+      </button>`).join('') : '<div class="side-empty">ไม่มีของที่ต่ำกว่า Min</div>';
+  }
+  if (!_logsCacheData || Date.now() - _logsCacheTs > 60000) {
+    if (_sideLogsFailed) { recentBox.innerHTML = '<div class="side-empty">โหลดประวัติไม่สำเร็จ</div>'; return; }
+    if (!_sideLogsLoading) {   // one request at a time; loadLogs calls back here when it arrives
+      _sideLogsLoading = true;
+      loadLogs(true).finally(() => { _sideLogsLoading = false; });
+    }
+    return;
+  }
+  const moves = _logsCacheData.filter(l => l.type === 'in' || l.type === 'out').slice(0, SIDE_ROWS);
+  recentBox.innerHTML = moves.length ? moves.map(l => {
+    const item = items.find(x => x['Part ID'] === l.partId);
+    const qty = (getUndoData(l) || {}).qty;
+    const w = logWhen(l.ts);
+    // today: just the time; yesterday: "เมื่อวาน 14:05"; older: the date
+    const when = w.label.startsWith('วันนี้') ? w.time : w.label.startsWith('เมื่อวาน') ? `เมื่อวาน ${w.time}` : w.label;
+    return `<button type="button" class="side-row" onclick="${item ? `openDetail('${escapeHtml(item._id)}')` : 'goTransactionLog()'}">
+        <span class="side-main"><span class="side-pid">${escapeHtml(l.partId || '')}</span><span class="side-name">${escapeHtml(item ? nameOf(item) : (l.msg || ''))}</span>
+        <span class="side-meta">${escapeHtml(l.user || '')} · ${escapeHtml(when)}</span></span>
+        <span class="side-val ${l.type}">${l.type === 'out' ? 'เบิก' : 'รับ'}${qty ? ' ' + escapeHtml(String(qty)) : ''}</span>
+      </button>`;
+  }).join('') : '<div class="side-empty">ยังไม่มีการเบิก/รับ</div>';
+}
+window.addEventListener('resize', () => { clearTimeout(window._sideResize); window._sideResize = setTimeout(renderHomeSide, 200); });
+
 function updateHomeStats() {
   const total = items.length;
   const low = items.filter(r => stockStatus(r['Actual'], r['Min']) === 'low').length;
@@ -6507,6 +6595,7 @@ function updateHomeStats() {
     <button type="button" class="home-stat home-stat-clickable home-stat-quiet" onclick="goInventory();setTimeout(()=>setQuickFilter('nostock'),80)" aria-label="No stock ${noStock} รายการ แตะเพื่อดูรายการ"><div class="home-stat-val" style="color:var(--text)">${noStock}</div><div class="home-stat-label">No stock <i data-lucide="chevron-right" class="home-stat-go"></i></div></button>
   `;
   if (!itemsLoaded) document.getElementById('homeStats').innerHTML = homeStatsUnknownHtml();
+  renderHomeSide();
   if (window.lucide) lucide.createIcons();
   const uploadZoneEl = document.getElementById('uploadZone');
   const homeLogEl = document.getElementById('homeLogSection');
