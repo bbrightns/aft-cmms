@@ -127,6 +127,29 @@ CREATE POLICY "pr-docs upload" ON storage.objects FOR INSERT TO authenticated
 CREATE POLICY "pr-docs delete" ON storage.objects FOR DELETE TO authenticated
   USING (bucket_id = 'pr-docs' AND (SELECT public.is_staff()));
 
+-- Part photos (bucket 'parts', PUBLIC bucket). Viewing a photo goes through its public URL, which needs
+-- no policy, so guests still see photos. Upload (upsert), replace and remove are staff only.
+-- Drops the dashboard-made "Public ..." policies that let anyone without a login overwrite or delete photos.
+DO $$
+DECLARE p record;
+BEGIN
+  FOR p IN
+    SELECT policyname FROM pg_policies
+    WHERE schemaname = 'storage' AND tablename = 'objects'
+      AND (coalesce(qual, '') LIKE '%''parts''%' OR coalesce(with_check, '') LIKE '%''parts''%')
+  LOOP
+    EXECUTE format('DROP POLICY %I ON storage.objects', p.policyname);
+  END LOOP;
+END $$;
+CREATE POLICY "parts staff read"   ON storage.objects FOR SELECT TO authenticated
+  USING (bucket_id = 'parts' AND (SELECT public.is_staff()));
+CREATE POLICY "parts staff upload" ON storage.objects FOR INSERT TO authenticated
+  WITH CHECK (bucket_id = 'parts' AND (SELECT public.is_staff()));
+CREATE POLICY "parts staff update" ON storage.objects FOR UPDATE TO authenticated
+  USING (bucket_id = 'parts' AND (SELECT public.is_staff())) WITH CHECK (bucket_id = 'parts' AND (SELECT public.is_staff()));
+CREATE POLICY "parts staff delete" ON storage.objects FOR DELETE TO authenticated
+  USING (bucket_id = 'parts' AND (SELECT public.is_staff()));
+
 -- 5. Table privileges: RLS is the fence, grants are the second fence.
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon;
 GRANT SELECT ON inventory, logs, store_meta, stock_value_snapshots TO anon;
