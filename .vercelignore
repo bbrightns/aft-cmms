@@ -7,3 +7,7 @@ DESIGN.md
 PRODUCT.md
 server.js
 *.cmd
+supabase_security.sql
+tests/
+.github/
+playwright.config.js

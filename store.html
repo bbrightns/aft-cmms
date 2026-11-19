@@ -6,8 +6,8 @@
 <title>Coating Store System - AGC</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://unpkg.com/lucide@1.73.0/dist/umd/lucide.js"></script>
-<script src="https://unpkg.com/html5-qrcode@2.3.8" type="text/javascript"></script>
+<script src="vendor/lucide-1.73.0.min.js"></script>
+<script src="vendor/html5-qrcode-2.3.8.min.js" type="text/javascript"></script>
 <link rel="stylesheet" href="shared.css">
 <script src="boot-guard.js"></script>
 <style>
@@ -50,6 +50,8 @@ html { scroll-behavior: smooth; }
 
 /* Action cards */
 .home-main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+.home-action-card.is-locked { opacity: 0.55; filter: grayscale(1); box-shadow: none; }
+.home-readonly-note { margin: -4px 0 16px; padding: 10px 14px; border-radius: 10px; background: var(--bg2); border: 1px solid var(--border); font-size: 14px; line-height: 1.5; color: var(--text); text-align: center; }
 .home-action-card { background: var(--surface); border-radius: 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow); padding: 20px 16px; max-height: 160px; display: flex; flex-direction: column; align-items: center; text-align: center; cursor: pointer; transition: all 0.2s ease; width: 100%; font-family: var(--sans); }
 .home-action-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--border2); }
 .hac-icon { width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; transition: transform 0.25s; flex-shrink: 0; }
@@ -2496,6 +2498,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
         <div class="hac-chevron"><i data-lucide="chevron-down" style="width:20px;height:20px"></i></div>
       </button>
     </div>
+    <p class="home-readonly-note" id="homeReadOnlyNote" role="note" hidden></p>
 
     <!--สแกน QR: the fastest way on the floor — scan the label, then pick เบิก or รับ-->
     <button class="home-scan-btn" onclick="openQRScanner('home')" aria-label="สแกน QR Code ที่ป้ายอะไหล่">
@@ -2583,7 +2586,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.27.0</div>
+    <div class="home-version">v1.28.0</div>
 
 
     <!-- Compat stubs -->
@@ -3239,7 +3242,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 
 <!-- Supabase -->
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.0/+esm";
+import { createClient } from "./vendor/supabase-js-2.119.0.esm.js";
 window.__supabaseLoaded = true;   // read by boot-guard.js: the import above succeeded
 
 const SUPABASE_URL = "https://crlxeaighpfgsduqccdg.supabase.co";
@@ -3490,7 +3493,7 @@ function showPage(id) {
   document.getElementById(id).style.display = '';
   const isHome = id === 'pageHome';
   document.getElementById('headerBack').classList.toggle('visible', !isHome);
-  document.getElementById('headerAddBtn').style.display = id === 'pageInventory' ? '' : 'none';
+  document.getElementById('headerAddBtn').style.display = id === 'pageInventory' && canPerform('addEdit') ? '' : 'none';
   document.getElementById('headerExportBtn').style.display = id === 'pageInventory' ? '' : 'none';
   refreshIcons();
 }
@@ -4144,6 +4147,8 @@ function undoBlockReason(log) {
   if (!log.partId || log.partId === 'SYSTEM' || !UNDOABLE_TYPES.has(type)) return 'รายการของระบบไม่สามารถย้อนกลับได้';
   if (isUndoRow(log)) return 'รายการนี้เป็นการย้อนกลับอยู่แล้ว ไม่สามารถย้อนซ้ำได้';
   if (_undoneIds.has(String(log.id))) return 'รายการนี้ถูกย้อนกลับไปแล้ว';
+  if (!canPerform('addEdit')) return `บัญชีนี้เป็น ${isGuestSession() ? 'Guest' : ROLE_LABEL[currentRole] || 'Viewer'} จึงย้อนกลับรายการไม่ได้`;
+  if (type === 'add' && !canPerform('delete')) return 'การย้อนกลับการเพิ่มรายการคือการลบรายการ ซึ่งทำได้เฉพาะ Admin';
   return '';
 }
 async function isLogAlreadyUndone(logId) {   // asks the server too: another device may have undone it, or it scrolled out of the last 200 rows
@@ -5800,7 +5805,24 @@ function applyRoleUI() {
   if (roleEl) roleEl.textContent = label;
   const isAdmin = canPerform('manageRoles');
   ['homeSettingsBtn', 'homeSettingsDot'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isAdmin ? '' : 'none'; });
+  const canAdjust = canPerform('adjust');
+  document.querySelectorAll('.home-action-card').forEach(c => {
+    c.classList.toggle('is-locked', !canAdjust);
+    c.setAttribute('aria-disabled', String(!canAdjust));   // still clickable: the tap explains why
+  });
+  const note = document.getElementById('homeReadOnlyNote');
+  if (note) {
+    note.hidden = canAdjust;
+    note.textContent = isGuestSession()
+      ? 'โหมด Guest ดูข้อมูลได้อย่างเดียว เข้าสู่ระบบเพื่อเบิก/รับของ'
+      : `บัญชีนี้เป็น ${label} ดูข้อมูลได้อย่างเดียว ติดต่อ Admin เพื่อขอสิทธิ์เบิก/รับ`;
+  }
+  const scanSub = document.querySelector('.home-scan-text span');
+  if (scanSub) scanSub.textContent = canAdjust ? 'สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ' : 'สแกนที่ป้ายอะไหล่เพื่อดูข้อมูลและตำแหน่ง';
+  const addBtn = document.getElementById('headerAddBtn');
+  if (addBtn && !canPerform('addEdit')) addBtn.style.display = 'none';
   if (itemsLoaded) { applyFilters(); updateStats(); }   // buttons inside rows depend on the role
+  if (_logsRendered.length) renderLog(_logsRendered);   // undo buttons depend on the role
   updateHomeStats();
 }
 // ===== USERS & ROLES (admin) =====
@@ -6723,9 +6745,9 @@ function renderTable() {
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
       <td data-col="value">${!onhandQty(r) ? '—' : isMissingCost(r) ? '<span class="pos-empty needs" title="มีของแต่ยังไม่มีราคา">ไม่มีราคา</span>' : fmtBaht(itemValue(r)) + (isEstCost(r) ? ' ' + EST_MARK : '')}</td>
       <td data-col="actions"><div class="row-actions">
-        <button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>
+        ${canPerform('adjust') ? `<button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>` : ''}
         ${reorder ? `<button class="btn-icon quote-btn" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
-        <button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="ลบรายการ" aria-label="ลบรายการ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="trash-2"></i></button>
+        ${canPerform('delete') ? `<button class="btn-icon del" onclick="event.stopPropagation();openDelete('${r._id}')" title="ลบรายการ" aria-label="ลบรายการ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="trash-2"></i></button>` : ''}
       </div></td>
     </tr>`;
   }).join('');
@@ -6750,7 +6772,7 @@ function renderCards() {
     const emptyStock = getActualNumber(r['Actual']) <= 0;   // nothing to withdraw: offer ขอราคา in its place
     const hasBrand = r['Brand'] && r['Brand'].trim();
     const displayName = hasBrand ? ((r['Brand']||'') + ' ' + (r['Model']||'')) : (r['Description'] || '—');
-    return `<div class="inv-card" onclick="openEdit('${r._id}')" style="cursor:pointer">
+    return `<div class="inv-card" onclick="${canPerform('addEdit') ? 'openEdit' : 'openDetail'}('${r._id}')" style="cursor:pointer">
       <div class="inv-card-top">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -6774,8 +6796,8 @@ function renderCards() {
       <div class="inv-card-actions">
         ${emptyStock && reorder
           ? `<button class="inv-card-btn quote-primary" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>`
-          : `<button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>`}
-        <button class="inv-card-btn deposit" onclick="event.stopPropagation();openAdjust('${r._id}', 'in')"><i data-lucide="log-in" style="width:14px;height:14px"></i> รับของ</button>
+          : canPerform('adjust') ? `<button class="inv-card-btn withdraw" onclick="event.stopPropagation();openAdjust('${r._id}', 'out')"><i data-lucide="log-out" style="width:14px;height:14px"></i> เบิกของ</button>` : ''}
+        ${canPerform('adjust') ? `<button class="inv-card-btn deposit" onclick="event.stopPropagation();openAdjust('${r._id}', 'in')"><i data-lucide="log-in" style="width:14px;height:14px"></i> รับของ</button>` : ''}
         ${!emptyStock && reorder ? `<button class="inv-card-btn quote" onclick="event.stopPropagation();openQuote('${r._id}')"><i data-lucide="mail" style="width:14px;height:14px"></i> ขอราคา</button>` : ''}
       </div>
     </div>`;
@@ -7192,6 +7214,8 @@ window.openDetail = (id) => {
   document.getElementById('detailQuoteBtn').onclick=()=>{closeModal('detailModal');openQuote(id);};
   document.getElementById('detailAdjustBtn').onclick=()=>{closeModal('detailModal');openAdjust(id);};
   document.getElementById('detailEditBtn').onclick=()=>{closeModal('detailModal');openEdit(id);};
+  document.getElementById('detailAdjustBtn').style.display = canPerform('adjust') ? '' : 'none';
+  document.getElementById('detailEditBtn').style.display = canPerform('addEdit') ? '' : 'none';
   document.getElementById('detailModal').style.display='flex';
   refreshIcons();
 };
@@ -7470,7 +7494,7 @@ function handleHomeScan(code) {
     setTimeout(() => { const i = document.getElementById('searchInput'); if (i) { i.value = code; window.onSearchInput(); } }, 120);
     return;
   }
-  if (roleBlocked('adjust')) return;
+  if (!canPerform('adjust')) { window.openDetail(match._id); return; }   // read-only: show the part instead of a dead end
   window.openScanChoice(match);   // never guess the direction: the user picks เบิก or รับ
 }
 function onScanSuccess(decodedText, decodedResult) {

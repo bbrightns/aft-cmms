@@ -1,0 +1,25 @@
+# One check per line: label | SQL | expected result for each user, in this order:
+#   guest anonSignin agcAccount unconfirmed viewer approver staff admin
+# A result is the first value returned, "0rows", or a short error: denied (no table/function privilege),
+# rls (row refused by a policy), or the exception text raised by the function (NOT_ALLOWED, ...).
+# Every check runs in its own transaction and is rolled back.
+my role        | select coalesce(my_role(),'null')                                                        | denied null null null viewer viewer staff admin
+read stock     | select count(*) from inventory                                                           | 1 0 0 0 1 1 1 1
+withdraw v2    | select adjust_stock_v2('i1',1,'out',null,null,'d','u')                                   | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED 4 4
+withdraw v3    | select adjust_stock_v3('i1',1,'out',null,null,'d','out','m','',null)                     | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED 4 4
+add item       | insert into inventory(id) values('n1') returning 1                                       | denied rls rls rls rls rls 1 1
+edit item      | update inventory set "Actual"='9' returning 1                                            | denied 0rows 0rows 0rows 0rows 0rows 1 1
+delete item    | delete from inventory returning 1                                                        | denied 0rows 0rows 0rows 0rows 0rows 0rows 1
+next part id   | select get_next_part_id()                                                                | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED 2 2
+write log      | insert into logs(type) values('x') returning 1                                           | denied rls rls rls rls rls 1 1
+clear logs     | delete from logs returning 1                                                             | denied 0rows 0rows 0rows 0rows 0rows 0rows 1
+read PRs       | select count(*) from pr_records                                                          | denied 0 0 0 1 1 1 1
+create PR      | insert into pr_records(id) values('p2') returning 1                                      | denied rls rls rls rls rls 1 1
+edit PR        | update pr_records set "PO No."='1' returning 1                                           | denied 0rows 0rows 0rows 0rows 1 1 1
+delete PR      | delete from pr_records returning 1                                                       | denied 0rows 0rows 0rows 0rows 0rows 0rows 1
+upload photo   | insert into storage.objects(bucket_id,name) values('parts','x.jpg') returning 1          | rls rls rls rls rls rls 1 1
+list users     | select count(*) from list_app_users()                                                    | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED 4
+set a role     | select set_user_role('viewer@gmail.com','staff')                                         | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED staff
+set own role   | select set_user_role('admin@gmail.com','viewer')                                         | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED CANNOT_CHANGE_OWN_ROLE
+role non-member| select set_user_role('rando@agc.com','staff')                                            | denied NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_ALLOWED NOT_A_MEMBER
+read roles tbl | select count(*) from app_roles                                                           | denied 0 0 0 0 0 0 0
