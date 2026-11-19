@@ -381,6 +381,102 @@ $$;
 REVOKE EXECUTE ON FUNCTION public.my_role(), public.list_app_users(), public.set_user_role(text, text) FROM PUBLIC, anon;
 GRANT  EXECUTE ON FUNCTION public.my_role(), public.list_app_users(), public.set_user_role(text, text) TO authenticated;
 
+-- 9. Who did it is decided by the database, and a stock change and its log row commit together.
+--    The page used to send the user's name itself (anyone could write someone else's name) and wrote the
+--    log in a second request after the stock change (a dropped connection left a change with no log).
+ALTER TABLE logs      ADD COLUMN IF NOT EXISTS user_email text;
+ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "_updatedByEmail" text;
+
+-- display name of the signed-in user, as set in their profile (falls back to the start of their email)
+CREATE OR REPLACE FUNCTION public.actor_name() RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public, auth AS $$
+  SELECT coalesce(nullif(btrim(u.raw_user_meta_data ->> 'display_name'), ''),
+                  nullif(btrim(u.raw_user_meta_data ->> 'full_name'), ''),
+                  nullif(btrim(u.raw_user_meta_data ->> 'name'), ''),
+                  split_part(u.email, '@', 1))
+  FROM auth.users u WHERE u.id = auth.uid();
+$$;
+
+-- Overwrites whatever name the page sent with the real signed-in account. Rows written from the SQL editor
+-- (no signed-in user) keep what they were given. A log row keeps its original author when an admin edits it.
+CREATE OR REPLACE FUNCTION public.stamp_actor() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  e text := public.member_email();
+BEGIN
+  IF TG_TABLE_NAME = 'logs' THEN
+    IF TG_OP = 'UPDATE' THEN
+      NEW."user" := OLD."user";
+      NEW.user_email := OLD.user_email;
+    ELSIF e IS NOT NULL THEN
+      NEW."user" := public.actor_name();
+      NEW.user_email := e;
+    END IF;
+  ELSIF e IS NOT NULL THEN
+    NEW."_updatedBy" := public.actor_name();
+    NEW."_updatedByEmail" := e;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS logs_stamp_actor ON logs;
+CREATE TRIGGER logs_stamp_actor BEFORE INSERT OR UPDATE ON logs
+  FOR EACH ROW EXECUTE FUNCTION public.stamp_actor();
+DROP TRIGGER IF EXISTS inventory_stamp_actor ON inventory;
+CREATE TRIGGER inventory_stamp_actor BEFORE INSERT OR UPDATE ON inventory
+  FOR EACH ROW EXECUTE FUNCTION public.stamp_actor();
+
+-- Withdraw / receive / move AND its log row, in one transaction: both happen or neither does.
+-- The page supplies the wording; the database supplies the facts (part, quantity, who, the new stock).
+-- log_msg may contain {stock}, replaced by the stock after the change.
+-- adjust_stock_v2 stays for pages opened before this version; it no longer trusts user_name either (trigger above).
+CREATE OR REPLACE FUNCTION public.adjust_stock_v3(
+  item_id text,
+  qty double precision,
+  mode text,
+  new_loc text,
+  new_pos text,
+  device_id text,
+  log_type text,
+  log_msg text,
+  log_note text,
+  log_undo jsonb
+)
+RETURNS double precision
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  new_actual double precision;
+  part text;
+  undo jsonb;
+BEGIN
+  -- the log must describe what really happened: a quantity change is logged as that direction, a move as an edit
+  IF (coalesce(qty, 0) > 0 AND log_type IS DISTINCT FROM mode) OR (coalesce(qty, 0) = 0 AND log_type IS DISTINCT FROM 'edit') THEN
+    RAISE EXCEPTION 'BAD_LOG_TYPE';
+  END IF;
+
+  new_actual := public.adjust_stock_v2(item_id, qty, mode, new_loc, new_pos, device_id, NULL);   -- checks role and stock
+
+  SELECT "Part ID" INTO part FROM inventory WHERE id = item_id;
+  undo := coalesce(log_undo, '{}'::jsonb) || jsonb_build_object('qty', qty, 'itemId', item_id, 'partId', part);
+  IF qty > 0 THEN
+    undo := undo || jsonb_build_object('action', mode);
+  END IF;
+
+  INSERT INTO logs (type, "partId", msg, note, device, undo_data)
+  VALUES (log_type, part,
+          replace(coalesce(log_msg, ''), '{stock}', CAST(new_actual AS text)),
+          concat_ws(E'\n', nullif(btrim(coalesce(log_note, '')), ''), '__UNDO_DATA__:' || undo::text),
+          device_id, undo);
+
+  RETURN new_actual;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.adjust_stock_v3(text, double precision, text, text, text, text, text, text, text, jsonb) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.adjust_stock_v3(text, double precision, text, text, text, text, text, text, text, jsonb) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.actor_name() FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.actor_name() TO authenticated;
+
 -- ============================================================
 -- Useful SQL (run by hand in the SQL editor):
 --
