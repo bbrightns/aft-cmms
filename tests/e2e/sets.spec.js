@@ -204,3 +204,67 @@ test('picking a part that is already in a set joins that set', async ({ page, co
   await expect.poll(() => patches.length).toBe(1);
   expect(patches[0].body['Set Group']).toBe('FR-S01');
 });
+
+test('renaming a set: clearing the name keeps the parts, and the new name goes to all of them', async ({ page, context }) => {
+  const { patches, errors } = await setup(page, context);
+  await page.evaluate(() => openEdit('s1'));
+  await expect(page.locator('#f_setlink_chips .set-link-chip')).toHaveCount(2);
+  await page.fill('#f_setgroup', '');                      // cleared to type a new name
+  await expect(page.locator('#f_setlink_chips .set-link-chip')).toHaveCount(2);   // nothing lost
+  // saving with no name is refused rather than silently dropping the set
+  await page.evaluate(() => saveItem());
+  await expect(page.locator('#f_setgroup_help')).toContainText('ใส่ชื่อชุด');
+  expect(patches.length).toBe(0);
+  await page.locator('#f_setgroup').pressSequentially('LEVEL-1');
+  await expect(page.locator('#f_setgroup_help')).toContainText('ทั้ง 3 รายการ');
+  await page.evaluate(() => saveItem());
+  await expect.poll(() => patches.length).toBe(3);
+  expect(Object.fromEntries(patches.map((p) => [p.id, p.body['Set Group']]))).toEqual({ s1: 'LEVEL-1', s2: 'LEVEL-1', s3: 'LEVEL-1' });
+  expect(errors).toEqual([]);
+});
+
+test('✕ takes one part out of the set; "เอารายการนี้ออกจากชุด" takes only this part out', async ({ page, context }) => {
+  const { patches } = await setup(page, context);
+  await page.evaluate(() => openEdit('s1'));
+  await page.locator('#f_setlink_chips [data-setlink-drop="s3"]').click();
+  await page.evaluate(() => saveItem());
+  await expect.poll(() => patches.length).toBe(2);
+  const a = Object.fromEntries(patches.map((p) => [p.id, p.body['Set Group']]));
+  expect(a).toEqual({ s1: 'FR-S01', s3: null });
+  await page.evaluate(() => { document.getElementById('txOverlay').hidden = true; });
+  patches.length = 0;
+  await page.evaluate(() => openEdit('s2'));
+  await page.locator('#f_setlink_chips .set-link-leave').click();
+  await expect(page.locator('#f_setgroup')).toHaveValue('');
+  await page.evaluate(() => saveItem());
+  await expect.poll(() => patches.length).toBe(1);
+  expect(patches[0]).toMatchObject({ id: 's2', body: { 'Set Group': null } });
+});
+
+test('inventory page: tick parts and create a set', async ({ page, context }) => {
+  const rows = ROWS.map((r) => ({ ...r, 'Set Group': null }));
+  const { patches, sent, errors } = await setup(page, context, rows);
+  await page.evaluate(() => goInventory());
+  await page.locator('#setSelectBtn').click();
+  await expect(page.locator('#setSelectBar')).toBeVisible();
+  await expect(page.locator('#setSelectGo')).toBeDisabled();
+  const phone = page.viewportSize().width < 768;
+  const row = (id) => page.locator(phone ? `#cardList [data-set-sel="${id}"]` : `#tableBody [data-set-sel="${id}"]`);
+  await row('s1').click();
+  await expect(page.locator('#editModal')).toBeHidden();   // a tap ticks, it does not open the part
+  await expect(page.locator('#setSelectGo')).toBeDisabled();
+  await row('s2').click();
+  await row('s3').click();
+  await row('x1').click();
+  await row('x1').click();                                  // untick
+  await expect(page.locator('#setSelectCount')).toContainText('3 รายการ');
+  expect(await h.noHorizontalScroll(page)).toBe(true);
+  await page.locator('#setSelectGo').click();
+  await expect(page.locator('#setCreateName')).toHaveValue('FR-S01');   // first ticked part's model
+  await page.locator('#setCreateSave').click();
+  await expect.poll(() => patches.length).toBe(3);
+  expect(Object.fromEntries(patches.map((p) => [p.id, p.body['Set Group']]))).toEqual({ s1: 'FR-S01', s2: 'FR-S01', s3: 'FR-S01' });
+  await expect.poll(() => sent.logPosts.length).toBe(3);
+  await expect(page.locator('#setSelectBar')).toBeHidden();
+  expect(errors).toEqual([]);
+});
