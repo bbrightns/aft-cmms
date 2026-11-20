@@ -2444,6 +2444,9 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 .home-stat.home-stat-clickable:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
 .home-scan-btn { width: 100%; min-height: 64px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: var(--agc-blue); color: #fff; border: 0; border-radius: 12px; cursor: pointer; text-align: left; font-family: var(--sans); box-shadow: var(--shadow); transition: background 0.15s, transform 0.15s; }
 .home-scan-btn:hover { background: var(--agc-blue2); transform: translateY(-1px); }
+.home-browse-btn { display: none; width: 100%; align-items: center; gap: 14px; padding: 10px 18px; background: var(--agc-blue); color: #fff; border: 0; border-radius: 12px; cursor: pointer; text-align: left; font-family: var(--sans); box-shadow: var(--shadow); transition: background 0.15s, transform 0.15s; }
+.home-browse-btn:hover { background: var(--agc-blue2); transform: translateY(-1px); }
+.home-browse-btn:focus-visible { outline: 3px solid var(--agc-red); outline-offset: 2px; }
 .home-scan-btn:focus-visible { outline: 3px solid var(--agc-red); outline-offset: 2px; }
 .home-scan-text { display: flex; flex-direction: column; gap: 2px; }
 .home-scan-text strong { font-size: 16px; font-weight: 800; }
@@ -2538,14 +2541,23 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
   .home-greeting-title { font-size: 32px; }
   .home-greeting-title-row h1 { font-size: 26px; }
   .home-greeting-sub { font-size: 16px; }
-  .home-search { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: 0 1 460px; min-width: 280px; height: 48px; padding: 0 6px 0 14px; background: var(--surface); border: 1.5px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow); }
-  .home-search:focus-within { border-color: var(--agc-blue); outline: 2px solid #bfdbfe; }
-  .home-search svg { width: 18px; height: 18px; color: var(--text3); flex-shrink: 0; }
-  .home-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font: inherit; font-size: 15px; color: var(--text); outline: none; }
-  .home-search button { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--agc-blue); color: #fff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  /* the part search is the main way in on a desk: the biggest control in the top row, ready to type into */
+  .home-search { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: 1 1 560px; max-width: 780px; min-width: 320px; height: 56px; padding: 0 7px 0 16px; background: var(--surface); border: 2px solid var(--agc-blue); border-radius: 14px; box-shadow: var(--shadow); }
+  .home-search:focus-within { outline: 3px solid #bfdbfe; }
+  .home-search > svg { width: 22px; height: 22px; color: var(--agc-blue); flex-shrink: 0; }
+  .home-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font: inherit; font-size: 17px; color: var(--text); outline: none; }
+  .home-search button { height: 42px; padding: 0 22px; border: 0; border-radius: 10px; background: var(--agc-blue); color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
   .home-layout .home-stats-row { grid-column: 1 / 6; }
+  /* desktop: finding a part matters most, QR is rarely used (it needs a webcam). The big blue card is
+     "ค้นหาพาร์ทอะไหล่"; QR is an icon in the search box. Phones keep the big QR button and the menu list. */
   .home-layout .home-main-grid { grid-column: 6 / 10; }
-  .home-layout .home-scan-btn { grid-column: 10 / -1; }
+  .home-layout .home-scan-btn { display: none; }
+  .home-layout .home-browse-btn { display: flex; grid-column: 10 / -1; min-height: 88px; height: 100%; }
+  .home-layout .home-links .home-sec-search { display: none; }   /* the big card above does this */
+  .home-layout .home-links { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+  .home-search .home-search-qr { display: inline-flex; align-items: center; justify-content: center; width: 42px; padding: 0; background: none; color: var(--agc-blue); border: 1.5px solid var(--border); }
+  .home-search .home-search-qr:hover { border-color: var(--agc-blue); background: #eef3ff; }
+  .home-search .home-search-qr svg { width: 18px; height: 18px; color: inherit; }
   .home-stats-row, .home-main-grid { gap: 12px; }
   .home-stats-row > .home-stat { display: flex; flex-direction: column; justify-content: center; min-height: 88px; }
   .home-action-card { flex-direction: row; justify-content: center; gap: 12px; padding: 12px 14px; max-height: none; height: 100%; min-height: 88px; }
@@ -2655,6 +2667,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <form class="home-search" id="homeSearch" role="search" onsubmit="homeSearch(event)">
         <i data-lucide="search"></i>
         <input type="search" id="homeSearchInput" placeholder="ค้นหา Part ID, ยี่ห้อ, รุ่น, ตำแหน่ง" aria-label="ค้นหาพาร์ทอะไหล่" autocomplete="off">
+        <button type="button" class="home-search-qr" id="homeSearchQr" onclick="openQRScanner('home')" title="สแกน QR ที่ป้ายอะไหล่ (ต้องมีกล้อง)" aria-label="สแกน QR Code ที่ป้ายอะไหล่"><i data-lucide="qr-code"></i></button>
         <button type="submit">ค้นหา</button>
       </form>
     </div>
@@ -2688,9 +2701,15 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <span class="home-scan-text"><strong>สแกน QR</strong><span>สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ</span></span>
     </button>
 
+    <!--desktop only: the big "find a part" card takes the slot the QR button has on phones-->
+    <button type="button" class="home-browse-btn" onclick="goInventory()" aria-label="ค้นหาพาร์ทอะไหล่: ดูและค้นหาทุกรายการในคลัง">
+      <i data-lucide="search" style="width:28px;height:28px"></i>
+      <span class="home-scan-text home-browse-text"><strong>ค้นหาพาร์ทอะไหล่</strong><span>ดูและค้นหาทุกรายการในคลัง</span></span>
+    </button>
+
     <div class="home-links" id="homeLinks">
     <!--ค้นหาพาร์ทอะไหล่-->
-    <button class="home-sec-btn" onclick="goInventory()">
+    <button class="home-sec-btn home-sec-search" onclick="goInventory()">
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="search" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">ค้นหาพาร์ทอะไหล่</div>
@@ -2770,7 +2789,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.33.0</div>
+    <div class="home-version">v1.34.0</div>
 
 
     <!-- Compat stubs -->
@@ -3756,7 +3775,16 @@ function showPage(id) {
   refreshIcons();
 }
 
-window.goHome = () => { if (setSelectMode) toggleSetSelect(false); showPage('pageHome'); updateHomeStats(); };
+window.goHome = () => { if (setSelectMode) toggleSetSelect(false); showPage('pageHome'); updateHomeStats(); focusHomeSearch(); };
+// Desktop: the cursor waits in the part search, so typing starts a search at once. Never on touch screens
+// (the keyboard would pop up) and never while something else already has the focus.
+function focusHomeSearch() {
+  const box = document.getElementById('homeSearchInput');
+  if (!box || !isWideHome() || !window.matchMedia('(pointer: fine)').matches) return;
+  if (document.getElementById('pageHome').style.display === 'none') return;
+  if (document.activeElement && document.activeElement !== document.body) return;
+  box.focus({ preventScroll: true });
+}
 window.homeSearch = (e) => {
   e.preventDefault();
   const q = document.getElementById('homeSearchInput').value.trim();
@@ -6157,7 +6185,7 @@ function applyRoleUI() {
       ? 'โหมด Guest ดูข้อมูลได้อย่างเดียว เข้าสู่ระบบเพื่อเบิก/รับของ'
       : `บัญชีนี้เป็น ${label} ดูข้อมูลได้อย่างเดียว ติดต่อ Admin เพื่อขอสิทธิ์เบิก/รับ`;
   }
-  const scanSub = document.querySelector('.home-scan-text span');
+  const scanSub = document.querySelector('.home-scan-btn .home-scan-text span');
   if (scanSub) scanSub.textContent = canAdjust ? 'สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ' : 'สแกนที่ป้ายอะไหล่เพื่อดูข้อมูลและตำแหน่ง';
   const addBtn = document.getElementById('headerAddBtn');
   if (addBtn && !canPerform('addEdit')) addBtn.style.display = 'none';
