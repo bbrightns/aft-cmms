@@ -6916,6 +6916,22 @@ function escapeHtml(v) {
 function escapeRegExp(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+// ===== SEARCH (inventory page and เบิก/รับ page share this) =====
+// Every word must appear somewhere in the part, in any order and any field: "tend safety" finds
+// TEND · TZ-93CPG-02 · "Safety Switch". Numbers-only fields (stock, cost, years) are left out on purpose:
+// typing "2" would match nearly everything.
+function searchHay(r) {
+  return [r['Part ID'], r['Department'], getDisplayMainCategory(r), r['Brand'], r['Model'], r['Description'],
+    r['Sub Category'], r['Area'], r['Location'], r['Position'], r['CLASS'], plantList(r).join(' '),   // plants as words: "mir" finds MIR + RFG too
+    r['VENDOR'], r['Set Group']].join(' ').toLowerCase();
+}
+const searchTokens = q => [...new Set(String(q || '').toLowerCase().split(/\s+/).filter(Boolean))];
+function matchesSearch(r, tokens) {
+  if (!tokens.length) return true;
+  const hay = searchHay(r);
+  return tokens.every(t => hay.includes(t));
+}
+
 function currentSearchText() {
   const inv = document.getElementById('pageInventory');
   if(inv && inv.style.display !== 'none') return document.getElementById('searchInput')?.value || '';
@@ -6923,9 +6939,9 @@ function currentSearchText() {
 }
 function highlightText(value, q = currentSearchText()) {
   const s = String(value ?? '');
-  q = String(q || '').trim();
-  if(!q) return escapeHtml(s);
-  const re = new RegExp(escapeRegExp(q), 'ig');
+  const words = searchTokens(q).sort((a, b) => b.length - a.length);   // longest first: "tz-93" wins over "tz"
+  if(!words.length) return escapeHtml(s);
+  const re = new RegExp(words.map(escapeRegExp).join('|'), 'ig');
   let out = '', last = 0, m;
   while((m = re.exec(s)) !== null) {
     out += escapeHtml(s.slice(last, m.index));
@@ -7128,6 +7144,7 @@ window.applyFilters = () => {
   updateFilterBadge();
   updateFilterSelectStyles();
   const q = document.getElementById('searchInput')?.value.toLowerCase().trim() || '';
+  const qWords = searchTokens(q);
   const cat = document.getElementById('catFilter')?.value || '';
   const dept = document.getElementById('departmentFilter')?.value || '';
   const sub = document.getElementById('subCatFilter')?.value || '';
@@ -7140,10 +7157,7 @@ window.applyFilters = () => {
     if (sub && r['Sub Category'] !== sub) return false;
     if (plant && !plantList(r).includes(plant)) return false;   // MIR also finds MIR + RFG
     if (stock && stockStatus(r['Actual'], r['Min']) !== stock) return false;
-    if (q) {
-      const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS'],plantList(r).join(' ')].join(' ').toLowerCase();   // plants as words: "mir" finds MIR and MIR + RFG (and old COMMON rows)
-      if (!hay.includes(q)) return false;
-    }
+    if (qWords.length && !matchesSearch(r, qWords)) return false;
     return true;
   };
   filteredItems = items.filter(r => advCorePass(r) && advPass(r));
@@ -7546,9 +7560,8 @@ window.qaSearchInput = () => {
     qaRenderDefaults();
     return;
   }
-  const results = items.filter(r =>
-    [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS']].join(' ').toLowerCase().includes(ql)
-  );
+  const words = searchTokens(ql);
+  const results = items.filter(r => matchesSearch(r, words));
   if (countEl) { countEl.textContent = `พบ ${results.length} รายการ`; countEl.classList.add('show'); }
   if (!results.length) { document.getElementById('qaResults').classList.remove('qa-defaults'); document.getElementById('qaResults').innerHTML = emptyStateHtml('qa'); refreshIcons(); return; }
   document.getElementById('qaResults').classList.remove('qa-defaults');

@@ -533,13 +533,11 @@
         const hasPosition = !!(i['Position'] && i['Position'].trim());
         if (!hasPosition) return false;
 
-        const matchSearch = !query || 
-          (i['Part ID'] || '').toLowerCase().includes(query) ||
-          (i['Brand'] || '').toLowerCase().includes(query) ||
-          (i['Model'] || '').toLowerCase().includes(query) ||
-          (i['Description'] || '').toLowerCase().includes(query) ||
-          (i['Location'] || '').toLowerCase().includes(query);
-          
+        // every word, any order, any field: the same rule as the store page's search
+        const hay = [i['Part ID'], i['Department'], i['Main Category'], i['Sub Category'], i['Brand'], i['Model'], i['Description'],
+          i['Area'], i['Location'], i['Position'], i['CLASS'], plantList(i).join(' '), i['VENDOR'], i['Set Group']].join(' ').toLowerCase();
+        const matchSearch = query.split(/\s+/).filter(Boolean).every(w => hay.includes(w));
+
         const matchDept = !deptFilter || i['Department'] === deptFilter;
         const matchPlant = !plantFilter || plantList(i).includes(plantFilter);   // MIR also finds parts shared with RFG
 
