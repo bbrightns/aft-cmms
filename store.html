@@ -23,18 +23,15 @@ html { scroll-behavior: smooth; }
 .home-page { padding: 24px 20px 48px; max-width: 640px; margin: 0 auto; font-family: var(--sans); }
 /* Desktop: a side column with what needs attention and the latest movements; phones keep the single column */
 .home-side { display: none; }
-@media (min-width: 1100px) {
-  .home-layout { display: flex; justify-content: center; align-items: flex-start; gap: 28px; padding: 0 24px; }
-  .home-layout .home-page { margin: 0; flex: 0 1 640px; min-width: 0; }
-  /* scrolls with the page: a sticky, height-capped column clipped its cards and grew its own scrollbar */
-  .home-side { display: flex; flex-direction: column; gap: 16px; flex: 0 0 380px; padding: 24px 0 48px; }
-}
-.side-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; }
+.side-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; min-width: 0; }
+.side-card[hidden], .side-more[hidden] { display: none; }
 .side-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .side-head h3 { margin: 0; font-size: 16px; font-weight: 800; color: var(--agc-blue); }
 .side-count { font-size: 13px; font-weight: 700; color: var(--danger-text); }
 .side-hint { margin: 2px 0 10px; font-size: 13px; color: var(--text2); }
-.side-list { display: flex; flex-direction: column; }
+.side-list { display: flex; flex-direction: column; margin-bottom: 10px; }
+.home-links { display: flex; flex-direction: column; gap: 16px; margin-bottom: 16px; }
+.home-search { display: none; }
 .side-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; padding: 8px 6px; border: none; border-top: 1px solid var(--border); background: none; text-align: left; font: inherit; color: var(--text); cursor: pointer; }
 .side-row:first-child { border-top: none; }
 .side-row:hover { background: var(--bg2); }
@@ -52,7 +49,7 @@ html { scroll-behavior: smooth; }
 .dup-group-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 4px; font-weight: 800; color: var(--agc-blue); }
 .dup-group .side-row { padding: 8px 4px; }
 .side-empty { padding: 12px 6px; font-size: 14px; color: var(--text2); }
-.side-more { margin-top: 10px; width: 100%; min-height: 40px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--agc-blue); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.side-more { margin-top: auto; flex-shrink: 0; width: 100%; min-height: 40px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--agc-blue); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .side-more:hover { background: var(--bg2); }
 
 /* Greeting — shared style with index.html */
@@ -2501,6 +2498,56 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
   .modal-footer .btn { min-width: 0; padding-left: 8px; padding-right: 8px; font-size: 14px; gap: 4px; }
 }
 @media (max-width: 480px) { .form-group:has(> div > #f_deliver) { grid-column: 1 / -1; } }   /* number + unit side by side need the full row */
+
+/* ===== HOME, desktop (>= 1100px): one wide dashboard instead of a phone column + a side column.
+   Row 1 title + search, row 2 stats | เบิก รับ | สแกน, row 3 menu tiles, row 4 three cards side by side, so every card
+   starts on the first screen. Cards never scroll inside themselves (that clipped rows before): they show at most
+   SIDE_ROWS rows and a "ดูทั้งหมด" button. Phones keep the single column above, untouched. */
+@media (min-width: 1100px) {
+  .home-layout { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; max-width: 1600px; margin: 0 auto; padding: 20px 32px 32px; align-items: stretch; }
+  .home-layout .home-page { display: contents; }
+  .home-layout .home-page > *, .home-side { grid-column: 1 / -1; margin: 0; }
+  .home-greeting { display: flex; align-items: center; gap: 16px 24px; flex-wrap: wrap; }
+  .home-greeting-title-row { margin: 0; align-items: center; }
+  .home-greeting-title { font-size: 32px; }
+  .home-greeting-title-row h1 { font-size: 26px; }
+  .home-greeting-sub { font-size: 16px; }
+  .home-search { display: flex; align-items: center; gap: 8px; margin-left: auto; flex: 0 1 460px; min-width: 280px; height: 48px; padding: 0 6px 0 14px; background: var(--surface); border: 1.5px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow); }
+  .home-search:focus-within { border-color: var(--agc-blue); outline: 2px solid #bfdbfe; }
+  .home-search svg { width: 18px; height: 18px; color: var(--text3); flex-shrink: 0; }
+  .home-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font: inherit; font-size: 15px; color: var(--text); outline: none; }
+  .home-search button { height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--agc-blue); color: #fff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+  .home-layout .home-stats-row { grid-column: 1 / 6; }
+  .home-layout .home-main-grid { grid-column: 6 / 10; }
+  .home-layout .home-scan-btn { grid-column: 10 / -1; }
+  .home-stats-row, .home-main-grid { gap: 12px; }
+  .home-stats-row > .home-stat { display: flex; flex-direction: column; justify-content: center; min-height: 88px; }
+  .home-action-card { flex-direction: row; justify-content: center; gap: 12px; padding: 12px 14px; max-height: none; height: 100%; min-height: 88px; }
+  .home-action-card .hac-icon { margin: 0; width: 44px; height: 44px; }
+  .home-action-card .hac-icon svg { width: 26px !important; height: 26px !important; }
+  .home-action-card h2 { font-size: 20px; margin: 0; }
+  .home-scan-btn { min-height: 88px; height: 100%; }
+  /* menu: five tiles in one row */
+  .home-layout .home-links { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+  .home-links .home-sec-btn { height: 100%; padding: 10px 12px; }
+  .home-links .home-sec-arrow { display: none; }
+  .home-links .home-sec-title { font-size: 14px; }
+  .home-links .home-sec-sub { font-size: 12px; }
+  /* the three cards, side by side; two when the duplicate card is hidden (non-admins) */
+  .home-side { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; align-items: stretch; }
+  .home-readonly-note, .set-home-alert { margin: 0; }
+  .home-layout .home-version { margin-top: -8px; }
+  #uploadHelpSection { margin: 0 !important; }
+  /* order: notes that only show for some users go under the action row, never between its pieces */
+  .home-readonly-note { order: 1; }
+  .home-links { order: 2; }
+  .home-side { order: 3; }
+  .upload-zone, #uploadHelpSection, .home-footer-links { order: 4; }
+  .home-version { order: 5; }
+}
+@media (min-width: 1100px) and (max-width: 1279px) {
+  .home-scan-text span { display: none; }   /* the button is narrow here; the title says enough */
+}
 </style>
 
 </head>
@@ -2578,6 +2625,12 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
         <h1>📦</h1>
       </div>
       <p class="home-greeting-sub">ระบบจัดการคลังอะไหล่ <strong>Coating Store</strong></p>
+      <!-- desktop only: type and press Enter to open the parts list already filtered -->
+      <form class="home-search" id="homeSearch" role="search" onsubmit="homeSearch(event)">
+        <i data-lucide="search"></i>
+        <input type="search" id="homeSearchInput" placeholder="ค้นหา Part ID, ยี่ห้อ, รุ่น, ตำแหน่ง" aria-label="ค้นหาพาร์ทอะไหล่" autocomplete="off">
+        <button type="submit">ค้นหา</button>
+      </form>
     </div>
 
     <!-- Stats -->
@@ -2609,8 +2662,9 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <span class="home-scan-text"><strong>สแกน QR</strong><span>สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ</span></span>
     </button>
 
+    <div class="home-links" id="homeLinks">
     <!--ค้นหาพาร์ทอะไหล่-->
-    <button class="home-sec-btn" style="margin-bottom:16px" onclick="goInventory()">
+    <button class="home-sec-btn" onclick="goInventory()">
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="search" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">ค้นหาพาร์ทอะไหล่</div>
@@ -2620,7 +2674,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </button>
 
     <!--log-->
-    <button class="home-sec-btn" style="margin-bottom:16px" onclick="goTransactionLog()">
+    <button class="home-sec-btn" onclick="goTransactionLog()">
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="clipboard-clock" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">ประวัติการแก้ไขข้อมูล</div>
@@ -2630,7 +2684,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </button>
 
     <!--print qr-->
-    <button class="home-sec-btn" style="margin-bottom:16px" onclick="window.location.href='print-qr.html'">
+    <button class="home-sec-btn" onclick="window.location.href='print-qr.html'">
       <div class="home-sec-icon" style="background:#f0fdf4;color:#16a34a"><i data-lucide="printer" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">พิมพ์บาร์โค้ด QR Code</div>
@@ -2640,7 +2694,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </button>
 
     <!--purchase request-->
-    <button class="home-sec-btn" style="margin-bottom:16px" onclick="window.location.href='pr.html'">
+    <button class="home-sec-btn" onclick="window.location.href='pr.html'">
       <div class="home-sec-icon" style="background:#fff7ed;color:#ea580c"><i data-lucide="shopping-cart" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">Purchase Request (PR)</div>
@@ -2650,7 +2704,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </button>
 
     <!--stock value: on demand only, no figure on the Home screen-->
-    <button class="home-sec-btn" style="margin-bottom:16px" onclick="goValue()">
+    <button class="home-sec-btn" onclick="goValue()">
       <div class="home-sec-icon" style="background:#eff6ff;color:#001F6B"><i data-lucide="wallet" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">มูลค่าคลัง</div>
@@ -2658,6 +2712,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       </div>
       <i data-lucide="chevron-right" style="width:20px;height:20px" class="home-sec-arrow"></i>
     </button>
+    </div>
 
     <!-- Upload zone — shown only when no data -->
     <div class="upload-zone" id="uploadZone" onclick="settingsUploadCSV()">
@@ -2698,7 +2753,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 
   </div>
 
-  <!-- Desktop only (>= 1100px): what a supervisor checks first, without opening other pages -->
+  <!-- Desktop only (>= 1100px): what a supervisor checks first, side by side under the actions -->
   <aside class="home-side" id="homeSide" aria-label="ภาพรวม">
     <section class="side-card">
       <div class="side-head"><h3>ต้องดูแล</h3><span class="side-count" id="sideLowCount"></span></div>
@@ -2706,16 +2761,16 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <div class="side-list" id="sideLowList"><div class="side-empty">กำลังโหลด…</div></div>
       <button type="button" class="side-more" id="sideLowMore" onclick="goInventoryWithFilters('low', null)" hidden>ดูทั้งหมด</button>
     </section>
+    <section class="side-card">
+      <div class="side-head"><h3>เบิก/รับล่าสุด</h3></div>
+      <div class="side-list" id="sideRecentList"><div class="side-empty">กำลังโหลด…</div></div>
+      <button type="button" class="side-more" onclick="goTransactionLog()">ดูประวัติทั้งหมด</button>
+    </section>
     <section class="side-card" id="sideDupCard" hidden>
       <div class="side-head"><h3>รายการซ้ำ</h3><span class="side-count" id="sideDupCount"></span></div>
       <p class="side-hint">Model เดียวกันแต่มีหลาย Part ID อาจลงข้อมูลซ้ำ ตรวจแล้วรวมหรือลบได้</p>
       <div class="side-list" id="sideDupList"></div>
       <button type="button" class="side-more" id="sideDupMore" onclick="openDupModal()" hidden>ดูทั้งหมด</button>
-    </section>
-    <section class="side-card">
-      <div class="side-head"><h3>เบิก/รับล่าสุด</h3></div>
-      <div class="side-list" id="sideRecentList"><div class="side-empty">กำลังโหลด…</div></div>
-      <button type="button" class="side-more" onclick="goTransactionLog()">ดูประวัติทั้งหมด</button>
     </section>
   </aside>
  </div>
@@ -3669,6 +3724,14 @@ function showPage(id) {
 }
 
 window.goHome = () => { showPage('pageHome'); updateHomeStats(); };
+window.homeSearch = (e) => {
+  e.preventDefault();
+  const q = document.getElementById('homeSearchInput').value.trim();
+  goInventory();
+  const box = document.getElementById('searchInput');
+  if (box) { box.value = q; onSearchInput(); box.focus(); }
+  document.getElementById('homeSearchInput').value = '';
+};
 window.goValue = () => { valView = 'overview'; showPage('pageValue'); renderValuePage(); window.scrollTo(0, 0); };
 
 window.goAction = (mode) => {
