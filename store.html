@@ -199,7 +199,12 @@ body.set-select-mode #pageInventory { padding-bottom: 90px; }
 .set-chip.gap { border-color: var(--warn); background: #fef3cd; color: var(--warn); }
 .set-chip.gap:hover { background: var(--warn); color: #fff; }
 .set-chip-gap { margin-left: 2px; padding: 0 5px; border-radius: 6px; background: var(--warn); color: #fff; font-size: 11px; }
-td[data-col="partid"] .set-chip { display: flex; font-family: var(--sans); }
+td[data-col="partid"] .pid-line { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.set-chip.compact { margin-top: 0; min-height: 22px; padding: 0 7px; gap: 3px; font-family: var(--sans); font-size: 11px; line-height: 1; }
+.set-chip.compact svg { width: 11px; height: 11px; }
+.set-chip-n { margin-left: 2px; padding: 0 5px; border-radius: 999px; background: rgba(0,31,107,.12); font-size: 10px; line-height: 16px; }
+.set-chip.gap .set-chip-n { background: rgba(180,83,9,.15); }
+.inv-card-pid .set-chip { margin: 0 0 0 8px; min-height: 26px; padding: 2px 9px; vertical-align: middle; }
 .set-hint { display: flex; gap: 8px; align-items: flex-start; background: #eef3ff; border: 1px solid rgba(0,31,107,.25); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--agc-blue); margin-bottom: 12px; line-height: 1.5; }
 .set-hint[hidden] { display: none; }
 .set-hint svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
@@ -6256,11 +6261,15 @@ function isSetIncomplete(r, index = null) { return setGapOf(setMembers(r, index)
 function setIncompleteGroups(index = buildSetIndex()) { return [...index.values()].filter(list => setGapOf(list).length); }
 // Thai list: "A", "A และ B", "A, B และ C"
 function thaiJoin(names) { return names.length < 2 ? (names[0] || '') : names.slice(0, -1).join(', ') + ' และ ' + names[names.length - 1]; }
-function setChipHtml(r, index) {
+// Headings: "ชุด FR-S01", but a name that already starts with ชุด is not doubled ("ชุดเซ็นเซอร์").
+const setTitle = name => /^ชุด/.test(String(name || '').trim()) ? String(name).trim() : 'ชุด ' + name;
+// The chip: link icon + set name + part count. The icon says "set", so the word ชุด is left out.
+// compact = one line next to the Part ID in the table, so rows in a set are no taller than others.
+function setChipHtml(r, index, compact = false) {
   const list = setMembers(r, index);
   if (!list.length) return '';
-  const gap = setGapOf(list).length > 0, key = setKeyOf(r);
-  return `<button type="button" class="set-chip${gap ? ' gap' : ''}" data-set-open="${escapeHtml(key)}" onclick="event.stopPropagation();openSetGroup(this.dataset.setOpen)" title="${gap ? 'ชุดไม่ครบ: บางชิ้นหมดสต็อก' : 'ดูทุกรายการในชุดนี้'}" aria-label="ชุด ${escapeHtml(setLabel(list))} ${list.length} รายการ${gap ? ' ชุดไม่ครบ' : ''}"><i data-lucide="${gap ? 'unlink' : 'link'}"></i>ชุด ${escapeHtml(setLabel(list))} (${list.length})${gap ? '<span class="set-chip-gap">ไม่ครบ</span>' : ''}</button>`;
+  const gap = setGapOf(list).length > 0, key = setKeyOf(r), name = escapeHtml(setLabel(list));
+  return `<button type="button" class="set-chip${gap ? ' gap' : ''}${compact ? ' compact' : ''}" data-set-open="${escapeHtml(key)}" onclick="event.stopPropagation();openSetGroup(this.dataset.setOpen)" title="${escapeHtml(setTitle(setLabel(list)))} · ${list.length} รายการ${gap ? ' · ไม่ครบ: บางชิ้นหมดสต็อก' : ''}" aria-label="${escapeHtml(setTitle(setLabel(list)))} ${list.length} รายการ${gap ? ' ชุดไม่ครบ' : ''}"><i data-lucide="${gap ? 'unlink' : 'link'}"></i>${name}<span class="set-chip-n">${list.length}</span>${gap && !compact ? '<span class="set-chip-gap">ไม่ครบ</span>' : ''}</button>`;
 }
 // Withdraw: the other parts of the set, the ones that can still be withdrawn first.
 function setMatesOf(r) { return setMembers(r).filter(x => x._id !== r._id); }
@@ -6280,7 +6289,7 @@ function setAfterWithdraw(itemId, pick) {
   const actions = mates.filter(m => onhandQty(m) > 0).slice(0, 3)
     .map(m => ({ label: `เบิก ${setPartName(m)} ต่อ`, cls: 'btn-ghost', onClick: () => pick(m) }));
   const hint = !onhandQty(r) && mates.some(m => onhandQty(m) > 0)
-    ? `ชุด ${setLabel(setMembers(r))} ไม่ครบแล้ว: ${setPartName(r)} หมด แต่ชิ้นอื่นในชุดยังมีของ` : '';
+    ? `${setTitle(setLabel(setMembers(r)))} ไม่ครบแล้ว: ${setPartName(r)} หมด แต่ชิ้นอื่นในชุดยังมีของ` : '';
   return { actions, hint };
 }
 
@@ -6587,7 +6596,7 @@ function renderSetModal() {
   const body = document.getElementById('setModalBody'), foot = document.getElementById('setModalFooter');
   if (!list.length) { closeModal('setModal'); return; }
   const gap = setGapOf(list);
-  document.getElementById('setModalTitle').innerHTML = `<i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px"></i> ชุด ${escapeHtml(setLabel(list))}`;
+  document.getElementById('setModalTitle').innerHTML = `<i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px"></i> ${escapeHtml(setTitle(setLabel(list)))}`;
   document.getElementById('setModalSub').textContent = setView === 'price' ? 'ใส่ราคาชุดครั้งเดียว ระบบแบ่งลงแต่ละชิ้นให้' : `${list.length} รายการที่ใช้ร่วมกัน`;
   if (setView === 'list') {
     body.innerHTML = `${gap.length ? `<div class="set-gap-banner" role="status"><i data-lucide="alert-triangle"></i><span><strong>ชุดไม่ครบ:</strong> ${escapeHtml(thaiJoin(gap.map(setPartName)))} หมดสต็อก แต่ชิ้นอื่นในชุดยังมีของ ติดตั้งครบชุดไม่ได้จนกว่าจะซื้อเพิ่ม</span></div>` : ''}
@@ -7653,7 +7662,7 @@ function renderTable() {
       : (hasStock ? `<span class="pos-empty needs" title="มีของในสต็อกแต่ยังไม่ได้ระบุตำแหน่งเก็บ">ไม่มีตำแหน่ง</span>` : `<span class="pos-empty" aria-label="ไม่มีข้อมูลตำแหน่ง">—</span>`);
     const tip = v => escapeHtml(v||'');
     return `<tr onclick="if(!setSelToggle('${r._id}'))openDetail('${r._id}')" style="cursor:pointer" data-set-sel="${r._id}" class="${setSelected.has(r._id) ? 'set-selected' : ''}">
-      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${setSelBoxHtml(r)}${highlightText(r['Part ID']||'—', q)}${setChipHtml(r, setIdx)}</td>
+      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${setSelBoxHtml(r)}<span class="pid-line">${highlightText(r['Part ID']||'—', q)}${setChipHtml(r, setIdx, true)}</span></td>
       <td data-col="dept">${dept ? `<span class="badge ${deptCls}">${escapeHtml(dept)}</span>` : '—'}</td>
       <td data-col="subcat" title="${tip(r['Sub Category'])}">${highlightText(r['Sub Category']||'—', q)}</td>
       <td data-col="brand" title="${tip(r['Brand'])}">${highlightText(r['Brand']||'—', q)}</td>
@@ -7705,8 +7714,7 @@ function renderCards() {
             <span style="font-family:var(--mono);font-size:12px;color:var(--text2);font-weight:600">${highlightText(r['Part ID']||'—', q)}</span>
           </div>
           <div class="inv-card-name">${highlightText(displayName, q)}</div>
-          <div class="inv-card-pid">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span></div>
-          ${setChipHtml(r, setIdx)}
+          <div class="inv-card-pid">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span>${setChipHtml(r, setIdx)}</div>
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>

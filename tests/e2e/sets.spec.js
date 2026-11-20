@@ -56,7 +56,9 @@ test('set chip, set dialog and the incomplete-set warning', async ({ page, conte
   const view = page.viewportSize().width < 768 ? '#cardList .inv-card' : '#tableBody tr';
   await expect(page.locator(view)).toHaveCount(3);
   const chip = page.locator(`${view} .set-chip`).first();
-  await expect(chip).toContainText('ชุด FR-S01 (3)');
+  await expect(chip).toContainText('FR-S01');
+  await expect(chip.locator('.set-chip-n')).toHaveText('3');
+  expect(await chip.innerText()).not.toContain('ชุด FR');   // the link icon says "set"; no ชุด prefix
   await expect(chip).toHaveClass(/gap/);
   await chip.click();
   await expect(page.locator('#setModal')).toBeVisible();
@@ -267,4 +269,21 @@ test('inventory page: tick parts and create a set', async ({ page, context }) =>
   await expect.poll(() => sent.logPosts.length).toBe(3);
   await expect(page.locator('#setSelectBar')).toBeHidden();
   expect(errors).toEqual([]);
+});
+
+test('a part in a set has a table row no taller than one outside a set', async ({ page, context }) => {
+  test.skip(page.viewportSize().width < 768, 'the table is the desktop view');
+  await setup(page, context);
+  await page.evaluate(() => goInventory());
+  const h1 = await page.locator('#tableBody tr[data-set-sel="s1"]').evaluate((e) => e.getBoundingClientRect().height);
+  const h2 = await page.locator('#tableBody tr[data-set-sel="x1"]').evaluate((e) => e.getBoundingClientRect().height);
+  await expect(page.locator('#tableBody tr[data-set-sel="s1"] .set-chip.compact')).toBeVisible();
+  expect(Math.abs(h1 - h2)).toBeLessThanOrEqual(2);
+});
+
+test('a set named ชุด... is not shown as ชุด ชุด...', async ({ page, context }) => {
+  const rows = ROWS.map((r) => (r['Set Group'] ? { ...r, 'Set Group': 'ชุดเซ็นเซอร์' } : r));
+  await setup(page, context, rows);
+  await page.evaluate(() => openSetGroup('ชุดเซ็นเซอร์'));
+  await expect(page.locator('#setModalTitle')).toHaveText(/^\s*ชุดเซ็นเซอร์\s*$/);
 });
