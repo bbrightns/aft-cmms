@@ -46,6 +46,11 @@ html { scroll-behavior: smooth; }
 .side-val.low { color: var(--danger-text); }
 .side-val.out { color: #be185d; }
 .side-val.in { color: #047857; }
+.side-val.dup { color: #b45309; }
+.side-flag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px; background: #fef3c7; color: #92400e; font-size: 11px; font-weight: 700; }
+.dup-group { border: 1.5px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; }
+.dup-group-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; margin-bottom: 4px; font-weight: 800; color: var(--agc-blue); }
+.dup-group .side-row { padding: 8px 4px; }
 .side-empty { padding: 12px 6px; font-size: 14px; color: var(--text2); }
 .side-more { margin-top: 10px; width: 100%; min-height: 40px; border: 1.5px solid var(--border-strong); border-radius: 8px; background: var(--surface); color: var(--agc-blue); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
 .side-more:hover { background: var(--bg2); }
@@ -2609,7 +2614,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.29.1</div>
+    <div class="home-version">v1.30.0</div>
 
 
     <!-- Compat stubs -->
@@ -2625,6 +2630,12 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <p class="side-hint">ของที่เหลือต่ำกว่า Min เรียงจากขาดมากที่สุด</p>
       <div class="side-list" id="sideLowList"><div class="side-empty">กำลังโหลด…</div></div>
       <button type="button" class="side-more" id="sideLowMore" onclick="goInventoryWithFilters('low', null)" hidden>ดูทั้งหมด</button>
+    </section>
+    <section class="side-card" id="sideDupCard" hidden>
+      <div class="side-head"><h3>รายการซ้ำ</h3><span class="side-count" id="sideDupCount"></span></div>
+      <p class="side-hint">Model เดียวกันแต่มีหลาย Part ID อาจลงข้อมูลซ้ำ ตรวจแล้วรวมหรือลบได้</p>
+      <div class="side-list" id="sideDupList"></div>
+      <button type="button" class="side-more" id="sideDupMore" onclick="openDupModal()" hidden>ดูทั้งหมด</button>
     </section>
     <section class="side-card">
       <div class="side-head"><h3>เบิก/รับล่าสุด</h3></div>
@@ -3181,6 +3192,17 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <button class="btn btn-ghost" onclick="closeModal('exportModal')"><i data-lucide="x"></i> ยกเลิก</button>
       <button class="btn btn-primary" onclick="executeExportCSV()"><i data-lucide="download"></i> Export</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Duplicate items (admin insight) -->
+<div class="modal-overlay" id="dupModal" style="display:none" onclick="closeOnOverlay(event,'dupModal')">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <div class="modal-title" id="dupModalTitle" style="display:flex;align-items:center;gap:8px;font-weight:700;color:var(--agc-blue)">รายการซ้ำ</div>
+      <button class="close-btn" onclick="closeModal('dupModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body" id="dupModalBody"></div>
   </div>
 </div>
 
@@ -5847,6 +5869,7 @@ function applyRoleUI() {
   if (roleEl) roleEl.textContent = label;
   const isAdmin = canPerform('manageRoles');
   ['homeSettingsBtn', 'homeSettingsDot'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isAdmin ? '' : 'none'; });
+  if (window.matchMedia('(min-width: 1100px)').matches) renderSideDups();   // the role can arrive after the items
   const canAdjust = canPerform('adjust');
   document.querySelectorAll('.home-action-card').forEach(c => {
     c.classList.toggle('is-locked', !canAdjust);
@@ -6547,6 +6570,7 @@ function renderHomeSide() {
   if (!isWideHome()) return;   // phones never show it: no work, no log download
   const lowBox = document.getElementById('sideLowList'), recentBox = document.getElementById('sideRecentList');
   if (!lowBox || !recentBox) return;
+  renderSideDups();
   const nameOf = r => ((r['Brand'] || '') + ' ' + (r['Model'] || '')).trim() || r['Description'] || '';
   if (!itemsLoaded) {
     lowBox.innerHTML = `<div class="side-empty">${itemsLoadFailed ? 'โหลดข้อมูลไม่สำเร็จ' : 'กำลังโหลด…'}</div>`;
@@ -6584,6 +6608,74 @@ function renderHomeSide() {
       </button>`;
   }).join('') : '<div class="side-empty">ยังไม่มีการเบิก/รับ</div>';
 }
+
+/* ---- Duplicate items (admin only, desktop side column) ----
+   Two rows are the same part when their Model matches after dropping case, spaces and punctuation
+   ("FS-N41P" = "fs n41p"). Models shorter than 3 characters (blank, "-", "N/A") are ignored.
+   The same Model in the same Plant is listed first: across plants it is often on purpose. */
+const dupKey = m => String(m ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function findDuplicateGroups(list) {
+  const map = new Map();
+  for (const r of list) {
+    const k = dupKey(r['Model']);
+    if (k.length < 3) continue;
+    if (!map.has(k)) map.set(k, []);
+    map.get(k).push(r);
+  }
+  const groups = [];
+  for (const [key, rows] of map) {
+    if (rows.length < 2) continue;
+    const plants = rows.map(r => advNorm(r['Plant']));
+    const brands = new Set(rows.map(r => dupKey(r['Brand'])).filter(Boolean));
+    groups.push({
+      key, rows,
+      samePlant: new Set(plants).size < plants.length,
+      brandDiff: brands.size > 1,
+      label: ((rows.find(r => r['Brand'])?.['Brand'] || '') + ' ' + (rows[0]['Model'] || '')).trim(),
+    });
+  }
+  return groups.sort((a, b) => (b.samePlant - a.samePlant) || (b.rows.length - a.rows.length) || a.key.localeCompare(b.key));
+}
+let _dupGroups = [];
+function renderSideDups() {
+  const card = document.getElementById('sideDupCard'), box = document.getElementById('sideDupList');
+  if (!card || !box) return;
+  const show = itemsLoaded && canPerform('manageRoles');
+  card.hidden = !show;
+  if (!show) return;
+  _dupGroups = findDuplicateGroups(items);
+  const extra = _dupGroups.reduce((n, g) => n + g.rows.length - 1, 0);
+  document.getElementById('sideDupCount').textContent = _dupGroups.length ? `${_dupGroups.length} กลุ่ม` : '';
+  document.getElementById('sideDupMore').hidden = _dupGroups.length <= SIDE_ROWS;
+  box.innerHTML = _dupGroups.length ? _dupGroups.slice(0, SIDE_ROWS).map((g, i) => {
+    const plants = [...new Set(g.rows.map(r => r['Plant'] || '—'))].join(', ');
+    return `<button type="button" class="side-row" onclick="openDupModal(${i})" aria-label="${escapeHtml(g.label)} ซ้ำ ${g.rows.length} รายการ">
+        <span class="side-main"><span class="side-pid">${escapeHtml(g.rows.map(r => r['Part ID'] || '').join(', '))}</span>
+        <span class="side-name">${escapeHtml(g.label)}</span>
+        <span class="side-meta">${escapeHtml(plants)}${g.samePlant ? '<span class="side-flag">Plant เดียวกัน</span>' : ''}${g.brandDiff ? '<span class="side-flag">ยี่ห้อไม่ตรง</span>' : ''}</span></span>
+        <span class="side-val dup">×${g.rows.length}</span>
+      </button>`;
+  }).join('') : '<div class="side-empty">ไม่พบ Model ที่ซ้ำกัน</div>';
+  if (extra) card.title = `ถ้ารวมได้ทั้งหมดจะลดลง ${extra} รายการ`;
+}
+window.openDupModal = (idx) => {
+  const groups = idx == null ? _dupGroups : [_dupGroups[idx]].filter(Boolean);
+  if (!groups.length) return;
+  document.getElementById('dupModalTitle').textContent = idx == null ? `รายการซ้ำ ${groups.length} กลุ่ม` : `ซ้ำ: ${groups[0].label}`;
+  const loc = r => [r['Plant'], r['Area'], r['Location'], r['Position']].filter(Boolean).join(' · ') || 'ไม่ระบุตำแหน่ง';
+  document.getElementById('dupModalBody').innerHTML = groups.map(g => `
+    <div class="dup-group">
+      <div class="dup-group-head"><span>${escapeHtml(g.label)}</span><span class="side-val dup">×${g.rows.length}</span></div>
+      ${g.rows.map(r => `<button type="button" class="side-row" onclick="closeModal('dupModal');openDetail('${escapeHtml(r._id)}')">
+        <span class="side-main"><span class="side-pid">${escapeHtml(r['Part ID'] || '')}${r['Brand'] ? ' · ' + escapeHtml(r['Brand']) : ''}</span>
+        <span class="side-name">${escapeHtml(r['Description'] || r['Model'] || '')}</span>
+        <span class="side-meta">${escapeHtml(loc(r))}</span></span>
+        <span class="side-val">เหลือ ${escapeHtml(String(getActualNumber(r['Actual'])))}</span>
+      </button>`).join('')}
+    </div>`).join('');
+  openModal('dupModal');
+  if (window.lucide) lucide.createIcons();
+};
 window.addEventListener('resize', () => { clearTimeout(window._sideResize); window._sideResize = setTimeout(renderHomeSide, 200); });
 
 function updateHomeStats() {
