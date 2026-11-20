@@ -140,6 +140,56 @@ html { scroll-behavior: smooth; }
 .est-check { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: none; letter-spacing: 0; min-height: 0; cursor: pointer; margin-top: 2px; }
 .est-check input { width: 16px; height: 16px; min-height: 0; margin: 0; accent-color: var(--agc-blue); }
 .est-check[hidden] { display: none; }
+/* Set Group (parts used together) */
+.form-group[hidden] { display: none; }
+.set-cost-mark { display: inline-block; font-size: 11px; font-weight: 700; color: var(--agc-blue); border: 1px solid currentColor; border-radius: 6px; padding: 0 5px; line-height: 1.5; vertical-align: middle; white-space: nowrap; }
+.set-chip { display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; margin-top: 6px; padding: 3px 9px; min-height: 28px; border-radius: 999px; border: 1.5px solid var(--agc-blue); background: #eef3ff; color: var(--agc-blue); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.set-chip svg { width: 13px; height: 13px; flex-shrink: 0; }
+.set-chip:hover { background: var(--agc-blue); color: #fff; }
+.set-chip.gap { border-color: var(--warn); background: #fef3cd; color: var(--warn); }
+.set-chip.gap:hover { background: var(--warn); color: #fff; }
+.set-chip-gap { margin-left: 2px; padding: 0 5px; border-radius: 6px; background: var(--warn); color: #fff; font-size: 11px; }
+td[data-col="partid"] .set-chip { display: flex; font-family: var(--sans); }
+.set-hint { display: flex; gap: 8px; align-items: flex-start; background: #eef3ff; border: 1px solid rgba(0,31,107,.25); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--agc-blue); margin-bottom: 12px; line-height: 1.5; }
+.set-hint[hidden] { display: none; }
+.set-hint svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+.set-out { color: var(--danger-text); font-weight: 700; }
+.set-home-alert { display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 12px; padding: 12px 14px; min-height: 48px; border-radius: 12px; border: 1.5px solid #f59e0b; background: #fef3cd; color: var(--warn); font: inherit; font-size: 14px; text-align: left; cursor: pointer; }
+.set-home-alert[hidden] { display: none; }
+.set-home-alert span { flex: 1; min-width: 0; }
+.set-home-alert svg { width: 18px; height: 18px; flex-shrink: 0; }
+.set-gap-banner { display: flex; gap: 8px; align-items: flex-start; background: #fef3cd; border: 1px solid #f59e0b; border-radius: 8px; padding: 10px 12px; font-size: 13px; color: var(--warn); line-height: 1.5; }
+.set-gap-banner svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+.set-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.set-row { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; min-height: 56px; border: 0; border-bottom: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.set-row:last-child { border-bottom: 0; }
+.set-row:hover { background: var(--bg2); }
+.set-row.out { background: #fff5f7; }
+.set-row-main, .set-split-name { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.set-row-id { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text2); }
+.set-row-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+.set-row-desc { font-size: 12px; color: var(--text2); overflow-wrap: anywhere; }
+.set-row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 13px; white-space: nowrap; }
+.set-row.out .set-row-stock { color: var(--danger-text); }
+.set-row-cost { color: var(--text2); }
+.set-howto { font-size: 13px; color: var(--text2); line-height: 1.55; background: var(--bg2); border-radius: 8px; padding: 9px 12px; }
+.set-split { display: flex; flex-direction: column; gap: 8px; }
+.set-split-row { display: grid; grid-template-columns: auto minmax(0, 1fr) 84px 120px auto 110px; gap: 8px; align-items: center; padding: 10px; border: 1px solid var(--border); border-radius: 10px; }
+.set-split-row.off { opacity: .5; }
+.set-split-inc input { width: 20px; height: 20px; min-height: 0; margin: 0; accent-color: var(--agc-blue); }
+.set-split-f { display: flex; flex-direction: column; gap: 3px; font-size: 11px; font-weight: 600; color: var(--text2); }
+.set-split-f input { min-height: 40px; padding: 6px 8px; font-family: var(--mono); }
+.set-split-g { min-height: 40px; padding: 6px 10px; align-self: end; }
+.set-split-out { display: flex; flex-direction: column; align-items: flex-end; font-size: 11px; color: var(--text2); white-space: nowrap; }
+.set-split-out strong { font-size: 15px; color: var(--agc-blue); font-family: var(--mono); }
+.set-split-sum { font-size: 13px; font-weight: 600; color: var(--warn); line-height: 1.5; }
+.set-split-sum.ok { color: var(--accent2); }
+@media (max-width: 640px) {
+  .set-split-row { grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.3fr) auto; }
+  .set-split-name { grid-column: 2 / -1; }
+  .set-split-row .set-split-f:has([data-split-q]) { grid-column: 1 / 3; }
+  .set-split-out { grid-column: 1 / -1; flex-direction: row; justify-content: flex-end; gap: 8px; align-items: baseline; }
+}
 .est-mark { display: inline-block; font-family: inherit; font-size: 11px; font-weight: 600; font-style: italic; color: var(--warn, #b26b00); border: 1px dashed currentColor; border-radius: 6px; padding: 0 5px; line-height: 1.5; vertical-align: middle; white-space: nowrap; }
 .val-warn { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: #fef3cd; border: 1.5px solid #e9c46a; color: #6b3d00; font-size: 14px; }
 .val-warn svg { width: 18px; height: 18px; flex-shrink: 0; }
@@ -2502,6 +2552,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- Stats -->
+    <button type="button" class="set-home-alert" id="homeSetAlert" hidden onclick="goInventoryWithSetGap()"></button>
     <div class="home-stats-row" id="homeStats">
       <div class="home-stat"><div class="home-stat-val" style="color:#2563eb">—</div><div class="home-stat-label">Total items</div></div>
       <div class="home-stat"><div class="home-stat-val" style="color:var(--text3)">—</div><div class="home-stat-label">Low stock</div></div>
@@ -2661,6 +2712,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
         <input type="number" class="qty-stepper-input" id="qaQtyNum" min="1" value="1" oninput="qaSetQty(this.value)">
         <button class="qty-btn-big" onclick="qaChangeQty(1)" aria-label="เพิ่ม">+</button>
       </div>
+      <div class="set-hint" id="qaSetHint" hidden></div>
       <div class="qty-warn" id="qaWarn"><i data-lucide="alert-triangle" style="width:14px;height:14px"></i> จำนวนที่เบิกเกิน Stock ที่มีอยู่!</div>
       <div class="qty-note"><input type="text" id="qaNote" placeholder="หมายเหตุ เช่น เครื่องจักร / งาน (ไม่บังคับ)"></div>
       <div class="qty-preview">
@@ -2822,6 +2874,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
           <button class="qty-btn-big" onclick="changeQty(1)" aria-label="เพิ่ม">+</button>
         </div>
       </div>
+      <div class="set-hint" id="adjSetHint" hidden></div>
       <div id="adjWarnMsg" style="display:none;background:#fef3cd;border:1px solid #f59e0b;border-radius:8px;padding:8px 12px;font-size:13px;color:var(--warn);font-weight:600;"><i data-lucide="alert-triangle" style="width:14px;height:14px"></i> จำนวนเกิน Stock ที่มีอยู่</div>
       <div class="adjust-location-box">
         <div style="font-size:12px;font-weight:700;color:var(--agc-blue);margin-bottom:8px;display:flex;align-items:center;gap:6px"><i data-lucide="map-pin" style="width:14px;height:14px"></i> Location / Position</div>
@@ -2897,6 +2950,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
         <div class="form-group" style="display:none"><label>Main Category</label><input type="text" id="f_maincat" class="readonly-field" readonly placeholder="Auto-filled"></div>
         <div class="form-group"><label>ยี่ห้อ</label><input type="text" id="f_brand" list="brandOptions" placeholder="พิมพ์หรือเลือกยี่ห้อ" oninput="this.value=this.value.toUpperCase()"><datalist id="brandOptions"></datalist></div>
         <div class="form-group"><label>รุ่น</label><input type="text" id="f_model" oninput="this.value=this.value.toUpperCase()"></div>
+        <div class="form-group" id="f_setgroup_wrap" hidden><label for="f_setgroup">ชุด (ใช้คู่กับ)</label><input type="text" id="f_setgroup" list="setGroupOptions" placeholder="เช่น FR-S01 (ว่าง = ไม่อยู่ในชุด)" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateSetGroupHelp()"><datalist id="setGroupOptions"></datalist><div class="form-helper" id="f_setgroup_help">ใส่ชื่อชุดเดียวกันกับชิ้นที่ใช้คู่กัน เช่น เซ็นเซอร์ + สาย + ขาจับ</div></div>
         <div class="form-group"><label>ความสำคัญ (A, B, C)</label><select id="f_class"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
         <div class="form-group full"><label>รายละเอียด</label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
         <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR)</label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option><option value="COMMON">COMMON</option></select><div class="field-error" id="err_plant"></div></div>
@@ -2929,7 +2983,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
 
       <div class="form-section-title">ข้อมูลเพิ่มเติม</div>
       <div class="form-row form-row-3">
-        <div class="form-group"><label>ราคา (บาท)</label><input type="text" id="f_cost"><label class="est-check" id="f_cost_est_wrap" hidden><input type="checkbox" id="f_cost_est"> ราคาประมาณ (ยังไม่ใช่ราคาซื้อจริง)</label></div>
+        <div class="form-group"><label>ราคา (บาท)</label><input type="text" id="f_cost"><label class="est-check" id="f_cost_est_wrap" hidden><input type="checkbox" id="f_cost_est"> ราคาประมาณ (ยังไม่ใช่ราคาซื้อจริง)</label><div class="form-helper" id="f_cost_set_note" hidden>ราคานี้แบ่งมาจากราคาชุด ถ้าแก้ตัวเลขเอง จะนับเป็นราคาจริง</div></div>
         <div class="form-group"><label>ร้านค้าอ้างอิง</label><input type="text" id="f_vendor" oninput="this.value=this.value.toUpperCase()"></div>
         <div class="form-group">
           <label>เวลานำส่ง</label>
@@ -2991,6 +3045,18 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <button class="btn" style="background:var(--warn);color:#fff" id="detailAdjustBtn"><i data-lucide="package"></i> ปรับสต็อก</button>
       <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> แก้ไขข้อมูล</button>
     </div>
+  </div>
+</div>
+
+<!-- MODAL: Set Group (parts used together) + set price split -->
+<div class="modal-overlay" id="setModal" style="display:none" onclick="closeOnOverlay(event,'setModal')">
+  <div class="modal" style="max-width:640px" role="dialog" aria-labelledby="setModalTitle">
+    <div class="modal-header">
+      <div><div class="modal-title" id="setModalTitle"></div><div style="font-size:12px;color:var(--text2);margin-top:3px" id="setModalSub"></div></div>
+      <button class="close-btn" onclick="closeModal('setModal')" aria-label="ปิดหน้าต่าง"><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body" id="setModalBody"></div>
+    <div class="modal-footer" id="setModalFooter"></div>
   </div>
 </div>
 
@@ -3308,7 +3374,7 @@ const CAT_MAP = {
 };
 
 // Columns of the inventory table that the app reads/writes (CSV import and undo only ever touch these).
-const INV_COLUMNS = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','CLASS','imageUrl','COST_SOURCE'];
+const INV_COLUMNS = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','CLASS','imageUrl','COST_SOURCE','Set Group'];
 
 const SUB_TO_MAIN_CATEGORY = Object.entries(CAT_MAP).reduce((acc,[main,subs]) => {
   subs.forEach(sub => acc[sub.toLowerCase()] = main);
@@ -3327,6 +3393,7 @@ const ADV_FIELDS = [
     ['low',     'Low',          r => stockStatus(r['Actual'], r['Min']) === 'low'],
     ['nostock', 'No Stock',     r => isNoStockItem(r)],
     ['nopos',   'ไม่มีตำแหน่ง', r => isStockedWithoutPosition(r)],
+    ['setgap',  'ชุดไม่ครบ',    r => isSetIncomplete(r, advSetIdx())],   // every part of a set where some parts ran out and others did not
   ] },
   { key: 'dept',  col: 'Department',   label: 'Dept' },
   { key: 'plant', col: 'Plant',        label: 'Plant' },
@@ -3343,6 +3410,12 @@ const advSel = Object.fromEntries(ADV_FIELDS.map(f => [f.key, new Set()]));
 const advSearch = Object.fromEntries(ADV_FIELDS.map(f => [f.key, '']));
 const advField = k => ADV_FIELDS.find(f => f.key === k);
 const advVal = (f, r) => f.get ? f.get(r) : r[f.col];
+// The filter runs once per row: share one set index per items array instead of rebuilding it each time.
+let _advSetIdx = null, _advSetFor = null, _advSetAt = 0;
+function advSetIdx() {
+  if (_advSetFor !== items || Date.now() - _advSetAt > 500) { _advSetIdx = buildSetIndex(); _advSetFor = items; _advSetAt = Date.now(); }
+  return _advSetIdx;
+}
 function advReset() { ADV_FIELDS.forEach(f => { advSel[f.key].clear(); advSearch[f.key] = ''; }); }
 let advCorePass = () => true;
 let sortCol = 'Part ID', sortAsc = false;
@@ -3629,12 +3702,25 @@ window.qaSelectItem = (id, el) => {
   document.getElementById('qtyItemMeta').innerHTML = `<span style="font-family:var(--mono);font-weight:700;color:var(--agc-blue)">${escapeHtml(qaSelectedItem['Part ID'])}</span>${posPart}${locPart ? ' &nbsp;' + locPart : ''}`;
   document.getElementById('qaQtyNum').value = '1';
   document.getElementById('qtyLabel').textContent = qaMode === 'out' ? 'จำนวนที่เบิก (pcs)' : 'จำนวนที่รับเข้า (pcs)';
+  const setHint = document.getElementById('qaSetHint');
+  setHint.innerHTML = qaMode === 'out' ? setWithdrawHintHtml(qaSelectedItem) : '';
+  setHint.hidden = !setHint.innerHTML;
   updateQaPreview();
   document.getElementById('qtyPanel').classList.add('visible');
   document.querySelectorAll('.qa-item').forEach(e => e.classList.remove('selected'));
-  el.classList.add('selected');
+  if (el) el.classList.add('selected');
   document.getElementById('qtyPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   refreshIcons();
+};
+
+// Select a part on the เบิก/รับ page as if it had been searched and tapped (used by "เบิก ... ต่อ").
+window.qaPickItem = (id) => {
+  const r = items.find(x => x._id === id); if (!r) return;
+  if (document.getElementById('pageAction').style.display === 'none') goAction('out');
+  const s = document.getElementById('qaSearch');
+  s.value = r['Part ID'] || '';
+  qaSearchInput();
+  qaSelectItem(id, document.querySelector(`.qa-item[data-id="${CSS.escape(id)}"]`));
 };
 
 window.qaChangeQty = (d) => {
@@ -3698,7 +3784,8 @@ window.qaExecute = async () => {
       title: qaMode === 'out' ? 'เบิกของสำเร็จ' : 'รับของเข้าสำเร็จ',
       sub: `${partName} · ${qaMode === 'out' ? '-' : '+'}${qaQty} pcs`,
       from: cur,
-      to: Number.isFinite(serverStock) ? serverStock : next
+      to: Number.isFinite(serverStock) ? serverStock : next,
+      ...(qaMode === 'out' ? setAfterWithdraw(qaSelectedItem._id, m => qaPickItem(m._id)) : {})
     });
     recordRecent(usedPartId, usedMode);
     qaClearSearch();
@@ -4611,7 +4698,7 @@ window.executeUndoLog = async () => {
 
 function getItemChangeSummary(oldItem, newData) {
   if (!oldItem) return '';
-  const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan'];
+  const fields = ['Department','Plant','Main Category','Sub Category','Brand','Model','Description','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','Set Group'];
   const changed = [];
   fields.forEach(f => {
     if (!(f in newData)) return;   // not part of this save (e.g. Stock left untouched)
@@ -4709,6 +4796,8 @@ window.openAdjust = (id, initialMode = 'in') => {
 
 window.setAdjustMode = (mode) => {
   adjustMode=mode;
+  const setHint = document.getElementById('adjSetHint');
+  if (setHint) { setHint.innerHTML = mode === 'out' && adjustItem ? setWithdrawHintHtml(adjustItem) : ''; setHint.hidden = !setHint.innerHTML; }
   document.getElementById('btnIn').style.opacity=mode==='in'?'1':'0.4';
   document.getElementById('btnOut').style.opacity=mode==='out'?'1':'0.4';
   updateAdjPreview();
@@ -4849,6 +4938,8 @@ window.openAddModal = () => {
   document.getElementById('f_max').value='2';
   document.getElementById('f_class').value='C';
   setCostEstField(false);
+  setSetGroupField('');
+  document.getElementById('f_cost_set_note').hidden = true;
 
   selectedPhotoFile = null;
   currentPhotoUrl = '';
@@ -4892,6 +4983,8 @@ window.openEdit = (id) => {
   document.getElementById('f_max').value=r['Max']||'';
   document.getElementById('f_cost').value=r['COST']||'';
   setCostEstField(String(r['COST_SOURCE'] || '').trim().toLowerCase() === 'est');
+  document.getElementById('f_cost_set_note').hidden = !isSetCost(r);
+  setSetGroupField(r['Set Group'] || '', r._id);
   document.getElementById('f_vendor').value=r['VENDOR']||'';
   document.getElementById('f_deliver').value=r['DELIVER TIME']||'';
   document.getElementById('f_deliver_unit').value=r['DELIVER UNIT']||'';
@@ -5050,7 +5143,12 @@ window.saveItem = async () => {
       if (cleanSingleLine(prev?.['COST'] ?? '') !== cost) data['COST_UPDATED_AT'] = cost ? new Date().toISOString() : null;
     }
     // The "ราคาประมาณ" box decides the flag; an empty price is never an estimate.
-    if (costSourceSupported()) data['COST_SOURCE'] = (cost && document.getElementById('f_cost_est')?.checked) ? 'est' : null;
+    if (costSourceSupported()) {
+      const prev = editItemId ? items.find(x => x._id === editItemId) : null;
+      const keepSet = prev && isSetCost(prev) && cleanSingleLine(prev['COST'] ?? '') === cost;   // a set share stays one until the price itself is changed
+      data['COST_SOURCE'] = !cost ? null : document.getElementById('f_cost_est')?.checked ? 'est' : keepSet ? 'set' : null;
+    }
+    if (setGroupSupported()) data['Set Group'] = cleanSingleLine(document.getElementById('f_setgroup').value).toUpperCase() || null;
     if (editItemId) {
       const oldItem = items.find(x => x._id === editItemId);
       const changeNote = getItemChangeSummary(oldItem, data);
@@ -5233,7 +5331,10 @@ function parseCSV(text) {
   out.skipped = all.length - out.length;                                   // rows dropped for an invalid Part ID
   // COST_SOURCE is optional (schema step C): without the column an upsert carrying it would fail the whole import
   if (!costSourceSupported()) out.forEach(r => { delete r['COST_SOURCE']; });
-  out.ignoredCols = headers.filter(h => h && (!INV_COLUMNS.includes(h) || (h === 'COST_SOURCE' && !costSourceSupported())));    // columns that are not imported
+  // Set Group is optional too (schema step D)
+  if (!setGroupSupported()) out.forEach(r => { delete r['Set Group']; });
+  else out.forEach(r => { if ('Set Group' in r) r['Set Group'] = cleanSingleLine(r['Set Group'] || '').toUpperCase() || null; });
+  out.ignoredCols = headers.filter(h => h && (!INV_COLUMNS.includes(h) || (h === 'COST_SOURCE' && !costSourceSupported()) || (h === 'Set Group' && !setGroupSupported())));    // columns that are not imported
   out.dups = [...dups];                                                    // Part IDs that appear more than once
   if(!out.length) throw new Error('ไม่พบแถวที่มี Part ID ถูกต้อง');
   return out;
@@ -5612,7 +5713,11 @@ window.tx = (() => {
     }
     burst(mode);
     buzz(35);
-    setActions([{ label: 'เสร็จสิ้น', cls: (mode === 'in' || mode === 'add') ? 'btn-success' : 'btn-primary', onClick: hide }]);
+    if (o.hint) $('txHint').textContent = o.hint;
+    // o.actions: follow-up buttons (e.g. withdraw the rest of a set). They keep the overlay open until a choice is made.
+    const extra = (o.actions || []).map(a => ({ ...a, onClick: () => { hide(); a.onClick(); } }));
+    setActions([{ label: 'เสร็จสิ้น', cls: (mode === 'in' || mode === 'add') ? 'btn-success' : 'btn-primary', onClick: hide }, ...extra]);
+    if (extra.length || o.hint) return;   // no auto-close: the person has something to read or choose
     const bar = $('txBar');
     bar.style.setProperty('--tx-dur', AUTO_CLOSE_MS + 'ms');
     bar.classList.remove('run'); void bar.offsetWidth; bar.classList.add('run');
@@ -5994,6 +6099,260 @@ function isMissingCost(r) { return onhandQty(r) > 0 && !Number.isFinite(parseCos
 // COST_SOURCE (optional column, schema step C): 'est' = estimated price (web search / similar model), anything else = real price.
 function costSourceSupported() { return items.length > 0 && 'COST_SOURCE' in items[0]; }
 function isEstCost(r) { return String(r?.['COST_SOURCE'] || '').trim().toLowerCase() === 'est' && Number.isFinite(parseCost(r?.['COST'])); }
+// 'set' = this part's share of a set price (split by setPriceSplit). It is a real price: it counts in Stock Value like 'actual'.
+function isSetCost(r) { return String(r?.['COST_SOURCE'] || '').trim().toLowerCase() === 'set' && Number.isFinite(parseCost(r?.['COST'])); }
+const SET_COST_MARK = '<span class="set-cost-mark" title="ราคาส่วนแบ่งจากราคาชุด (ซื้อแยกชิ้นอาจแพงกว่านี้)">แบ่งจากชุด</span>';
+const costMarks = r => isEstCost(r) ? ' ' + EST_MARK : isSetCost(r) ? ' ' + SET_COST_MARK : '';
+
+// ===== SET GROUP (optional column "Set Group", schema step D) =====
+// Parts bought or used together share one Set Group value. Each part keeps its own row and stock;
+// the page groups them on the fly. Matching ignores case and extra spaces, like the filters.
+function setGroupSupported() { return items.length > 0 && 'Set Group' in items[0]; }
+const setKeyOf = r => advNorm(r?.['Set Group']);
+// Map key -> rows, only for groups with 2+ parts (a "set" of one part links to nothing).
+function buildSetIndex(rows = items) {
+  const map = new Map();
+  rows.forEach(r => { const k = setKeyOf(r); if (!k) return; if (!map.has(k)) map.set(k, []); map.get(k).push(r); });
+  for (const [k, list] of map) {
+    if (list.length < 2) map.delete(k);
+    else list.sort((a, b) => String(a['Part ID'] || '').localeCompare(String(b['Part ID'] || '')));
+  }
+  return map;
+}
+function setMembers(r, index = null) { const k = setKeyOf(r); if (!k) return []; return (index ? index.get(k) : buildSetIndex().get(k)) || []; }
+const setLabel = list => cleanSingleLine(list?.[0]?.['Set Group'] || '') || '—';
+const setPartName = r => cleanSingleLine(r['Model'] || '') || cleanSingleLine(r['Part ID'] || '');
+// A set is incomplete when some parts are in stock and others have run out: the stock on hand cannot be installed.
+function setGapOf(list) {
+  const out = list.filter(r => !onhandQty(r)), have = list.filter(r => onhandQty(r) > 0);
+  return out.length && have.length ? out : [];
+}
+function isSetIncomplete(r, index = null) { return setGapOf(setMembers(r, index)).length > 0; }
+function setIncompleteGroups(index = buildSetIndex()) { return [...index.values()].filter(list => setGapOf(list).length); }
+// Thai list: "A", "A และ B", "A, B และ C"
+function thaiJoin(names) { return names.length < 2 ? (names[0] || '') : names.slice(0, -1).join(', ') + ' และ ' + names[names.length - 1]; }
+function setChipHtml(r, index) {
+  const list = setMembers(r, index);
+  if (!list.length) return '';
+  const gap = setGapOf(list).length > 0, key = setKeyOf(r);
+  return `<button type="button" class="set-chip${gap ? ' gap' : ''}" data-set-open="${escapeHtml(key)}" onclick="event.stopPropagation();openSetGroup(this.dataset.setOpen)" title="${gap ? 'ชุดไม่ครบ: บางชิ้นหมดสต็อก' : 'ดูทุกรายการในชุดนี้'}" aria-label="ชุด ${escapeHtml(setLabel(list))} ${list.length} รายการ${gap ? ' ชุดไม่ครบ' : ''}"><i data-lucide="${gap ? 'unlink' : 'link'}"></i>ชุด ${escapeHtml(setLabel(list))} (${list.length})${gap ? '<span class="set-chip-gap">ไม่ครบ</span>' : ''}</button>`;
+}
+// Withdraw: the other parts of the set, the ones that can still be withdrawn first.
+function setMatesOf(r) { return setMembers(r).filter(x => x._id !== r._id); }
+function setWithdrawHintHtml(r) {
+  const mates = setMatesOf(r);
+  if (!mates.length) return '';
+  const names = mates.map(m => escapeHtml(setPartName(m)) + (onhandQty(m) ? '' : ' <span class="set-out">(หมด)</span>'));
+  const anyOut = mates.some(m => !onhandQty(m));
+  return `<i data-lucide="link"></i><span>รายการนี้ใช้คู่กับ <strong>${thaiJoin(names)}</strong> จะเบิกด้วยไหม?${mates.some(m => onhandQty(m) > 0) ? ' บันทึกรายการนี้แล้วกดเบิกชิ้นที่เหลือต่อได้ทันที' : ''}${anyOut ? '<br><span class="set-out">ชุดไม่ครบ: บางชิ้นหมดสต็อก ติดตั้งครบชุดไม่ได้</span>' : ''}</span>`;
+}
+// After a withdrawal: buttons to withdraw the rest of the set, and a warning if this one just broke the set.
+function setAfterWithdraw(itemId, pick) {
+  const r = items.find(x => x._id === itemId);
+  if (!r) return {};
+  const mates = setMatesOf(r);
+  if (!mates.length) return {};
+  const actions = mates.filter(m => onhandQty(m) > 0).slice(0, 3)
+    .map(m => ({ label: `เบิก ${setPartName(m)} ต่อ`, cls: 'btn-ghost', onClick: () => pick(m) }));
+  const hint = !onhandQty(r) && mates.some(m => onhandQty(m) > 0)
+    ? `ชุด ${setLabel(setMembers(r))} ไม่ครบแล้ว: ${setPartName(r)} หมด แต่ชิ้นอื่นในชุดยังมีของ` : '';
+  return { actions, hint };
+}
+
+// Edit form: Set Group box (hidden until the column exists) and a live "this set now has ..." line.
+let _setFieldSelf = null;
+function setSetGroupField(val, selfId = null) {
+  const wrap = document.getElementById('f_setgroup_wrap'), input = document.getElementById('f_setgroup');
+  if (!wrap || !input) return;
+  _setFieldSelf = selfId;
+  wrap.hidden = !setGroupSupported();
+  input.value = cleanSingleLine(val || '').toUpperCase();
+  const names = [...new Set(items.map(r => cleanSingleLine(r['Set Group'] || '').toUpperCase()).filter(Boolean))].sort();
+  document.getElementById('setGroupOptions').innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+  updateSetGroupHelp();
+}
+window.updateSetGroupHelp = () => {
+  const help = document.getElementById('f_setgroup_help'), key = advNorm(document.getElementById('f_setgroup')?.value);
+  if (!help) return;
+  const others = key ? items.filter(r => r._id !== _setFieldSelf && setKeyOf(r) === key) : [];
+  help.textContent = !key ? 'ใส่ชื่อชุดเดียวกันกับชิ้นที่ใช้คู่กัน เช่น เซ็นเซอร์ + สาย + ขาจับ'
+    : others.length ? `ชุดนี้มีอยู่แล้ว: ${others.map(r => (r['Part ID'] || '') + ' ' + setPartName(r)).join(', ')}`
+    : 'ชุดใหม่: ใส่ชื่อเดียวกันนี้ที่ชิ้นอื่นในชุดด้วย';
+};
+
+// ----- Set price split -----
+// The page cannot know how a set price divides over its parts: the person gives each part's stand-alone
+// price (quotation, catalogue, web), and the set price is shared in proportion to (stand-alone price × qty in set).
+// Rounding: every share is rounded to 0.01 and the biggest share takes what is left, so Σ(unit × qty) = set price.
+function setPriceSplit(total, parts) {   // parts: [{ w: stand-alone unit price (or 1 for an equal split), q: qty in the set }]
+  const lines = parts.map(p => p.w * p.q), sum = lines.reduce((a, b) => a + b, 0);
+  if (!(total > 0) || !(sum > 0) || parts.some(p => !(p.w > 0) || !(p.q > 0))) return null;
+  const big = lines.indexOf(Math.max(...lines));
+  const units = parts.map((p, i) => i === big ? 0 : Math.round(total * lines[i] / sum / p.q * 100) / 100);
+  const used = units.reduce((a, u, i) => a + u * parts[i].q, 0);
+  units[big] = Math.round((total - used) / parts[big].q * 100) / 100;
+  return units.some(u => !(u > 0)) ? null : units;
+}
+window.setPriceSplit = setPriceSplit;   // tests call it directly
+const fmtBaht2 = n => '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+let setOpenKey = null, setView = 'list', setSplitMode = 'ratio', setSaving = false;
+window.openSetGroup = (key, view = 'list') => {
+  const k = advNorm(key), list = buildSetIndex().get(k);
+  if (!list) { toast('ไม่พบชุดนี้แล้ว (อาจถูกแก้ไขไปแล้ว)', 'warn'); return; }
+  closeModal('detailModal');
+  setOpenKey = k; setSplitMode = 'ratio';
+  setView = view === 'price' && canPerform('addEdit') ? 'price' : 'list';
+  renderSetModal();
+  document.getElementById('setModal').style.display = 'flex';
+  if (setView === 'price') document.getElementById('setTotal')?.focus();
+};
+function setCurrentList() { return buildSetIndex().get(setOpenKey) || []; }
+function renderSetModal() {
+  const list = setCurrentList();
+  const body = document.getElementById('setModalBody'), foot = document.getElementById('setModalFooter');
+  if (!list.length) { closeModal('setModal'); return; }
+  const gap = setGapOf(list);
+  document.getElementById('setModalTitle').innerHTML = `<i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px"></i> ชุด ${escapeHtml(setLabel(list))}`;
+  document.getElementById('setModalSub').textContent = setView === 'price' ? 'ใส่ราคาชุดครั้งเดียว ระบบแบ่งลงแต่ละชิ้นให้' : `${list.length} รายการที่ใช้ร่วมกัน`;
+  if (setView === 'list') {
+    body.innerHTML = `${gap.length ? `<div class="set-gap-banner" role="status"><i data-lucide="alert-triangle"></i><span><strong>ชุดไม่ครบ:</strong> ${escapeHtml(thaiJoin(gap.map(setPartName)))} หมดสต็อก แต่ชิ้นอื่นในชุดยังมีของ ติดตั้งครบชุดไม่ได้จนกว่าจะซื้อเพิ่ม</span></div>` : ''}
+      <div class="set-list">${list.map(r => {
+        const q = onhandQty(r), c = parseCost(r['COST']);
+        return `<button type="button" class="set-row${q ? '' : ' out'}" data-set-detail="${escapeHtml(r._id)}">
+          <span class="set-row-main"><span class="set-row-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="set-row-name">${escapeHtml(valItemName(r))}</span>${r['Description'] ? `<span class="set-row-desc">${escapeHtml(r['Description'])}</span>` : ''}${r['Position'] ? `<span class="set-row-desc"><i data-lucide="map-pin" style="width:11px;height:11px;vertical-align:-1px"></i> ${escapeHtml([r['Location'], r['Position']].filter(Boolean).join(' '))}</span>` : ''}</span>
+          <span class="set-row-side"><span class="set-row-stock">${q ? `คงเหลือ <strong>${q.toLocaleString('en-US')}</strong>` : '<strong>หมด</strong>'}</span><span class="set-row-cost">${Number.isFinite(c) ? fmtBaht2(c) + costMarks(r) : 'ไม่มีราคา'}</span></span>
+        </button>`;
+      }).join('')}</div>`;
+    foot.innerHTML = `<button class="btn btn-ghost" onclick="closeModal('setModal')"><i data-lucide="x"></i> ปิด</button>
+      ${canPerform('addEdit') ? `<button class="btn btn-primary" data-set-price><i data-lucide="tag"></i> ราคาเป็นชุด</button>` : ''}`;
+  } else {
+    body.innerHTML = `
+      <div class="form-group"><label for="setTotal">ราคาชุด (บาท) ต่อ 1 ชุด</label><input type="text" inputmode="decimal" id="setTotal" autocomplete="off" placeholder="เช่น 22000"></div>
+      <div class="val-seg set-mode" role="group" aria-label="วิธีแบ่งราคา">
+        <button type="button" class="${setSplitMode === 'ratio' ? 'active' : ''}" aria-pressed="${setSplitMode === 'ratio'}" data-set-mode="ratio">ตามราคาแยกชิ้น</button>
+        <button type="button" class="${setSplitMode === 'equal' ? 'active' : ''}" aria-pressed="${setSplitMode === 'equal'}" data-set-mode="equal">หารเท่ากัน</button>
+      </div>
+      <div class="set-howto">${setSplitMode === 'ratio'
+        ? 'ระบบไม่รู้สัดส่วนเอง: ใส่<strong>ราคาแยกชิ้น</strong>ของแต่ละรายการ (จากใบเสนอราคา แคตตาล็อก หรือ Google ไม่ต้องเป็นราคาที่จ่ายจริง) ระบบจะแบ่งราคาชุดตามสัดส่วนนั้น ช่องที่มีราคาอยู่แล้วเติมให้ก่อน'
+        : 'หารราคาชุดเท่ากันทุกชิ้น ใช้เมื่อหาราคาแยกชิ้นไม่ได้เลย (ชิ้นถูกอย่างขาจับจะได้ราคาสูงเกินจริง)'}</div>
+      <div class="set-split">${list.map(r => {
+        const c = parseCost(r['COST']);
+        return `<div class="set-split-row" data-split-row="${escapeHtml(r._id)}">
+          <label class="set-split-inc"><input type="checkbox" data-split-inc checked aria-label="รวม ${escapeHtml(r['Part ID'] || '')} ในราคาชุด"></label>
+          <div class="set-split-name"><span class="set-row-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="set-row-name">${escapeHtml(valItemName(r))}</span>${Number.isFinite(c) ? `<span class="set-row-desc">ราคาเดิม ${fmtBaht2(c)}${costMarks(r)}</span>` : ''}</div>
+          <label class="set-split-f"><span>จำนวน/ชุด</span><input type="number" min="1" step="1" value="1" data-split-q inputmode="numeric"></label>
+          <label class="set-split-f"><span>ราคาแยกชิ้น</span><input type="text" inputmode="decimal" data-split-w autocomplete="off" value="${Number.isFinite(c) && !isSetCost(r) ? c : ''}" placeholder="฿ / หน่วย" ${setSplitMode === 'equal' ? 'disabled' : ''}></label>
+          <a class="pe-btn set-split-g" target="_blank" rel="noopener noreferrer" title="ค้นหาราคาแยกชิ้นใน Google" aria-label="ค้นหาราคา ${escapeHtml(r['Part ID'] || '')} ใน Google" href="https://www.google.com/search?q=${encodeURIComponent((peSearchText(r, false) || peSearchText(r, true)) + ' ราคา')}"><i data-lucide="search"></i></a>
+          <div class="set-split-out" data-split-out>—</div>
+        </div>`;
+      }).join('')}</div>
+      <div class="set-split-sum" id="setSplitSum" role="status"></div>`;
+    foot.innerHTML = `<button class="btn btn-ghost" data-set-back><i data-lucide="arrow-left"></i> กลับ</button>
+      <button class="btn btn-primary" id="setSaveBtn" data-set-save disabled><i data-lucide="check"></i> บันทึกราคา</button>`;
+    updateSetSplit();
+    // synchronous on purpose: a delayed focus could jump in while the person is already typing in another box
+    if (document.getElementById('setModal').style.display !== 'none') document.getElementById('setTotal')?.focus();
+  }
+  refreshIcons();
+}
+// Reads the price form; returns { total, rows:[{r, q, unit}], error } and paints each row's result.
+function updateSetSplit() {
+  const list = setCurrentList();
+  const total = parseCost(document.getElementById('setTotal')?.value);
+  const picked = [];
+  let error = '';
+  list.forEach(r => {
+    const row = document.querySelector(`#setModalBody [data-split-row="${CSS.escape(r._id)}"]`);
+    if (!row) return;
+    const inc = row.querySelector('[data-split-inc]').checked;
+    row.classList.toggle('off', !inc);
+    row.querySelector('[data-split-out]').textContent = '—';
+    if (!inc) return;
+    const q = Number(row.querySelector('[data-split-q]').value);
+    const w = setSplitMode === 'equal' ? 1 : parseCost(row.querySelector('[data-split-w]').value);
+    if (!Number.isInteger(q) || q < 1) error = error || `จำนวน/ชุด ของ ${r['Part ID']} ต้องเป็นเลขจำนวนเต็มตั้งแต่ 1`;
+    if (!Number.isFinite(w)) error = error || `ใส่ราคาแยกชิ้นของ ${r['Part ID']} หรือเลือก "หารเท่ากัน"`;
+    picked.push({ r, row, q, w });
+  });
+  if (!picked.length) error = 'เลือกอย่างน้อย 1 รายการ';
+  if (!Number.isFinite(total)) error = error || 'ใส่ราคาชุด (ตัวเลขมากกว่า 0)';
+  const units = error ? null : setPriceSplit(total, picked.map(p => ({ w: p.w, q: p.q })));
+  if (!error && !units) error = 'แบ่งราคาไม่ได้: ราคาชุดน้อยเกินไปสำหรับจำนวนชิ้น';
+  if (units) picked.forEach((p, i) => { p.unit = units[i]; p.row.querySelector('[data-split-out]').innerHTML = `<strong>${fmtBaht2(units[i])}</strong><span>/หน่วย</span>${p.q > 1 ? `<span>รวม ${fmtBaht2(units[i] * p.q)}</span>` : ''}`; });
+  const sumEl = document.getElementById('setSplitSum');
+  if (sumEl) {
+    if (units) {
+      const back = picked.reduce((a, p) => a + p.unit * p.q, 0);
+      const replaced = picked.filter(p => Number.isFinite(parseCost(p.r['COST'])) && !isSetCost(p.r) && !isEstCost(p.r)).length;
+      sumEl.className = 'set-split-sum ok';
+      sumEl.innerHTML = `รวมทุกชิ้น ${fmtBaht2(back)} = ราคาชุด ${fmtBaht2(total)}${Math.abs(back - total) >= 0.01 ? ` (ต่างจากการปัดเศษ ${fmtBaht2(Math.abs(back - total))})` : ''}${replaced ? `<br><span class="set-out">จะแทนราคาจริงเดิม ${replaced} รายการ</span>` : ''}`;
+    } else { sumEl.className = 'set-split-sum'; sumEl.textContent = error; }
+  }
+  const btn = document.getElementById('setSaveBtn');
+  if (btn) btn.disabled = !units || setSaving;
+  return { total, rows: units ? picked : [], error };
+}
+async function saveSetPrice() {
+  if (setSaving || !canPerform('addEdit')) return;
+  const { total, rows } = updateSetSplit();
+  if (!rows.length) return;
+  const label = setLabel(setCurrentList());
+  setSaving = true;
+  const btn = document.getElementById('setSaveBtn');
+  btn.disabled = true; btn.classList.add('btn-loading');
+  const done = [];
+  try {
+    for (const p of rows) {   // one row at a time: a failure leaves a clear list of what was saved
+      const old = p.r['COST'] ?? '', oldSource = p.r['COST_SOURCE'] ?? null;
+      await peWriteCost(p.r, String(p.unit), `กรอกราคาจากชุด ${label} (ราคาชุด ${fmtBaht2(total)}${p.q > 1 ? `, ชุดละ ${p.q} ชิ้น` : ''})`, 'set');
+      done.push(p.r);
+      if (peIds.includes(p.r._id)) { peSaved.set(p.r._id, { old, oldSource, now: p.unit, est: false, set: true }); peReplaceRow(p.r._id); }
+    }
+    toast(`บันทึกราคาชุด ${label} แล้ว ${done.length} รายการ`, 'success');
+    setView = 'list';
+    renderSetModal();
+  } catch (err) {
+    console.error('Set price error:', err);
+    toast(`บันทึกไม่ครบ: สำเร็จ ${done.length}/${rows.length} รายการ${done.length ? ' (' + done.map(r => r['Part ID']).join(', ') + ')' : ''} · ${err?.message || 'ลองอีกครั้ง'}`, 'error');
+  } finally {
+    setSaving = false;
+    btn.classList.remove('btn-loading');
+    if (setView === 'price') updateSetSplit();
+    applyFilters();
+  }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest && e.target.closest('#setModal [data-set-detail],#setModal [data-set-price],#setModal [data-set-back],#setModal [data-set-save],#setModal [data-set-mode]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.setDetail) { closeModal('setModal'); openDetail(d.setDetail); }
+  else if ('setPrice' in d) { setView = 'price'; renderSetModal(); }
+  else if ('setBack' in d) { setView = 'list'; renderSetModal(); }
+  else if ('setSave' in d) saveSetPrice();
+  else if (d.setMode) {
+    // keep what was typed: only the mode flips
+    setSplitMode = d.setMode;
+    document.querySelectorAll('#setModal [data-set-mode]').forEach(b => { const on = b.dataset.setMode === setSplitMode; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+    document.querySelectorAll('#setModal [data-split-w]').forEach(i => { i.disabled = setSplitMode === 'equal'; });
+    const how = document.querySelector('#setModal .set-howto');
+    if (how) how.innerHTML = setSplitMode === 'ratio'
+      ? 'ระบบไม่รู้สัดส่วนเอง: ใส่<strong>ราคาแยกชิ้น</strong>ของแต่ละรายการ (จากใบเสนอราคา แคตตาล็อก หรือ Google ไม่ต้องเป็นราคาที่จ่ายจริง) ระบบจะแบ่งราคาชุดตามสัดส่วนนั้น ช่องที่มีราคาอยู่แล้วเติมให้ก่อน'
+      : 'หารราคาชุดเท่ากันทุกชิ้น ใช้เมื่อหาราคาแยกชิ้นไม่ได้เลย (ชิ้นถูกอย่างขาจับจะได้ราคาสูงเกินจริง)';
+    updateSetSplit();
+  }
+});
+document.addEventListener('input', e => { if (e.target.closest && e.target.closest('#setModalBody')) updateSetSplit(); });
+document.addEventListener('change', e => { if (e.target.matches && e.target.matches('#setModalBody [data-split-inc]')) updateSetSplit(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.closest && e.target.closest('#setModalBody') && e.target.matches('input:not([type=checkbox])')) { e.preventDefault(); saveSetPrice(); }
+});
+document.addEventListener('paste', e => {
+  if (!e.target.matches || !e.target.matches('#setTotal, #setModalBody [data-split-w]')) return;
+  const n = parseCost((e.clipboardData || window.clipboardData)?.getData('text') || '');
+  if (!Number.isFinite(n)) return;
+  e.preventDefault(); e.target.value = String(n); updateSetSplit();
+});
 // Edit form: the box is shown only once the column exists.
 function setCostEstField(checked) {
   const wrap = document.getElementById('f_cost_est_wrap'), box = document.getElementById('f_cost_est');
@@ -6049,7 +6408,7 @@ function valItemRow(r, sub) {
   const q = onhandQty(r), c = parseCost(r['COST']);
   return `<button type="button" class="val-item" data-val-detail="${escapeHtml(r._id)}">
     <span class="val-item-main"><span class="val-item-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="val-item-name">${escapeHtml(valItemName(r))}</span>${sub ? `<span class="val-item-sub">${escapeHtml(sub)}</span>` : ''}</span>
-    <span class="val-item-num"><span class="val-item-calc">${q.toLocaleString('en-US')} × ${fmtBaht(c)}${isEstCost(r) ? ' ' + EST_MARK : ''}</span><span class="val-item-val">${fmtBaht(q * c)}</span></span>
+    <span class="val-item-num"><span class="val-item-calc">${q.toLocaleString('en-US')} × ${fmtBaht(c)}${costMarks(r)}</span><span class="val-item-val">${fmtBaht(q * c)}</span></span>
   </button>`;
 }
 function topValueRows(rows, n) {
@@ -6223,7 +6582,7 @@ function valGoInventory(advKey, value) {
   applyFilters();
 }
 function exportValueCSV() {
-  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value', ...(costDateSupported() ? ['COST_UPDATED_AT'] : []), ...(costSourceSupported() ? ['COST_SOURCE'] : [])];
+  const cols = ['Part ID','Department','Plant','Main Category','Sub Category','Brand','Model','Description','CLASS','Location','Position','Actual','COST','Value', ...(costDateSupported() ? ['COST_UPDATED_AT'] : []), ...(costSourceSupported() ? ['COST_SOURCE'] : []), ...(setGroupSupported() ? ['Set Group'] : [])];
   const rowsData = items.filter(r => onhandQty(r) > 0).sort((a, b) => (itemValue(b) || 0) - (itemValue(a) || 0));
   const cell = v => { v = cleanCSVValue(v); return v.includes(',') || v.includes('"') ? `"${v.replace(/"/g, '""')}"` : v; };
   const lines = [cols.join(',')];
@@ -6294,9 +6653,10 @@ function peRowHtml(r) {
       <span class="pe-tools">
         <button type="button" class="pe-btn" data-pe-copy="${escapeHtml(r._id)}" title="คัดลอกชื่อและรายละเอียด"><i data-lucide="copy"></i> Copy</button>
         ${q ? `<a class="pe-btn" target="_blank" rel="noopener noreferrer" title="ค้นหาราคาใน Google (แท็บใหม่)" href="https://www.google.com/search?q=${encodeURIComponent(q + ' ราคา')}"><i data-lucide="search"></i> Google</a>` : ''}
+        ${canEdit && !saved && setMembers(r).length ? `<button type="button" class="pe-btn pe-set" data-pe-set="${escapeHtml(setKeyOf(r))}" title="ใส่ราคาชุดครั้งเดียว แล้วแบ่งลงทุกชิ้นในชุด ${escapeHtml(setLabel(setMembers(r)))}"><i data-lucide="link"></i> ราคาเป็นชุด</button>` : ''}
       </span>
       ${saved
-        ? `<span class="pe-entry"><span class="pe-done"><i data-lucide="check-circle"></i><span><strong>${fmtBaht(saved.now)}</strong>${saved.est ? ' ' + EST_MARK : ''} × ${qty} = ${fmtBaht(saved.now * onhandQty(r))}</span></span><button type="button" class="pe-btn pe-undo" data-pe-undo="${escapeHtml(r._id)}"><i data-lucide="undo-2"></i> Undo</button></span>`
+        ? `<span class="pe-entry"><span class="pe-done"><i data-lucide="check-circle"></i><span><strong>${fmtBaht(saved.now)}</strong>${saved.est ? ' ' + EST_MARK : saved.set ? ' ' + SET_COST_MARK : ''} × ${qty} = ${fmtBaht(saved.now * onhandQty(r))}</span></span><button type="button" class="pe-btn pe-undo" data-pe-undo="${escapeHtml(r._id)}"><i data-lucide="undo-2"></i> Undo</button></span>`
         : `<span class="pe-entry"><label class="pe-field"><span class="pe-field-pre" aria-hidden="true">฿</span><input type="text" inputmode="decimal" autocomplete="off" class="pe-input" data-pe-input="${escapeHtml(r._id)}" placeholder="ราคา / หน่วย" aria-label="ราคาต่อ 1 หน่วย ${escapeHtml(r['Part ID'] || '')}" ${canEdit ? '' : 'disabled'}></label>
            <button type="button" class="pe-btn pe-save" data-pe-save="${escapeHtml(r._id)}" ${canEdit ? '' : 'disabled'} aria-label="บันทึกราคา ${escapeHtml(r['Part ID'] || '')}"><i data-lucide="check"></i> บันทึก</button></span>`}
     </div>
@@ -6349,7 +6709,7 @@ function peFocusNext(id) {
 async function peWriteCost(r, newCost, logMsg, source = null) {
   const old = r['COST'] ?? '';
   const stamp = costDateSupported() ? { 'COST_UPDATED_AT': newCost ? new Date().toISOString() : null } : {};
-  if (costSourceSupported()) stamp['COST_SOURCE'] = (newCost && source === 'est') ? 'est' : null;
+  if (costSourceSupported()) stamp['COST_SOURCE'] = (newCost && (source === 'est' || source === 'set')) ? source : null;
   const prevStamp = {};
   if ('COST_UPDATED_AT' in stamp) prevStamp['COST_UPDATED_AT'] = r['COST_UPDATED_AT'] ?? null;
   if ('COST_SOURCE' in stamp) prevStamp['COST_SOURCE'] = r['COST_SOURCE'] ?? null;
@@ -6425,7 +6785,7 @@ async function peCopy(id) {
   window.toast('คัดลอกแล้ว: ' + (text.length > 40 ? text.slice(0, 40) + '…' : text), 'success');
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest && e.target.closest('#valPage [data-pe-mode],#valPage [data-val-entry],#valPage [data-pe-back],#valPage [data-pe-dept],#valPage [data-pe-more],#valPage [data-pe-copy],#valPage [data-pe-save],#valPage [data-pe-undo]');
+  const t = e.target.closest && e.target.closest('#valPage [data-pe-mode],#valPage [data-val-entry],#valPage [data-pe-back],#valPage [data-pe-dept],#valPage [data-pe-more],#valPage [data-pe-copy],#valPage [data-pe-save],#valPage [data-pe-undo],#valPage [data-pe-set]');
   if (!t) return;
   const d = t.dataset;
   if ('peMode' in d) {
@@ -6444,6 +6804,7 @@ document.addEventListener('click', e => {
     if (left > 0) t.textContent = `แสดงเพิ่ม (เหลืออีก ${left})`; else t.remove();
     refreshIcons();
   }
+  else if (d.peSet) openSetGroup(d.peSet, 'price');
   else if (d.peCopy) peCopy(d.peCopy);
   else if (d.peSave) peSave(d.peSave);
   else if (d.peUndo) peUndo(d.peUndo);
@@ -6596,6 +6957,12 @@ function updateHomeStats() {
     <button type="button" class="home-stat home-stat-clickable home-stat-quiet" onclick="goInventory();setTimeout(()=>setQuickFilter('nostock'),80)" aria-label="No stock ${noStock} รายการ แตะเพื่อดูรายการ"><div class="home-stat-val" style="color:var(--text)">${noStock}</div><div class="home-stat-label">No stock <i data-lucide="chevron-right" class="home-stat-go"></i></div></button>
   `;
   if (!itemsLoaded) document.getElementById('homeStats').innerHTML = homeStatsUnknownHtml();
+  const setAlert = document.getElementById('homeSetAlert');
+  if (setAlert) {
+    const gaps = itemsLoaded ? setIncompleteGroups() : [];
+    setAlert.hidden = !gaps.length;
+    setAlert.innerHTML = gaps.length ? `<i data-lucide="unlink"></i><span><strong>ชุดไม่ครบ ${gaps.length} ชุด</strong> · ${escapeHtml(gaps.slice(0, 2).map(l => `${setLabel(l)}: ${setGapOf(l).map(setPartName).join(', ')} หมด`).join(' · '))}${gaps.length > 2 ? ' …' : ''}</span><i data-lucide="chevron-right"></i>` : '';
+  }
   renderHomeSide();
   if (window.lucide) lucide.createIcons();
   const uploadZoneEl = document.getElementById('uploadZone');
@@ -6610,6 +6977,12 @@ function updateHomeStats() {
     if (homeFooterEl) homeFooterEl.style.display = hasData ? 'flex' : 'none';
   }
 }
+
+window.goInventoryWithSetGap = () => {
+  goInventory();
+  advSel.status.add('setgap');
+  applyFilters();
+};
 
 window.applyFilters = () => {
   updateFilterBadge();
@@ -6802,6 +7175,7 @@ function renderTable() {
   if(rc) rc.textContent = `แสดง ${filteredItems.length} / ${items.length} รายการ`;
   if(!tbody) return;
   const q = document.getElementById('searchInput')?.value || '';
+  const setIdx = buildSetIndex();
   tbody.innerHTML = filteredItems.map(r => {
     const sc = stockStatus(r['Actual'],r['Min']);
     const dot = sc==='ok'?'dot-ok':sc==='low'?'dot-low':'dot-none';
@@ -6820,7 +7194,7 @@ function renderTable() {
       : (hasStock ? `<span class="pos-empty needs" title="มีของในสต็อกแต่ยังไม่ได้ระบุตำแหน่งเก็บ">ไม่มีตำแหน่ง</span>` : `<span class="pos-empty" aria-label="ไม่มีข้อมูลตำแหน่ง">—</span>`);
     const tip = v => escapeHtml(v||'');
     return `<tr onclick="openDetail('${r._id}')" style="cursor:pointer">
-      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}</td>
+      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}${setChipHtml(r, setIdx)}</td>
       <td data-col="dept">${dept ? `<span class="badge ${deptCls}">${escapeHtml(dept)}</span>` : '—'}</td>
       <td data-col="subcat" title="${tip(r['Sub Category'])}">${highlightText(r['Sub Category']||'—', q)}</td>
       <td data-col="brand" title="${tip(r['Brand'])}">${highlightText(r['Brand']||'—', q)}</td>
@@ -6833,7 +7207,7 @@ function renderTable() {
       <td data-col="position">${posCell}${reorder?`<div class="reorder-chip">Order ${reorder}</div>`:''}</td>
       <td data-col="stock"><div class="stock-cell ${sc==='low'?'low':''}"><span class="stock-dot ${dot}"></span>${escapeHtml(actual)}</div></td>
       <td data-col="minmax" style="font-family:var(--mono)">${escapeHtml(mm)}</td>
-      <td data-col="value">${!onhandQty(r) ? '—' : isMissingCost(r) ? '<span class="pos-empty needs" title="มีของแต่ยังไม่มีราคา">ไม่มีราคา</span>' : fmtBaht(itemValue(r)) + (isEstCost(r) ? ' ' + EST_MARK : '')}</td>
+      <td data-col="value">${!onhandQty(r) ? '—' : isMissingCost(r) ? '<span class="pos-empty needs" title="มีของแต่ยังไม่มีราคา">ไม่มีราคา</span>' : fmtBaht(itemValue(r)) + costMarks(r)}</td>
       <td data-col="actions"><div class="row-actions">
         ${canPerform('adjust') ? `<button class="btn-icon btn-icon-label" onclick="event.stopPropagation();openAdjust('${r._id}')" title="เบิก / รับของ / ย้ายตำแหน่ง" aria-label="เบิก หรือ รับของ ${escapeHtml(r['Part ID']||'')}"><i data-lucide="arrow-left-right"></i><span>เบิก/รับ</span></button>` : ''}
         ${reorder ? `<button class="btn-icon quote-btn" onclick="event.stopPropagation();openQuote('${r._id}')" title="ขอราคา" aria-label="ขอราคา ${escapeHtml(r['Part ID']||'')}"><i data-lucide="mail"></i></button>` : ''}
@@ -6849,6 +7223,7 @@ function renderCards() {
   if (!cl) return;
   if (!filteredItems.length) { cl.innerHTML = emptyStateHtml('inventory'); refreshIcons(); return; }
   const q = document.getElementById('searchInput')?.value || '';
+  const setIdx = buildSetIndex();
   cl.innerHTML = filteredItems.map(r => {
     const sc = stockStatus(r['Actual'],r['Min']);
     const scCls = sc==='ok'?'stock-ok':sc==='low'?'stock-low':'stock-none';
@@ -6871,6 +7246,7 @@ function renderCards() {
           </div>
           <div class="inv-card-name">${highlightText(displayName, q)}</div>
           <div class="inv-card-pid">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span></div>
+          ${setChipHtml(r, setIdx)}
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>
@@ -7184,7 +7560,8 @@ window.confirmAdjust = async () => {
           title: adjustMode==='in' ? 'รับของเข้าสำเร็จ' : 'เบิกของสำเร็จ',
           sub: `${partName} · ${adjustMode==='in'?'+':'-'}${adjustQty} pcs`,
           from: cur,
-          to: Number.isFinite(serverStock) ? serverStock : next
+          to: Number.isFinite(serverStock) ? serverStock : next,
+          ...(adjustMode === 'out' ? setAfterWithdraw(adjustItem._id, m => openAdjust(m._id, 'out')) : {})
         });
   } catch(e){
     let msg;
@@ -7291,7 +7668,8 @@ window.openDetail = (id) => {
       <div class="detail-item"><div class="detail-label">Stock</div><div class="detail-val"><span class="stock-dot ${dot}" style="display:inline-block;margin-right:6px;width:8px;height:8px;border-radius:50%"></span>${escapeHtml(r['Actual']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Min / Max</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Min']||'—')} / ${escapeHtml(r['Max']||'—')}</div></div>
       ${reorder ? `<div class="detail-item"><div class="detail-label">Reorder Suggestion</div><div class="detail-val"><span class="reorder-chip">Suggest order: ${reorder} pcs</span></div></div>` : ''}
-      <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}${isEstCost(r) ? ' ' + EST_MARK : ''}${r['COST'] && r['COST_UPDATED_AT'] ? ` <span style="font-size:12px;color:var(--text2);font-weight:500">(อัปเดต ${escapeHtml(valDateText(r['COST_UPDATED_AT']))})</span>` : ''}</div></div>
+      ${setChipHtml(r) ? `<div class="detail-item" style="grid-column:1/-1"><div class="detail-label">ใช้คู่กับ (ชุด)</div><div class="detail-val">${setChipHtml(r)} <span style="font-size:13px;color:var(--text2);font-weight:500">${escapeHtml(setMatesOf(r).map(m => (m['Part ID'] || '') + ' ' + setPartName(m)).join(', '))}</span></div></div>` : ''}
+      <div class="detail-item"><div class="detail-label">Cost</div><div class="detail-val">${r['COST']?'฿'+escapeHtml(r['COST']):'—'}${costMarks(r)}${r['COST'] && r['COST_UPDATED_AT'] ? ` <span style="font-size:12px;color:var(--text2);font-weight:500">(อัปเดต ${escapeHtml(valDateText(r['COST_UPDATED_AT']))})</span>` : ''}</div></div>
       <div class="detail-item"><div class="detail-label">Vendor</div><div class="detail-val">${escapeHtml(r['VENDOR']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Deliver Time</div><div class="detail-val">${escapeHtml(r['DELIVER TIME']||'—')} ${escapeHtml(r['DELIVER UNIT']||'')}</div></div>
       <div class="detail-item"><div class="detail-label">Install Year</div><div class="detail-val">${escapeHtml(r['Install Year']||'—')}</div></div>
@@ -7342,7 +7720,7 @@ window.executeExportCSV = () => {
 };
 const EXPORT_COLS = ['Part ID','Department','Main Category','Sub Category','Brand','Model','Description','Plant','Area','Location','Position','Actual','Min','Max','CLASS','COST','VENDOR','DELIVER TIME','DELIVER UNIT','Install Year','Expected Life','Replace Plan','imageUrl'];
 function downloadInventoryCSV(rowsData, filename) {
-  const cols = costSourceSupported() ? [...EXPORT_COLS, 'COST_SOURCE'] : EXPORT_COLS;
+  const cols = [...EXPORT_COLS, ...(costSourceSupported() ? ['COST_SOURCE'] : []), ...(setGroupSupported() ? ['Set Group'] : [])];
   const rows=[cols.join(',')];
   rowsData.forEach(r=>rows.push(cols.map(c=>{const v=cleanCSVValue(c==='Main Category'?getDisplayMainCategory(r):r[c]);return v.includes(',')||v.includes('"')?`"${v.replace(/"/g,'""')}"`:`${v}`;}).join(',')));
   const a=document.createElement('a');
