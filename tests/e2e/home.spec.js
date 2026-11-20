@@ -107,3 +107,48 @@ test('desktop side column is never cut off or scrolled inside itself, even when 
   }
   expect(await h.noHorizontalScroll(page)).toBe(true);
 });
+
+test('desktop side column: admins see items that share a Model', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'desktop', 'the side column only exists on wide screens');
+  const rows = [
+    { id: 'd1', 'Part ID': 'SPFL-C-0101', Brand: 'KEYENCE', Model: 'FS-N41P', Plant: 'MIR', Area: 'PAINTING ROOM', Actual: '2', Min: '0' },
+    { id: 'd2', 'Part ID': 'SPFL-C-0102', Brand: 'Keyence', Model: 'fs n41p', Plant: 'MIR', Actual: '1', Min: '0' },
+    { id: 'd3', 'Part ID': 'SPFL-C-0103', Brand: 'KEYENCE', Model: 'FS-N41P', Plant: 'RFG', Actual: '0', Min: '0' },
+    { id: 'd4', 'Part ID': 'SPFL-C-0104', Brand: 'OMRON', Model: 'E3Z-T61', Plant: 'RFG', Actual: '1', Min: '0' },
+    { id: 'd5', 'Part ID': 'SPFL-C-0105', Brand: 'IFM', Model: 'E3ZT61', Plant: 'MIR', Actual: '1', Min: '0' },
+    { id: 'd6', 'Part ID': 'SPFL-C-0106', Brand: 'WAGO', Model: '-', Actual: '1', Min: '0' },
+    { id: 'd7', 'Part ID': 'SPFL-C-0107', Brand: 'WAGO', Model: '-', Actual: '1', Min: '0' },
+  ];
+  const errors = h.watchErrors(page);
+  await h.mockBackend(context, { role: 'admin', rows });
+  await h.openStore(page);
+  await h.waitForStockLoaded(page);
+
+  await expect(page.locator('#sideDupCard')).toBeVisible();
+  await expect(page.locator('#sideDupCount')).toHaveText('2 กลุ่ม');   // "-" is not a model
+  const first = page.locator('#sideDupList .side-row').first();
+  await expect(first).toContainText('×3');
+  await expect(first).toContainText('Plant เดียวกัน');
+  await expect(page.locator('#sideDupList .side-row').nth(1)).toContainText('ยี่ห้อไม่ตรง');
+
+  await first.click();
+  await expect(page.locator('#dupModal')).toBeVisible();
+  await expect(page.locator('#dupModal .side-row')).toHaveCount(3);
+  await page.locator('#dupModal .side-row', { hasText: 'SPFL-C-0103' }).click();
+  await expect(page.locator('#dupModal')).toBeHidden();
+  await expect(page.locator('#detailModal')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('the duplicate card is hidden from staff', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'desktop', 'the side column only exists on wide screens');
+  const rows = [
+    { id: 'd1', 'Part ID': 'SPFL-C-0101', Brand: 'KEYENCE', Model: 'FS-N41P', Actual: '2', Min: '0' },
+    { id: 'd2', 'Part ID': 'SPFL-C-0102', Brand: 'KEYENCE', Model: 'FS-N41P', Actual: '1', Min: '0' },
+  ];
+  await h.mockBackend(context, { role: 'staff', rows });
+  await h.openStore(page);
+  await h.waitForStockLoaded(page);
+  await expect(page.locator('#sideLowList')).toBeVisible();
+  await expect(page.locator('#sideDupCard')).toBeHidden();
+});
