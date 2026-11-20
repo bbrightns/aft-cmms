@@ -2704,7 +2704,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     <!--desktop only: the big "find a part" card takes the slot the QR button has on phones-->
     <button type="button" class="home-browse-btn" onclick="goInventory()" aria-label="ค้นหาพาร์ทอะไหล่: ดูและค้นหาทุกรายการในคลัง">
       <i data-lucide="search" style="width:28px;height:28px"></i>
-      <span class="home-scan-text"><strong>ค้นหาพาร์ทอะไหล่</strong><span>ดูและค้นหาทุกรายการในคลัง</span></span>
+      <span class="home-scan-text home-browse-text"><strong>ค้นหาพาร์ทอะไหล่</strong><span>ดูและค้นหาทุกรายการในคลัง</span></span>
     </button>
 
     <div class="home-links" id="homeLinks">
@@ -6185,7 +6185,7 @@ function applyRoleUI() {
       ? 'โหมด Guest ดูข้อมูลได้อย่างเดียว เข้าสู่ระบบเพื่อเบิก/รับของ'
       : `บัญชีนี้เป็น ${label} ดูข้อมูลได้อย่างเดียว ติดต่อ Admin เพื่อขอสิทธิ์เบิก/รับ`;
   }
-  const scanSub = document.querySelector('.home-scan-text span');
+  const scanSub = document.querySelector('.home-scan-btn .home-scan-text span');
   if (scanSub) scanSub.textContent = canAdjust ? 'สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ' : 'สแกนที่ป้ายอะไหล่เพื่อดูข้อมูลและตำแหน่ง';
   const addBtn = document.getElementById('headerAddBtn');
   if (addBtn && !canPerform('addEdit')) addBtn.style.display = 'none';

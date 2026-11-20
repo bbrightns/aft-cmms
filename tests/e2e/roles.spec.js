@@ -125,7 +125,7 @@ for (const c of VIEW_CASES) {
     for (const card of await page.locator('.home-action-card').all()) {
       if (c.locked) await expect(card).toHaveClass(/is-locked/); else await expect(card).not.toHaveClass(/is-locked/);
     }
-    await expect(page.locator('.home-scan-text span')).toHaveText(c.locked ? /เพื่อดูข้อมูล/ : /เลือกเบิกหรือรับ/);
+    await expect(page.locator('.home-scan-btn .home-scan-text span')).toHaveText(c.locked ? /เพื่อดูข้อมูล/ : /เลือกเบิกหรือรับ/);
     if (c.note) await expect(page.locator('#homeReadOnlyNote')).toHaveText(c.note);
     else await expect(page.locator('#homeReadOnlyNote')).toBeHidden();
 
