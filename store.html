@@ -161,6 +161,27 @@ html { scroll-behavior: smooth; }
 .set-link-chip small { font-weight: 600; color: var(--warn); }
 .set-link-chip button { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; min-height: 0; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; cursor: pointer; }
 .set-link-chip button:hover { background: rgba(0,31,107,.12); }
+.set-sel-box { display: none; }
+body.set-select-mode .set-sel-box { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; margin-right: 8px; vertical-align: -5px; border: 2px solid var(--border-strong); border-radius: 6px; background: var(--surface); color: transparent; flex-shrink: 0; }
+body.set-select-mode .set-sel-box svg { width: 15px; height: 15px; }
+body.set-select-mode .set-selected .set-sel-box { background: var(--agc-blue); border-color: var(--agc-blue); color: #fff; }
+body.set-select-mode .inv-card .set-sel-box { float: right; margin: 0 0 6px 8px; width: 28px; height: 28px; }
+body.set-select-mode tr.set-selected td { background: #eef3ff; }
+body.set-select-mode .inv-card.set-selected { border-color: var(--agc-blue); box-shadow: 0 0 0 2px var(--agc-blue) inset; background: #f5f8ff; }
+body.set-select-mode .inv-card-actions, body.set-select-mode .row-actions { pointer-events: none; opacity: .35; }
+.set-select-btn { margin-left: auto; flex-shrink: 0; }
+.set-select-btn[hidden] { display: none !important; }
+.set-select-btn.active { background: var(--agc-blue); border-color: var(--agc-blue); color: #fff; }
+.set-select-bar { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 90; display: flex; align-items: center; gap: 10px; width: min(560px, calc(100% - 32px)); padding: 10px 12px; background: var(--surface); border: 1.5px solid var(--agc-blue); border-radius: 14px; box-shadow: var(--shadow-md); }
+.set-select-bar[hidden] { display: none; }
+.set-select-count { flex: 1; min-width: 0; font-weight: 700; font-size: 14px; color: var(--agc-blue); }
+.set-select-bar .btn { min-height: 44px; white-space: nowrap; }
+body.set-select-mode #pageInventory { padding-bottom: 90px; }
+@media (max-width: 480px) { .set-select-bar .btn-ghost span, .set-select-bar { gap: 6px; } .set-select-count { font-size: 13px; } }
+.set-link-leave { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 3px 10px; border-radius: 999px; border: 1.5px dashed var(--border-strong); background: none; color: var(--text2); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+.set-link-leave svg { width: 13px; height: 13px; }
+.set-link-leave:hover { border-color: var(--danger-text); color: var(--danger-text); }
+.form-helper.set-link-warn { color: var(--danger-text); font-weight: 700; }
 .set-link-name { display: flex; align-items: center; gap: 8px; }
 .set-link-name label { flex-shrink: 0; font-size: 12px; font-weight: 600; color: var(--text2); text-transform: none; letter-spacing: 0; }
 .set-link-name input { flex: 1; min-width: 0; }
@@ -175,7 +196,12 @@ html { scroll-behavior: smooth; }
 .set-chip.gap { border-color: var(--warn); background: #fef3cd; color: var(--warn); }
 .set-chip.gap:hover { background: var(--warn); color: #fff; }
 .set-chip-gap { margin-left: 2px; padding: 0 5px; border-radius: 6px; background: var(--warn); color: #fff; font-size: 11px; }
-td[data-col="partid"] .set-chip { display: flex; font-family: var(--sans); }
+td[data-col="partid"] .pid-line { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.set-chip.compact { margin-top: 0; min-height: 22px; padding: 0 7px; gap: 3px; font-family: var(--sans); font-size: 11px; line-height: 1; }
+.set-chip.compact svg { width: 11px; height: 11px; }
+.set-chip-n { margin-left: 2px; padding: 0 5px; border-radius: 999px; background: rgba(0,31,107,.12); font-size: 10px; line-height: 16px; }
+.set-chip.gap .set-chip-n { background: rgba(180,83,9,.15); }
+.inv-card-pid .set-chip { margin: 0 0 0 8px; min-height: 26px; padding: 2px 9px; vertical-align: middle; }
 .set-hint { display: flex; gap: 8px; align-items: flex-start; background: #eef3ff; border: 1px solid rgba(0,31,107,.25); border-radius: 8px; padding: 9px 12px; font-size: 13px; color: var(--agc-blue); margin-bottom: 12px; line-height: 1.5; }
 .set-hint[hidden] { display: none; }
 .set-hint svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
@@ -2744,7 +2770,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     </div>
 
     <!-- App Version -->
-    <div class="home-version">v1.32.0</div>
+    <div class="home-version">v1.33.0</div>
 
 
     <!-- Compat stubs -->
@@ -2852,6 +2878,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
     <div class="quick-filter-chips merged-filter-chips" id="quickFilterChips">
       <button type="button" class="quick-filter-chip adv-filter-btn" id="advFilterBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="advFilterPanel" onclick="toggleAdvFilter(event)"><i data-lucide="sliders-horizontal"></i> Filter <span class="chip-count adv-filter-badge" id="advFilterBadge" hidden>0</span></button>
       <span class="adv-filter-tags" id="advFilterTags"></span>
+      <button type="button" class="quick-filter-chip set-select-btn" id="setSelectBtn" hidden onclick="toggleSetSelect()" aria-pressed="false" title="ติ๊กรายการที่ใช้คู่กัน แล้วสร้างเป็นชุด"><i data-lucide="link"></i> สร้างชุด</button>
     </div>
     <div class="adv-filter-backdrop" id="advFilterBackdrop" hidden onclick="closeAdvFilter()"></div>
     <div class="adv-filter-panel" id="advFilterPanel" role="dialog" aria-label="ตัวกรองเพิ่มเติม" tabindex="-1" hidden></div>
@@ -3145,6 +3172,12 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <button class="btn btn-primary" id="detailEditBtn"><i data-lucide="pencil"></i> แก้ไขข้อมูล</button>
     </div>
   </div>
+</div>
+
+<div class="set-select-bar" id="setSelectBar" role="region" aria-label="เลือกรายการเพื่อสร้างชุด" hidden>
+  <span class="set-select-count" id="setSelectCount" aria-live="polite"></span>
+  <button type="button" class="btn btn-ghost" onclick="toggleSetSelect(false)"><i data-lucide="x"></i> ยกเลิก</button>
+  <button type="button" class="btn btn-primary" id="setSelectGo" onclick="openSetCreate()" disabled><i data-lucide="link"></i> สร้างชุด</button>
 </div>
 
 <!-- MODAL: Set Group (parts used together) + set price split -->
@@ -3723,7 +3756,7 @@ function showPage(id) {
   refreshIcons();
 }
 
-window.goHome = () => { showPage('pageHome'); updateHomeStats(); };
+window.goHome = () => { if (setSelectMode) toggleSetSelect(false); showPage('pageHome'); updateHomeStats(); };
 window.homeSearch = (e) => {
   e.preventDefault();
   const q = document.getElementById('homeSearchInput').value.trim();
@@ -5206,6 +5239,8 @@ window.saveItem = async () => {
   if(min!==''&&max!==''&&parseFloat(min)>parseFloat(max)){
     document.getElementById('err_min').textContent='Min ต้องน้อยกว่า Max'; hasError=true;
   }
+  const setErr = setFieldError();
+  if (setErr) { document.getElementById('f_setgroup_help').textContent = setErr; document.getElementById('f_setgroup_help').className = 'form-helper set-link-warn'; hasError = true; }
   if(hasError){ toast('กรุณาตรวจสอบข้อมูล', 'error'); return; }
 
   const possibleDup = brand && model ? items.find(r =>
@@ -5331,7 +5366,7 @@ window.saveItem = async () => {
         user: getCurrentUserName()
       });
 
-      const linked = data['Set Group'] ? await saveSetLinks(data['Set Group']) : [];
+      const linked = setGroupSupported() ? await saveSetLinks(data['Set Group']) : [];
       tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
       await fetchItems(false);
       invalidateLogsCache();
@@ -5357,7 +5392,7 @@ window.saveItem = async () => {
         user: getCurrentUserName()
       });
 
-      const linked = data['Set Group'] ? await saveSetLinks(data['Set Group']) : [];
+      const linked = setGroupSupported() ? await saveSetLinks(data['Set Group']) : [];
       tx.step(txId, 'กำลังรีเฟรชข้อมูล...');
       await fetchItems(false);
       invalidateLogsCache();
@@ -6289,11 +6324,15 @@ function isSetIncomplete(r, index = null) { return setGapOf(setMembers(r, index)
 function setIncompleteGroups(index = buildSetIndex()) { return [...index.values()].filter(list => setGapOf(list).length); }
 // Thai list: "A", "A และ B", "A, B และ C"
 function thaiJoin(names) { return names.length < 2 ? (names[0] || '') : names.slice(0, -1).join(', ') + ' และ ' + names[names.length - 1]; }
-function setChipHtml(r, index) {
+// Headings: "ชุด FR-S01", but a name that already starts with ชุด is not doubled ("ชุดเซ็นเซอร์").
+const setTitle = name => /^ชุด/.test(String(name || '').trim()) ? String(name).trim() : 'ชุด ' + name;
+// The chip: link icon + set name + part count. The icon says "set", so the word ชุด is left out.
+// compact = one line next to the Part ID in the table, so rows in a set are no taller than others.
+function setChipHtml(r, index, compact = false) {
   const list = setMembers(r, index);
   if (!list.length) return '';
-  const gap = setGapOf(list).length > 0, key = setKeyOf(r);
-  return `<button type="button" class="set-chip${gap ? ' gap' : ''}" data-set-open="${escapeHtml(key)}" onclick="event.stopPropagation();openSetGroup(this.dataset.setOpen)" title="${gap ? 'ชุดไม่ครบ: บางชิ้นหมดสต็อก' : 'ดูทุกรายการในชุดนี้'}" aria-label="ชุด ${escapeHtml(setLabel(list))} ${list.length} รายการ${gap ? ' ชุดไม่ครบ' : ''}"><i data-lucide="${gap ? 'unlink' : 'link'}"></i>ชุด ${escapeHtml(setLabel(list))} (${list.length})${gap ? '<span class="set-chip-gap">ไม่ครบ</span>' : ''}</button>`;
+  const gap = setGapOf(list).length > 0, key = setKeyOf(r), name = escapeHtml(setLabel(list));
+  return `<button type="button" class="set-chip${gap ? ' gap' : ''}${compact ? ' compact' : ''}" data-set-open="${escapeHtml(key)}" onclick="event.stopPropagation();openSetGroup(this.dataset.setOpen)" title="${escapeHtml(setTitle(setLabel(list)))} · ${list.length} รายการ${gap ? ' · ไม่ครบ: บางชิ้นหมดสต็อก' : ''}" aria-label="${escapeHtml(setTitle(setLabel(list)))} ${list.length} รายการ${gap ? ' ชุดไม่ครบ' : ''}"><i data-lucide="${gap ? 'unlink' : 'link'}"></i>${name}<span class="set-chip-n">${list.length}</span>${gap && !compact ? '<span class="set-chip-gap">ไม่ครบ</span>' : ''}</button>`;
 }
 // Withdraw: the other parts of the set, the ones that can still be withdrawn first.
 function setMatesOf(r) { return setMembers(r).filter(x => x._id !== r._id); }
@@ -6313,47 +6352,53 @@ function setAfterWithdraw(itemId, pick) {
   const actions = mates.filter(m => onhandQty(m) > 0).slice(0, 3)
     .map(m => ({ label: `เบิก ${setPartName(m)} ต่อ`, cls: 'btn-ghost', onClick: () => pick(m) }));
   const hint = !onhandQty(r) && mates.some(m => onhandQty(m) > 0)
-    ? `ชุด ${setLabel(setMembers(r))} ไม่ครบแล้ว: ${setPartName(r)} หมด แต่ชิ้นอื่นในชุดยังมีของ` : '';
+    ? `${setTitle(setLabel(setMembers(r)))} ไม่ครบแล้ว: ${setPartName(r)} หมด แต่ชิ้นอื่นในชุดยังมีของ` : '';
   return { actions, hint };
 }
 
-// Edit form: Set Group box (hidden until the column exists) and a live "this set now has ..." line.
-let _setFieldSelf = null;
+// ===== EDIT FORM: "ใช้คู่กับ (ชุด)" =====
+// The chips are the truth: they list every other part that will be in this part's set after Save.
+// - Opening the form: chips = the current set (minus this part).
+// - Search + tap adds a chip; ✕ removes one (that part leaves the set on Save).
+// - The name box is only the set's name. Changing it renames the set for every chip; clearing it
+//   while typing a new name never drops the chips. Saving with chips but no name is refused.
+// - "เอาออกจากชุด" takes only this part out and leaves the others as they were.
+let _setFieldSelf = null, _setOrigKey = '';
+const _setChosen = new Map();    // itemId -> row: the other parts in this set after Save
+const _setDropped = new Map();   // itemId -> row: parts of the original set removed with ✕
+let _setLinkHits = [], _setLinkActive = -1;
+const setFieldKey = () => advNorm(document.getElementById('f_setgroup')?.value);
 function setSetGroupField(val, selfId = null) {
   const wrap = document.getElementById('f_setgroup_wrap'), input = document.getElementById('f_setgroup');
   if (!wrap || !input) return;
   _setFieldSelf = selfId;
-  _setLinkAdd.clear();
+  _setChosen.clear(); _setDropped.clear();
   const q = document.getElementById('f_setlink_q'); if (q) q.value = '';
   const res = document.getElementById('f_setlink_results'); if (res) res.hidden = true;
   wrap.hidden = !setGroupSupported();
   input.value = cleanSingleLine(val || '').toUpperCase();
+  _setOrigKey = advNorm(input.value);
+  if (_setOrigKey) items.filter(r => r._id !== selfId && setKeyOf(r) === _setOrigKey).forEach(r => _setChosen.set(r._id, r));
   const names = [...new Set(items.map(r => cleanSingleLine(r['Set Group'] || '').toUpperCase()).filter(Boolean))].sort();
   document.getElementById('setGroupOptions').innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
   updateSetGroupHelp();
 }
-// Picking a part to pair with: search the stock, tap a result. The set name fills itself in
-// (the picked part's set, or a new one named after this part's model), and parts picked here are
-// moved into the set when the form is saved, so nobody has to type the same name on each part.
-const _setLinkAdd = new Map();   // itemId -> row, written on save
-let _setLinkHits = [], _setLinkActive = -1;
-const setFieldKey = () => advNorm(document.getElementById('f_setgroup')?.value);
 function setLinkSuggestName(other) {
   const own = cleanSingleLine(document.getElementById('f_model')?.value || '').toUpperCase();
   return own || setPartName(other).toUpperCase() || cleanSingleLine(document.getElementById('f_partid')?.value || '').toUpperCase();
 }
 window.renderSetLinkResults = () => {
   const box = document.getElementById('f_setlink_results'), q = document.getElementById('f_setlink_q')?.value || '';
-  const words = searchTokens(q), key = setFieldKey();
   if (!box) return;
   if (!q.trim()) { box.hidden = true; box.innerHTML = ''; _setLinkHits = []; return; }
-  _setLinkHits = items.filter(r => r._id !== _setFieldSelf && !_setLinkAdd.has(r._id) && !(key && setKeyOf(r) === key) && matchesSearch(r, words)).slice(0, 8);
+  const words = searchTokens(q);
+  _setLinkHits = items.filter(r => r._id !== _setFieldSelf && !_setChosen.has(r._id) && matchesSearch(r, words)).slice(0, 8);
   _setLinkActive = _setLinkHits.length ? 0 : -1;
   box.innerHTML = _setLinkHits.length ? _setLinkHits.map((r, i) => `<button type="button" class="set-link-hit${i === _setLinkActive ? ' active' : ''}" role="option" data-setlink-pick="${escapeHtml(r._id)}">
       <span class="set-row-id">${highlightText(r['Part ID'] || '—', q)}</span>
       <span class="set-row-name">${highlightText(valItemName(r), q)}</span>
       ${r['Description'] ? `<span class="set-row-desc">${highlightText(r['Description'], q)}</span>` : ''}
-      ${setKeyOf(r) ? `<span class="set-link-in">อยู่ในชุด ${escapeHtml(cleanSingleLine(r['Set Group']))}${key ? ' (จะย้ายมาชุดนี้)' : ''}</span>` : ''}
+      ${setKeyOf(r) ? `<span class="set-link-in">อยู่ในชุด ${escapeHtml(cleanSingleLine(r['Set Group']))}${_setChosen.size || setFieldKey() ? ' (จะย้ายมาชุดนี้)' : ''}</span>` : ''}
     </button>`).join('') : '<div class="set-link-none">ไม่พบรายการ</div>';
   box.hidden = false;
 };
@@ -6370,55 +6415,206 @@ window.setLinkKey = (e) => {
 function setLinkPick(id) {
   const r = items.find(x => x._id === id); if (!r) return;
   const name = document.getElementById('f_setgroup');
-  const theirs = cleanSingleLine(r['Set Group'] || '').toUpperCase();
   if (!setFieldKey()) {
-    if (theirs) name.value = theirs;                                 // join the set the picked part is already in
-    else { name.value = setLinkSuggestName(r); _setLinkAdd.set(r._id, r); }   // start a new set with both parts
-  } else if (advNorm(theirs) !== setFieldKey()) _setLinkAdd.set(r._id, r);   // bring that part into this set
+    const theirs = cleanSingleLine(r['Set Group'] || '').toUpperCase();
+    if (theirs && !_setChosen.size) {
+      // joining an existing set: take its name and all its parts
+      name.value = theirs;
+      items.filter(x => x._id !== _setFieldSelf && setKeyOf(x) === advNorm(theirs)).forEach(x => { _setChosen.set(x._id, x); _setDropped.delete(x._id); });
+    } else name.value = setLinkSuggestName(r);   // a new set, named after this part's model
+  }
+  _setChosen.set(r._id, r); _setDropped.delete(r._id);
   const q = document.getElementById('f_setlink_q');
   q.value = ''; document.getElementById('f_setlink_results').hidden = true;
   updateSetGroupHelp();
   q.focus();
 }
+window.setLeaveSet = () => {   // this part leaves; the rest of the set is not touched
+  _setChosen.clear(); _setDropped.clear();
+  document.getElementById('f_setgroup').value = '';
+  updateSetGroupHelp();
+};
 window.updateSetGroupHelp = () => {
   const chips = document.getElementById('f_setlink_chips'), help = document.getElementById('f_setgroup_help');
   if (!chips || !help) return;
   const key = setFieldKey();
-  if (!key) _setLinkAdd.clear();   // no set name = not in a set: nothing to link
-  const members = key ? items.filter(r => r._id !== _setFieldSelf && setKeyOf(r) === key && !_setLinkAdd.has(r._id)) : [];
-  chips.innerHTML = members.map(r => `<span class="set-link-chip"><i data-lucide="link"></i>${escapeHtml(r['Part ID'] || '')} ${escapeHtml(setPartName(r))}</span>`).join('')
-    + [..._setLinkAdd.values()].map(r => `<span class="set-link-chip new"><i data-lucide="plus"></i>${escapeHtml(r['Part ID'] || '')} ${escapeHtml(setPartName(r))}${setKeyOf(r) ? ` <small>(ย้ายจากชุด ${escapeHtml(cleanSingleLine(r['Set Group']))})</small>` : ''}<button type="button" data-setlink-drop="${escapeHtml(r._id)}" aria-label="เอา ${escapeHtml(r['Part ID'] || '')} ออก"><i data-lucide="x"></i></button></span>`).join('');
-  help.textContent = !key ? 'ค้นหาแล้วแตะชิ้นที่ใช้คู่กัน ระบบตั้งชื่อชุดให้ ไม่ต้องพิมพ์ชื่อเอง'
-    : _setLinkAdd.size ? `กดบันทึกแล้ว ${_setLinkAdd.size} รายการที่มีเครื่องหมาย + จะเข้าชุดนี้ด้วย`
-    : members.length ? `ชุดนี้มี ${members.length + 1} รายการ (รวมรายการนี้)` : 'ยังไม่มีชิ้นอื่นในชุดนี้: ค้นหาแล้วแตะเพื่อเพิ่ม';
+  chips.innerHTML = [..._setChosen.values()].map(r => {
+    const isNew = setKeyOf(r) !== (_setOrigKey || key);   // + = joins on Save; a link icon = already in this set
+    const from = isNew && setKeyOf(r) ? ` <small>(ย้ายจากชุด ${escapeHtml(cleanSingleLine(r['Set Group']))})</small>` : '';
+    return `<span class="set-link-chip${isNew ? ' new' : ''}"><i data-lucide="${isNew ? 'plus' : 'link'}"></i>${escapeHtml(r['Part ID'] || '')} ${escapeHtml(setPartName(r))}${from}<button type="button" data-setlink-drop="${escapeHtml(r._id)}" aria-label="เอา ${escapeHtml(r['Part ID'] || '')} ออกจากชุด"><i data-lucide="x"></i></button></span>`;
+  }).join('') + (_setChosen.size || key ? `<button type="button" class="set-link-leave" onclick="setLeaveSet()"><i data-lucide="unlink"></i> เอารายการนี้ออกจากชุด</button>` : '');
+  const renamed = _setOrigKey && key && key !== _setOrigKey;
+  document.getElementById('f_setgroup').placeholder = _setChosen.size ? 'พิมพ์ชื่อชุดใหม่' : 'ตั้งให้อัตโนมัติเมื่อเลือกชิ้นแรก';
+  help.className = 'form-helper' + (_setChosen.size && !key ? ' set-link-warn' : '');
+  help.textContent = _setChosen.size && !key ? 'ใส่ชื่อชุด: ทุกรายการด้านบนจะใช้ชื่อนี้'
+    : !key ? 'ค้นหาแล้วแตะชิ้นที่ใช้คู่กัน ระบบตั้งชื่อชุดให้ ไม่ต้องพิมพ์ชื่อเอง'
+    : renamed ? `กดบันทึกแล้ว เปลี่ยนชื่อชุดเป็น ${key} ทั้ง ${_setChosen.size + 1} รายการ`
+    : _setChosen.size ? `ชุดนี้มี ${_setChosen.size + 1} รายการ (รวมรายการนี้)${_setDropped.size ? ` · เอาออก ${_setDropped.size} รายการ` : ''}`
+    : 'ยังไม่มีชิ้นอื่นในชุดนี้: ค้นหาแล้วแตะเพื่อเพิ่ม';
   refreshIcons();
 };
 document.addEventListener('click', e => {
   const pick = e.target.closest && e.target.closest('[data-setlink-pick]');
   if (pick) { setLinkPick(pick.dataset.setlinkPick); return; }
   const drop = e.target.closest && e.target.closest('[data-setlink-drop]');
-  if (drop) { _setLinkAdd.delete(drop.dataset.setlinkDrop); updateSetGroupHelp(); return; }
+  if (drop) {
+    const r = _setChosen.get(drop.dataset.setlinkDrop);
+    _setChosen.delete(drop.dataset.setlinkDrop);
+    if (r && _setOrigKey && setKeyOf(r) === _setOrigKey) _setDropped.set(r._id, r);   // was in the set: leaves on Save
+    updateSetGroupHelp();
+    return;
+  }
   const box = document.getElementById('f_setlink_results');
   if (box && !box.hidden && !e.target.closest('.set-link')) box.hidden = true;
 });
-// After the item itself is saved: write the set name onto the parts picked in the form (one row, one log each).
+// Refuse a save that would lose the set: parts are listed but the name was cleared.
+function setFieldError() {
+  return setGroupSupported() && _setChosen.size && !setFieldKey() ? 'ใส่ชื่อชุด หรือกด "เอารายการนี้ออกจากชุด"' : '';
+}
+// One part's Set Group, with an undoable log row.
+async function writeSetGroup(r, value, msg) {
+  const before = r['Set Group'] ?? null;
+  if (advNorm(before) === advNorm(value)) return false;
+  const { data: rows, error } = await supabase.from('inventory')
+    .update({ 'Set Group': value, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
+    .eq('id', r._id).select('id');
+  if (error) throw error;
+  if (!rows || !rows.length) throw new Error(`แก้ชุดของ ${r['Part ID']} ไม่สำเร็จ (ไม่พบรายการ หรือไม่มีสิทธิ์)`);
+  const undo = { action: 'edit', partId: r['Part ID'], itemId: r._id, before: { 'Set Group': before }, after: { 'Set Group': value } };
+  await insertLog({ type: 'edit', partId: r['Part ID'], msg,
+    note: `Set Group: ${cleanSingleLine(before || '') || '—'} → ${value || '—'}\n__UNDO_DATA__:` + JSON.stringify(undo),
+    undo_data: undo, device: DEVICE_ID, user: getCurrentUserName() });
+  r['Set Group'] = value;
+  return true;
+}
+// After the edited part is saved: bring every chip to the set's name, take ✕'d parts out.
 async function saveSetLinks(groupValue) {
   const done = [];
-  for (const r of _setLinkAdd.values()) {
-    const before = r['Set Group'] ?? null;
-    if (advNorm(before) === advNorm(groupValue)) continue;
-    const { data: rows, error } = await supabase.from('inventory')
-      .update({ 'Set Group': groupValue, _updatedAt: new Date().toISOString(), _device: DEVICE_ID, _updatedBy: getCurrentUserName() })
-      .eq('id', r._id).select('id');
-    if (error) throw error;
-    if (!rows || !rows.length) throw new Error(`ผูกชุดกับ ${r['Part ID']} ไม่สำเร็จ (ไม่พบรายการ หรือไม่มีสิทธิ์)`);
-    const undo = { action: 'edit', partId: r['Part ID'], itemId: r._id, before: { 'Set Group': before }, after: { 'Set Group': groupValue } };
-    await insertLog({ type: 'edit', partId: r['Part ID'], msg: `เพิ่มเข้าชุด ${groupValue}`,
-      note: `Set Group: ${cleanSingleLine(before || '') || '—'} → ${groupValue}\n__UNDO_DATA__:` + JSON.stringify(undo),
-      undo_data: undo, device: DEVICE_ID, user: getCurrentUserName() });
-    done.push(r['Part ID']);
+  if (groupValue) {
+    for (const r of _setChosen.values()) {
+      const renamed = _setOrigKey && setKeyOf(r) === _setOrigKey;
+      if (await writeSetGroup(r, groupValue, renamed ? `เปลี่ยนชื่อชุดเป็น ${groupValue}` : `เพิ่มเข้าชุด ${groupValue}`)) done.push(r['Part ID']);
+    }
+    for (const r of _setDropped.values()) if (await writeSetGroup(r, null, `เอาออกจากชุด ${cleanSingleLine(r['Set Group'] || '')}`)) done.push(r['Part ID']);
   }
-  _setLinkAdd.clear();
+  _setChosen.clear(); _setDropped.clear();
+  return done;
+}
+// ===== INVENTORY PAGE: tick parts, then "สร้างชุด" =====
+// Select mode: a tap on a row or card ticks it instead of opening it. The bar at the bottom counts the
+// ticks; "สร้างชุด" opens the set dialog to confirm the name, then writes it on every ticked part.
+let setSelectMode = false;
+const setSelected = new Map();   // itemId -> row
+function setSelBoxHtml(r) {
+  return `<span class="set-sel-box" aria-hidden="true"><i data-lucide="check"></i></span>`;
+}
+window.toggleSetSelect = (on = !setSelectMode) => {
+  setSelectMode = !!on && setGroupSupported() && canPerform('addEdit');
+  if (!setSelectMode) setSelected.clear();
+  document.body.classList.toggle('set-select-mode', setSelectMode);
+  const btn = document.getElementById('setSelectBtn');
+  if (btn) { btn.setAttribute('aria-pressed', setSelectMode); btn.classList.toggle('active', setSelectMode); }
+  document.getElementById('setSelectBar').hidden = !setSelectMode;
+  document.querySelectorAll('[data-set-sel].set-selected').forEach(el => el.classList.remove('set-selected'));
+  updateSetSelectBar();
+  if (setSelectMode) toast('แตะรายการที่ใช้คู่กันเพื่อติ๊ก แล้วกด "สร้างชุด" ด้านล่าง', 'success');
+};
+window.setSelToggle = (id) => {
+  if (!setSelectMode) return false;
+  const r = items.find(x => x._id === id); if (!r) return true;
+  if (setSelected.has(id)) setSelected.delete(id); else setSelected.set(id, r);
+  document.querySelectorAll(`[data-set-sel="${CSS.escape(id)}"]`).forEach(el => el.classList.toggle('set-selected', setSelected.has(id)));
+  updateSetSelectBar();
+  return true;
+};
+function updateSetSelectBar() {
+  const n = setSelected.size, go = document.getElementById('setSelectGo');
+  document.getElementById('setSelectCount').textContent = n ? `เลือกแล้ว ${n} รายการ${n < 2 ? ' (เลือกอย่างน้อย 2)' : ''}` : 'แตะรายการที่ใช้คู่กัน';
+  if (go) go.disabled = n < 2;
+}
+let _setCreateRows = [];
+window.openSetCreate = () => {
+  _setCreateRows = [...setSelected.values()];
+  if (_setCreateRows.length < 2) return;
+  setOpenKey = null; setView = 'create';
+  document.getElementById('setModalBody').innerHTML = '';   // start from the default name, not last time's
+  renderSetModal();
+  document.getElementById('setModal').style.display = 'flex';
+  document.getElementById('setCreateName')?.focus();
+};
+function renderSetCreate() {
+  const rows = _setCreateRows;
+  const groups = [...new Set(rows.map(r => cleanSingleLine(r['Set Group'] || '').toUpperCase()).filter(Boolean))];
+  const typed = document.getElementById('setCreateName')?.value;
+  const name = typed != null ? typed : (groups[0] || cleanSingleLine(rows[0]['Model'] || '').toUpperCase() || cleanSingleLine(rows[0]['Part ID'] || '').toUpperCase());
+  const key = advNorm(name);
+  // parts of an existing set that were not ticked stay where they are: say so
+  const leftBehind = groups.filter(g => advNorm(g) !== key).flatMap(g => items.filter(x => setKeyOf(x) === advNorm(g) && !rows.some(r => r._id === x._id)));
+  document.getElementById('setModalTitle').innerHTML = `<i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px"></i> สร้างชุด`;
+  document.getElementById('setModalSub').textContent = `${rows.length} รายการที่ใช้คู่กัน`;
+  document.getElementById('setModalBody').innerHTML = `
+    <div class="form-group"><label for="setCreateName">ชื่อชุด</label><input type="text" id="setCreateName" autocomplete="off" list="setGroupOptions" value="${escapeHtml(name)}" oninput="this.value=this.value.toUpperCase();renderSetCreateCheck()"></div>
+    <div class="set-list">${rows.map(r => `<div class="set-row" data-create-row="${escapeHtml(r._id)}">
+      <span class="set-row-main"><span class="set-row-id">${escapeHtml(r['Part ID'] || '—')}</span><span class="set-row-name">${escapeHtml(valItemName(r))}</span>${r['Description'] ? `<span class="set-row-desc">${escapeHtml(r['Description'])}</span>` : ''}
+      ${setKeyOf(r) && setKeyOf(r) !== key ? `<span class="set-link-in">ย้ายจากชุด ${escapeHtml(cleanSingleLine(r['Set Group']))}</span>` : ''}</span>
+      <button type="button" class="pe-btn" data-create-drop="${escapeHtml(r._id)}" aria-label="ไม่เอา ${escapeHtml(r['Part ID'] || '')}"><i data-lucide="x"></i></button>
+    </div>`).join('')}</div>
+    ${leftBehind.length ? `<div class="set-howto">ชิ้นที่ไม่ได้ติ๊กจะยังอยู่ชุดเดิม: ${escapeHtml(leftBehind.map(x => (x['Part ID'] || '') + ' ' + setPartName(x)).join(', '))}</div>` : ''}
+    <div class="set-split-sum" id="setCreateErr" role="status"></div>`;
+  document.getElementById('setModalFooter').innerHTML = `<button class="btn btn-ghost" onclick="closeModal('setModal')"><i data-lucide="x"></i> ยกเลิก</button>
+    <button class="btn btn-primary" id="setCreateSave" data-set-create-save><i data-lucide="check"></i> บันทึกชุด</button>`;
+  renderSetCreateCheck();
+}
+window.renderSetCreateCheck = () => {
+  const name = cleanSingleLine(document.getElementById('setCreateName')?.value || '');
+  const err = !name ? 'ใส่ชื่อชุด' : _setCreateRows.length < 2 ? 'ชุดต้องมีอย่างน้อย 2 รายการ' : '';
+  const el = document.getElementById('setCreateErr'); if (el) el.textContent = err;
+  const btn = document.getElementById('setCreateSave'); if (btn) btn.disabled = !!err || setSaving;
+};
+async function saveSetCreate() {
+  const name = cleanSingleLine(document.getElementById('setCreateName')?.value || '').toUpperCase();
+  if (!name || _setCreateRows.length < 2 || setSaving || !canPerform('addEdit')) return;
+  setSaving = true;
+  const btn = document.getElementById('setCreateSave');
+  btn.disabled = true; btn.classList.add('btn-loading');
+  try {
+    await saveSetGroupFor(_setCreateRows, name);
+    invalidateLogsCache();
+    await fetchItems(false);
+    toast(`สร้างชุด ${name} แล้ว (${_setCreateRows.length} รายการ)`, 'success');
+    toggleSetSelect(false);
+    setSaving = false;
+    openSetGroup(name);   // show the new set
+  } catch (err) {
+    console.error('Create set error:', err);
+    toast('บันทึกชุดไม่ครบ: ' + (err?.message || 'ลองอีกครั้ง') + ' · ตรวจในประวัติ (Log) ว่ารายการไหนบันทึกแล้ว', 'error');
+    fetchItems(false).catch(() => {});
+  } finally {
+    setSaving = false;
+    btn.classList.remove('btn-loading');
+    renderSetCreateCheck();
+  }
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest && e.target.closest('#setModal [data-create-drop],#setModal [data-set-create-save]');
+  if (!t) return;
+  if ('setCreateSave' in t.dataset) { saveSetCreate(); return; }
+  const id = t.dataset.createDrop;
+  _setCreateRows = _setCreateRows.filter(r => r._id !== id);
+  setSelToggle(id);   // keep the page's ticks in step
+  renderSetCreate();
+  refreshIcons();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'setCreateName') { e.preventDefault(); saveSetCreate(); }
+  if (e.key === 'Escape' && setSelectMode && document.getElementById('setModal').style.display === 'none'
+      && !document.querySelector('.modal-overlay[style*="flex"]')) toggleSetSelect(false);
+});
+
+// Several parts at once (inventory page "สร้างชุด"). Returns the Part IDs written.
+async function saveSetGroupFor(rows, groupValue) {
+  const done = [];
+  for (const r of rows) if (await writeSetGroup(r, groupValue, `เพิ่มเข้าชุด ${groupValue}`)) done.push(r['Part ID']);
   return done;
 }
 
@@ -6458,11 +6654,12 @@ window.openSetGroup = (key, view = 'list') => {
 };
 function setCurrentList() { return buildSetIndex().get(setOpenKey) || []; }
 function renderSetModal() {
+  if (setView === 'create') { renderSetCreate(); refreshIcons(); return; }
   const list = setCurrentList();
   const body = document.getElementById('setModalBody'), foot = document.getElementById('setModalFooter');
   if (!list.length) { closeModal('setModal'); return; }
   const gap = setGapOf(list);
-  document.getElementById('setModalTitle').innerHTML = `<i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px"></i> ชุด ${escapeHtml(setLabel(list))}`;
+  document.getElementById('setModalTitle').innerHTML = `<i data-lucide="link" style="width:18px;height:18px;vertical-align:-3px"></i> ${escapeHtml(setTitle(setLabel(list)))}`;
   document.getElementById('setModalSub').textContent = setView === 'price' ? 'ใส่ราคาชุดครั้งเดียว ระบบแบ่งลงแต่ละชิ้นให้' : `${list.length} รายการที่ใช้ร่วมกัน`;
   if (setView === 'list') {
     body.innerHTML = `${gap.length ? `<div class="set-gap-banner" role="status"><i data-lucide="alert-triangle"></i><span><strong>ชุดไม่ครบ:</strong> ${escapeHtml(thaiJoin(gap.map(setPartName)))} หมดสต็อก แต่ชิ้นอื่นในชุดยังมีของ ติดตั้งครบชุดไม่ได้จนกว่าจะซื้อเพิ่ม</span></div>` : ''}
@@ -7494,6 +7691,8 @@ document.addEventListener('scroll', e => {
 }, true);
 
 function renderTable() {
+  const selBtn = document.getElementById('setSelectBtn');
+  if (selBtn) selBtn.hidden = !(setGroupSupported() && canPerform('addEdit'));
   const tbody = document.getElementById('tableBody');
   const es = document.getElementById('emptyState');
   const rc = document.getElementById('resultCount');
@@ -7525,8 +7724,8 @@ function renderTable() {
       ? `<span class="pos-chip"><i data-lucide="map-pin" style="width:10px;height:10px"></i>${highlightText(posRaw, q)}</span>`
       : (hasStock ? `<span class="pos-empty needs" title="มีของในสต็อกแต่ยังไม่ได้ระบุตำแหน่งเก็บ">ไม่มีตำแหน่ง</span>` : `<span class="pos-empty" aria-label="ไม่มีข้อมูลตำแหน่ง">—</span>`);
     const tip = v => escapeHtml(v||'');
-    return `<tr onclick="openDetail('${r._id}')" style="cursor:pointer">
-      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${highlightText(r['Part ID']||'—', q)}${setChipHtml(r, setIdx)}</td>
+    return `<tr onclick="if(!setSelToggle('${r._id}'))openDetail('${r._id}')" style="cursor:pointer" data-set-sel="${r._id}" class="${setSelected.has(r._id) ? 'set-selected' : ''}">
+      <td data-col="partid" style="font-family:var(--mono);font-weight:600">${setSelBoxHtml(r)}<span class="pid-line">${highlightText(r['Part ID']||'—', q)}${setChipHtml(r, setIdx, true)}</span></td>
       <td data-col="dept">${dept ? `<span class="badge ${deptCls}">${escapeHtml(dept)}</span>` : '—'}</td>
       <td data-col="subcat" title="${tip(r['Sub Category'])}">${highlightText(r['Sub Category']||'—', q)}</td>
       <td data-col="brand" title="${tip(r['Brand'])}">${highlightText(r['Brand']||'—', q)}</td>
@@ -7569,7 +7768,8 @@ function renderCards() {
     const emptyStock = getActualNumber(r['Actual']) <= 0;   // nothing to withdraw: offer ขอราคา in its place
     const hasBrand = r['Brand'] && r['Brand'].trim();
     const displayName = hasBrand ? ((r['Brand']||'') + ' ' + (r['Model']||'')) : (r['Description'] || '—');
-    return `<div class="inv-card" onclick="${canPerform('addEdit') ? 'openEdit' : 'openDetail'}('${r._id}')" style="cursor:pointer">
+    return `<div class="inv-card${setSelected.has(r._id) ? ' set-selected' : ''}" data-set-sel="${r._id}" onclick="if(!setSelToggle('${r._id}'))${canPerform('addEdit') ? 'openEdit' : 'openDetail'}('${r._id}')" style="cursor:pointer">
+      ${setSelBoxHtml(r)}
       <div class="inv-card-top">
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
@@ -7577,8 +7777,7 @@ function renderCards() {
             <span style="font-family:var(--mono);font-size:12px;color:var(--text2);font-weight:600">${highlightText(r['Part ID']||'—', q)}</span>
           </div>
           <div class="inv-card-name">${highlightText(displayName, q)}</div>
-          <div class="inv-card-pid">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span></div>
-          ${setChipHtml(r, setIdx)}
+          <div class="inv-card-pid">Class <span class="class-val">${highlightText(r['CLASS']||'—', q)}</span>${setChipHtml(r, setIdx)}</div>
         </div>
         <div class="inv-card-stock-wrap">
           <div class="qa-item-stock ${scCls} inv-card-stock">${escapeHtml(actual)}</div>
@@ -8217,7 +8416,7 @@ function serializeEditForm() {
     if (!el.id || el.type === 'file' || el.readOnly || el.disabled || 'noDirty' in el.dataset) return;
     vals[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value;
   });
-  vals.__setlink = [..._setLinkAdd.keys()].sort().join(',');
+  vals.__setlink = [..._setChosen.keys()].sort().join(',') + '|' + [..._setDropped.keys()].sort().join(',');
   vals.__photo = (photoChanged ? '1' : '0') + (selectedPhotoFile ? selectedPhotoFile.name + ':' + selectedPhotoFile.size : '');
   return JSON.stringify(vals);
 }
