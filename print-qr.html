@@ -492,10 +492,18 @@
       }
     }
 
+    // Plant holds one or more plants ("MIR", "MIR,RFG"); the old value COMMON means both. Same rules as store.html.
+    function plantList(i) {
+      const out = new Set();
+      String(i?.['Plant'] ?? '').toUpperCase().split(/[\s,/+&;]+/).filter(Boolean)
+        .forEach(p => { if (['COMMON', 'ALL', 'BOTH'].includes(p)) { out.add('MIR'); out.add('RFG'); } else out.add(p); });
+      return [...out];
+    }
+
     // Populate drop downs
     function populateFilters() {
       const depts = [...new Set(items.map(i => i['Department']).filter(Boolean))].sort();
-      const plants = [...new Set(items.map(i => i['Plant']).filter(Boolean))].sort();
+      const plants = [...new Set(items.flatMap(plantList))].sort();
 
       const deptSelect = document.getElementById('deptFilter');
       depts.forEach(d => {
@@ -533,7 +541,7 @@
           (i['Location'] || '').toLowerCase().includes(query);
           
         const matchDept = !deptFilter || i['Department'] === deptFilter;
-        const matchPlant = !plantFilter || i['Plant'] === plantFilter;
+        const matchPlant = !plantFilter || plantList(i).includes(plantFilter);   // MIR also finds parts shared with RFG
 
         return matchSearch && matchDept && matchPlant;
       });

@@ -147,6 +147,10 @@ html { scroll-behavior: smooth; }
 .est-check[hidden] { display: none; }
 /* Set Group (parts used together) */
 .form-group[hidden] { display: none; }
+.plant-checks { display: flex; gap: 8px; flex-wrap: wrap; }
+.plant-check { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 1.5px solid var(--border-strong); border-radius: 10px; background: var(--surface); font-weight: 700; font-size: 14px; color: var(--text); cursor: pointer; text-transform: none; letter-spacing: 0; }
+.plant-check input { width: 18px; height: 18px; min-height: 0; margin: 0; accent-color: var(--agc-blue); }
+.plant-check:has(input:checked) { border-color: var(--agc-blue); background: #eef3ff; color: var(--agc-blue); }
 .set-cost-mark { display: inline-block; font-size: 11px; font-weight: 700; color: var(--agc-blue); border: 1px solid currentColor; border-radius: 6px; padding: 0 5px; line-height: 1.5; vertical-align: middle; white-space: nowrap; }
 .set-chip { display: inline-flex; align-items: center; gap: 4px; width: fit-content; max-width: 100%; margin-top: 6px; padding: 3px 9px; min-height: 28px; border-radius: 999px; border: 1.5px solid var(--agc-blue); background: #eef3ff; color: var(--agc-blue); font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .set-chip svg { width: 13px; height: 13px; flex-shrink: 0; }
@@ -2964,7 +2968,7 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
         <div class="form-group" id="f_setgroup_wrap" hidden><label for="f_setgroup">ชุด (ใช้คู่กับ)</label><input type="text" id="f_setgroup" list="setGroupOptions" placeholder="เช่น FR-S01 (ว่าง = ไม่อยู่ในชุด)" autocomplete="off" oninput="this.value=this.value.toUpperCase();updateSetGroupHelp()"><datalist id="setGroupOptions"></datalist><div class="form-helper" id="f_setgroup_help">ใส่ชื่อชุดเดียวกันกับชิ้นที่ใช้คู่กัน เช่น เซ็นเซอร์ + สาย + ขาจับ</div></div>
         <div class="form-group"><label>ความสำคัญ (A, B, C)</label><select id="f_class"><option value="">—</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
         <div class="form-group full"><label>รายละเอียด</label><textarea id="f_desc" rows="2"></textarea><div class="field-error" id="err_modeldesc"></div></div>
-        <div class="form-group"><label>แผนกที่ใช้งาน (RFG/MIR)</label><select id="f_plant"><option value="">—</option><option value="RFG">RFG</option><option value="MIR">MIR</option><option value="COMMON">COMMON</option></select><div class="field-error" id="err_plant"></div></div>
+        <div class="form-group"><label id="f_plant_label">แผนกที่ใช้งาน (เลือกได้หลายอัน)</label><div class="plant-checks" role="group" aria-labelledby="f_plant_label"><label class="plant-check"><input type="checkbox" id="f_plant_mir" value="MIR"> MIR</label><label class="plant-check"><input type="checkbox" id="f_plant_rfg" value="RFG"> RFG</label></div><div class="form-helper">ใช้ทั้งสองแผนก ติ๊กทั้ง MIR และ RFG</div><div class="field-error" id="err_plant"></div></div>
         <div class="form-group"><label>พื้นที่</label><input type="text" id="f_area" oninput="this.value=this.value.toUpperCase()"></div>        
       </div>
 
@@ -3418,7 +3422,7 @@ const ADV_FIELDS = [
     ['setgap',  'ชุดไม่ครบ',    r => isSetIncomplete(r, advSetIdx())],   // every part of a set where some parts ran out and others did not
   ] },
   { key: 'dept',  col: 'Department',   label: 'Dept' },
-  { key: 'plant', col: 'Plant',        label: 'Plant' },
+  { key: 'plant', col: 'Plant',        label: 'Plant', many: r => plantFilterKeys(r) },   // a row can be in more than one option
   { key: 'class', col: 'CLASS',        label: 'Class' },
   { key: 'main',  col: 'Main Category', label: 'Main Cat', get: r => getDisplayMainCategory(r) },   // derived from Sub Cat, same as the table shows
   { key: 'sub',   col: 'Sub Category', label: 'Sub Cat', search: true },
@@ -4125,13 +4129,39 @@ function populateBrandOptions() {
     .map(b=>`<option value="${escapeHtml(b)}"></option>`).join('');
 }
 
+// ===== PLANT (which plant uses the part) =====
+// One text column holding one or more plants, stored as "MIR", "RFG" or "MIR,RFG". The old single value
+// "COMMON" (and "RFG/MIR", "MIR + RFG" from CSVs) still reads as both, so old rows and old devices keep working.
+const PLANTS = ['MIR', 'RFG'];
+const PLANT_BOTH_WORDS = new Set(['COMMON', 'ALL', 'BOTH']);
+function plantList(v) {   // a row or a raw value -> ['MIR','RFG'] in a fixed order; unknown plants are kept
+  const raw = v && typeof v === 'object' ? v['Plant'] : v;
+  const out = new Set();
+  String(raw ?? '').toUpperCase().split(/[\s,/+&;]+/).filter(Boolean)
+    .forEach(p => { if (PLANT_BOTH_WORDS.has(p)) PLANTS.forEach(x => out.add(x)); else out.add(p); });
+  const rank = p => { const i = PLANTS.indexOf(p); return i < 0 ? 99 : i; };
+  return [...out].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+}
+const plantValue = v => plantList(Array.isArray(v) ? v.join(',') : v).join(',');   // what is written to the database
+const plantLabel = v => plantList(v).join(' + ');                                   // what people read: "MIR + RFG"
+// Filter keys: each plant on its own (so MIR also finds MIR + RFG) plus the combination itself, '' when none.
+function plantFilterKeys(r) {
+  const list = plantList(r);
+  return !list.length ? [''] : list.length > 1 ? [...list, list.join(' + ')] : list;
+}
+function plantBadgesHtml(r) {
+  const list = plantList(r);
+  if (!list.length) return '<span class="badge badge-none">—</span>';
+  return list.map(p => `<span class="badge ${p === 'RFG' ? 'badge-plant-rfg' : p === 'MIR' ? 'badge-plant-mir' : 'badge-none'}">${escapeHtml(p)}</span>`).join(' ');
+}
+
 function getDisplayMainCategory(r) {
   const sub = String(r['Sub Category'] || '').trim().toLowerCase();
   return SUB_TO_MAIN_CATEGORY[sub] || r['Main Category'] || '';
 }
 
 function taxonomyText(r) {
-  return [r['Plant'] || '', getDisplayMainCategory(r) || '', r['Sub Category'] || '']
+  return [plantLabel(r), getDisplayMainCategory(r) || '', r['Sub Category'] || '']
     .filter(Boolean).join(' / ') || '—';
 }
 
@@ -4951,7 +4981,7 @@ window.openAddModal = () => {
   ['brand','model','desc','area','actual','min','max','cost','deliver','installyear','life','replaceplan','class','vendor','deliver_unit'].forEach(f=>{const el=document.getElementById('f_'+f);if(el)el.value='';});
   document.getElementById('f_partid').value = getPreviewNextPartId();
   document.getElementById('f_department').value='';
-  document.getElementById('f_plant').value='';
+  setPlantField('');
   document.getElementById('f_maincat').value='';
   document.getElementById('f_subcat').value='';
   
@@ -4988,7 +5018,7 @@ window.openEdit = (id) => {
   document.getElementById('editModalTitle').textContent='แก้ไขรายการ';
   document.getElementById('f_partid').value=r['Part ID']||'';
   document.getElementById('f_department').value=(r['Department']||'').toUpperCase();
-  document.getElementById('f_plant').value=r['Plant']||'';
+  setPlantField(r['Plant']);
   populateSubCategoryOptions();
   populateBrandOptions();
   document.getElementById('f_subcat').value=(r['Sub Category']||'').toUpperCase();
@@ -5034,11 +5064,20 @@ window.openEdit = (id) => {
   markEditPristine();
 };
 
+// Edit form: tick the plants the row has. A plant other than MIR/RFG (from an old import) is kept as it was.
+let _plantFieldExtra = [];
+function setPlantField(v) {
+  const list = plantList(v);
+  document.getElementById('f_plant_mir').checked = list.includes('MIR');
+  document.getElementById('f_plant_rfg').checked = list.includes('RFG');
+  _plantFieldExtra = list.filter(p => !PLANTS.includes(p));
+}
+
 window.saveItem = async () => {
   let hasError = false;
   const partId = cleanSingleLine(document.getElementById('f_partid').value);
   const department = cleanSingleLine(document.getElementById('f_department').value).toUpperCase();
-  const plant = cleanSingleLine(document.getElementById('f_plant').value).toUpperCase();
+  const plant = plantValue([...[...document.querySelectorAll('#editModal .plant-checks input:checked')].map(i => i.value), ..._plantFieldExtra]);
   const subCat = cleanSingleLine(document.getElementById('f_subcat').value).toUpperCase();
   const mainCat = (SUB_TO_MAIN_CATEGORY[subCat.toLowerCase()] || (subCat ? 'Other' : '')).toUpperCase();
   document.getElementById('f_maincat').value = mainCat;
@@ -5353,6 +5392,8 @@ function parseCSV(text) {
   out.skipped = all.length - out.length;                                   // rows dropped for an invalid Part ID
   // COST_SOURCE is optional (schema step C): without the column an upsert carrying it would fail the whole import
   if (!costSourceSupported()) out.forEach(r => { delete r['COST_SOURCE']; });
+  // Plant: "COMMON", "RFG/MIR", "mir + rfg" -> "MIR,RFG"
+  out.forEach(r => { if ('Plant' in r) r['Plant'] = plantValue(r['Plant']); });
   // Set Group is optional too (schema step D)
   if (!setGroupSupported()) out.forEach(r => { delete r['Set Group']; });
   else out.forEach(r => { if ('Set Group' in r) r['Set Group'] = cleanSingleLine(r['Set Group'] || '').toUpperCase() || null; });
@@ -6217,6 +6258,13 @@ function setPriceSplit(total, parts) {   // parts: [{ w: stand-alone unit price 
   return units.some(u => !(u > 0)) ? null : units;
 }
 window.setPriceSplit = setPriceSplit;   // tests call it directly
+// Read-only handles for the browser tests (module scope is not reachable from page.evaluate).
+window.__storeTest = {
+  plantValue: v => plantValue(v), plantLabel: v => plantLabel(v),
+  valGroups: col => valGroups(VAL_DIMS.find(d => d.col === col)),
+  get filteredIds() { return filteredItems.map(r => r._id).sort(); },
+  get advSel() { return advSel; },
+};
 const fmtBaht2 = n => '฿' + Number(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
 let setOpenKey = null, setView = 'list', setSplitMode = 'ratio', setSaving = false;
@@ -6408,7 +6456,7 @@ function stockValueSummary(rows) {
 // ===== STOCK VALUE PAGE =====
 const VAL_DIMS = [
   { col: 'Department',    label: 'Dept',     adv: 'dept' },
-  { col: 'Plant',         label: 'Plant',    adv: 'plant' },
+  { col: 'Plant',         label: 'Plant',    adv: 'plant', get: r => plantLabel(r) },   // shared parts are their own "MIR + RFG" group, never counted twice
   { col: 'Main Category', label: 'Main Cat', adv: 'main', get: r => getDisplayMainCategory(r) },
   { col: 'CLASS',         label: 'Class',    adv: 'class' },
   { col: 'Location',      label: 'Location', adv: 'location' },
@@ -6986,7 +7034,7 @@ function findDuplicateGroups(list) {
   const groups = [];
   for (const [key, rows] of map) {
     if (rows.length < 2) continue;
-    const plants = rows.map(r => advNorm(r['Plant']));
+    const plants = rows.flatMap(r => { const l = plantList(r); return l.length ? l : ['']; });   // shared parts overlap both plants
     const brands = new Set(rows.map(r => dupKey(r['Brand'])).filter(Boolean));
     groups.push({
       key, rows,
@@ -7009,7 +7057,7 @@ function renderSideDups() {
   document.getElementById('sideDupCount').textContent = _dupGroups.length ? `${_dupGroups.length} กลุ่ม` : '';
   document.getElementById('sideDupMore').hidden = _dupGroups.length <= SIDE_ROWS;
   box.innerHTML = _dupGroups.length ? _dupGroups.slice(0, SIDE_ROWS).map((g, i) => {
-    const plants = [...new Set(g.rows.map(r => r['Plant'] || '—'))].join(', ');
+    const plants = [...new Set(g.rows.map(r => plantLabel(r) || '—'))].join(', ');
     return `<button type="button" class="side-row" onclick="openDupModal(${i})" aria-label="${escapeHtml(g.label)} ซ้ำ ${g.rows.length} รายการ">
         <span class="side-main"><span class="side-pid">${escapeHtml(g.rows.map(r => r['Part ID'] || '').join(', '))}</span>
         <span class="side-name">${escapeHtml(g.label)}</span>
@@ -7023,7 +7071,7 @@ window.openDupModal = (idx) => {
   const groups = idx == null ? _dupGroups : [_dupGroups[idx]].filter(Boolean);
   if (!groups.length) return;
   document.getElementById('dupModalTitle').textContent = idx == null ? `รายการซ้ำ ${groups.length} กลุ่ม` : `ซ้ำ: ${groups[0].label}`;
-  const loc = r => [r['Plant'], r['Area'], r['Location'], r['Position']].filter(Boolean).join(' · ') || 'ไม่ระบุตำแหน่ง';
+  const loc = r => [plantLabel(r), r['Area'], r['Location'], r['Position']].filter(Boolean).join(' · ') || 'ไม่ระบุตำแหน่ง';
   document.getElementById('dupModalBody').innerHTML = groups.map(g => `
     <div class="dup-group">
       <div class="dup-group-head"><span>${escapeHtml(g.label)}</span><span class="side-val dup">×${g.rows.length}</span></div>
@@ -7090,10 +7138,10 @@ window.applyFilters = () => {
     if (cat && String(getDisplayMainCategory(r)).trim().toLowerCase() !== cat.toLowerCase()) return false;   // data has both 'Other' and 'OTHER'
     if (dept && (r['Department'] || '').toUpperCase() !== dept) return false;
     if (sub && r['Sub Category'] !== sub) return false;
-    if (plant && r['Plant'] !== plant) return false;
+    if (plant && !plantList(r).includes(plant)) return false;   // MIR also finds MIR + RFG
     if (stock && stockStatus(r['Actual'], r['Min']) !== stock) return false;
     if (q) {
-      const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS']].join(' ').toLowerCase();
+      const hay = [r['Part ID'],r['Department'],getDisplayMainCategory(r),r['Brand'],r['Model'],r['Description'],r['Sub Category'],r['Area'],r['Location'],r['Position'],r['CLASS'],plantList(r).join(' ')].join(' ').toLowerCase();   // plants as words: "mir" finds MIR and MIR + RFG (and old COMMON rows)
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -7115,6 +7163,7 @@ function advPass(r, skipKey) {
     const sel = advSel[f.key];
     if (f.key === skipKey || !sel.size) continue;
     if (f.fixed) { if (!f.fixed.some(([k, , test]) => sel.has(k) && test(r))) return false; }
+    else if (f.many) { if (!f.many(r).some(k => sel.has(k))) return false; }
     else if (!sel.has(advNorm(advVal(f, r)))) return false;
   }
   return true;
@@ -7187,7 +7236,7 @@ function renderAdvFilterLists() {
       opts = f.fixed.map(([k, , test]) => [k, base.filter(test).length]);
     } else {
       const counts = new Map();
-      base.forEach(r => { const k = advNorm(advVal(f, r)); counts.set(k, (counts.get(k) || 0) + 1); });
+      base.forEach(r => (f.many ? f.many(r) : [advNorm(advVal(f, r))]).forEach(k => counts.set(k, (counts.get(k) || 0) + 1)));
       advSel[f.key].forEach(k => { if (!counts.has(k)) counts.set(k, 0); });   // a pick never disappears
       opts = [...counts.entries()]
       .filter(([k, c]) => (c > 0 || advSel[f.key].has(k)) && (!s || k.includes(s) || advSel[f.key].has(k)))
@@ -7271,8 +7320,7 @@ function renderTable() {
   tbody.innerHTML = filteredItems.map(r => {
     const sc = stockStatus(r['Actual'],r['Min']);
     const dot = sc==='ok'?'dot-ok':sc==='low'?'dot-low':'dot-none';
-    const plant = r['Plant']||'';
-    const pb = plant==='RFG'?'badge-plant-rfg':plant==='MIR'?'badge-plant-mir':'badge-none';
+
     const actual = (r['Actual']!==''&&r['Actual']!=null) ? r['Actual'] : '—';
     const mm = (r['Min']||r['Max']) ? `${r['Min']||'—'}/${r['Max']||'—'}` : '—';
     const desc = r['Description']||'';
@@ -7292,7 +7340,7 @@ function renderTable() {
       <td data-col="brand" title="${tip(r['Brand'])}">${highlightText(r['Brand']||'—', q)}</td>
       <td data-col="model" title="${tip(r['Model'])}">${highlightText(r['Model']||'—', q)}</td>
       <td data-col="desc" title="${escapeHtml(desc)}">${highlightText(desc||'—', q)}</td>
-      <td data-col="plant"><span class="badge ${pb}">${escapeHtml(plant||'—')}</span></td>
+      <td data-col="plant">${plantBadgesHtml(r)}</td>
       <td data-col="area" title="${tip(r['Area'])}">${highlightText(r['Area']||'—', q)}</td>
       <td data-col="class">${highlightText(r['CLASS']||'—', q)}</td>
       <td data-col="location" title="${tip(r['Location'])}">${highlightText(r['Location']||'—', q)}</td>
@@ -7750,7 +7798,7 @@ window.openDetail = (id) => {
     <div class="detail-grid">
       <div class="detail-item"><div class="detail-label">Part ID</div><div class="detail-val" style="font-family:var(--mono)">${escapeHtml(r['Part ID']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Department</div><div class="detail-val">${escapeHtml(r['Department']||'—')}</div></div>
-      <div class="detail-item"><div class="detail-label">Plant / Area</div><div class="detail-val">${escapeHtml(r['Plant']||'—')} / ${escapeHtml(r['Area']||'—')}</div></div>
+      <div class="detail-item"><div class="detail-label">Plant / Area</div><div class="detail-val">${escapeHtml(plantLabel(r)||'—')} / ${escapeHtml(r['Area']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Category</div><div class="detail-val">${escapeHtml(getDisplayMainCategory(r)||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Sub Category</div><div class="detail-val">${escapeHtml(r['Sub Category']||'—')}</div></div>
       <div class="detail-item"><div class="detail-label">Brand</div><div class="detail-val">${escapeHtml(r['Brand']||'—')}</div></div>

@@ -348,3 +348,8 @@ ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "COST_SOURCE" text;
 --    runs out while the rest is still in stock, offers the rest of the set on withdraw, and splits a set price.
 --    NULL/'' = not in a set. Import a CSV with columns `Part ID,Set Group` (Merge) to fill it in bulk.
 ALTER TABLE inventory ADD COLUMN IF NOT EXISTS "Set Group" text;
+
+-- E. Plant can hold more than one plant: "MIR", "RFG" or "MIR,RFG" (comma, fixed order MIR then RFG).
+--    The old single value COMMON meant both plants, but a search or filter for MIR could not find it.
+--    Turn it into "MIR,RFG". Safe to run again: once converted, no row matches.
+UPDATE inventory SET "Plant" = 'MIR,RFG' WHERE upper(trim("Plant")) IN ('COMMON', 'RFG/MIR', 'MIR/RFG', 'RFG,MIR', 'MIR + RFG');
