@@ -164,3 +164,43 @@ test('pages work before the Set Group column exists', async ({ page, context }) 
   await expect(page.locator('#f_setgroup_wrap')).toBeHidden();
   expect(errors).toEqual([]);
 });
+
+test('edit form: pick the parts used together instead of typing a set name', async ({ page, context }) => {
+  // nothing is in a set yet
+  const rows = ROWS.map((r) => ({ ...r, 'Set Group': null }));
+  const { patches, sent, errors } = await setup(page, context, rows);
+  await page.evaluate(() => openEdit('s1'));
+  await expect(page.locator('#f_setgroup')).toHaveValue('');
+  await page.fill('#f_setlink_q', 'op-888');
+  const hits = page.locator('#f_setlink_results .set-link-hit');
+  await expect(hits).toHaveCount(1);
+  await expect(hits.first()).toContainText('SPFL-C-0804');
+  await hits.first().click();
+  // the set is named after this part's model, and the picked part waits to be linked on save
+  await expect(page.locator('#f_setgroup')).toHaveValue('FR-S01');
+  await expect(page.locator('#f_setlink_chips .set-link-chip.new')).toHaveCount(1);
+  await page.fill('#f_setlink_q', 'support');   // a second part, found by its description
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#f_setlink_chips .set-link-chip.new')).toHaveCount(2);
+  expect(await h.noHorizontalScroll(page)).toBe(true);
+  await page.evaluate(() => saveItem());
+  await expect.poll(() => patches.length).toBe(3);
+  const byId = Object.fromEntries(patches.map((p) => [p.id, p.body['Set Group']]));
+  expect(byId).toEqual({ s1: 'FR-S01', s2: 'FR-S01', s3: 'FR-S01' });
+  await expect.poll(() => sent.logPosts.length).toBe(3);   // the edit + one "เพิ่มเข้าชุด" per linked part
+  expect(errors).toEqual([]);
+});
+
+test('picking a part that is already in a set joins that set', async ({ page, context }) => {
+  const rows = ROWS.map((r) => (r.id === 's1' ? { ...r, 'Set Group': null } : r));
+  const { patches } = await setup(page, context, rows);
+  await page.evaluate(() => openEdit('s1'));
+  await page.fill('#f_setlink_q', 'SPFL-C-0802');
+  await page.locator('#f_setlink_results .set-link-hit').first().click();
+  await expect(page.locator('#f_setgroup')).toHaveValue('FR-S01');
+  await expect(page.locator('#f_setlink_chips .set-link-chip.new')).toHaveCount(0);   // already in that set
+  await expect(page.locator('#f_setlink_chips .set-link-chip')).toHaveCount(2);       // 0802 and 0804
+  await page.evaluate(() => saveItem());
+  await expect.poll(() => patches.length).toBe(1);
+  expect(patches[0].body['Set Group']).toBe('FR-S01');
+});
