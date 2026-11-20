@@ -1,5 +1,5 @@
-// Home page: readable Thai subtitles, cards without a dropdown arrow, self-hosted fonts, and on desktop a side
-// column with what needs attention and the latest withdrawals / receipts.
+// Home page: readable Thai subtitles, cards without a dropdown arrow, self-hosted fonts, and on desktop one wide
+// dashboard: stats + actions on one row, the menu as tiles, and the attention / latest-movement cards side by side.
 const { test, expect } = require('@playwright/test');
 const h = require('./helpers');
 
@@ -151,4 +151,54 @@ test('the duplicate card is hidden from staff', async ({ page, context }, info) 
   await h.waitForStockLoaded(page);
   await expect(page.locator('#sideLowList')).toBeVisible();
   await expect(page.locator('#sideDupCard')).toBeHidden();
+});
+
+test('desktop dashboard: actions on one row, cards side by side, search box opens the filtered list', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'desktop', 'the dashboard layout only exists on wide screens');
+  const errors = h.watchErrors(page);
+  await h.mockBackend(context, { role: 'admin', logs: LOGS, rows: [
+    { id: 'd1', 'Part ID': 'SPFL-C-0101', Brand: 'KEYENCE', Model: 'FS-N41P', Actual: '0', Min: '2' },
+    { id: 'd2', 'Part ID': 'SPFL-C-0102', Brand: 'KEYENCE', Model: 'FS-N41P', Actual: '1', Min: '0' },
+    { id: 'd3', 'Part ID': 'SPFL-C-0103', Brand: 'OMRON', Model: 'LY4N', Actual: '4', Min: '0' },
+  ] });
+  await h.openStore(page);
+  await h.waitForStockLoaded(page);
+  await expect(page.locator('#sideRecentList .side-row')).toHaveCount(2);
+
+  const top = async (sel) => Math.round((await page.locator(sel).boundingBox()).y);
+  // stats, เบิก/รับ and สแกน share one row
+  const rowY = await top('#homeStats');
+  expect(Math.abs(await top('.home-main-grid') - rowY)).toBeLessThanOrEqual(1);
+  expect(Math.abs(await top('.home-scan-btn') - rowY)).toBeLessThanOrEqual(1);
+  // the five menu tiles share one row
+  const tiles = await page.locator('#homeLinks .home-sec-btn').all();
+  expect(tiles.length).toBe(5);
+  const tileY = new Set(await Promise.all(tiles.map(async (t) => Math.round((await t.boundingBox()).y))));
+  expect(tileY.size).toBe(1);
+  // the three cards start on the same line, inside the first screen
+  const cards = await page.locator('#homeSide .side-card:visible').all();
+  expect(cards.length).toBe(3);
+  const cardY = await Promise.all(cards.map(async (c) => Math.round((await c.boundingBox()).y)));
+  expect(new Set(cardY).size).toBe(1);
+  expect(cardY[0]).toBeLessThan(page.viewportSize().height);
+  expect(await h.noHorizontalScroll(page)).toBe(true);
+
+  await page.fill('#homeSearchInput', 'omron');
+  await page.press('#homeSearchInput', 'Enter');
+  await expect(page.locator('#pageInventory')).toBeVisible();
+  await expect(page.locator('#searchInput')).toHaveValue('omron');
+  await expect(page.locator('#homeSearchInput')).toHaveValue('');
+  expect(errors).toEqual([]);
+});
+
+test('phones keep the menu list and have no dashboard search box', async ({ page, context }, info) => {
+  test.skip(info.project.name !== 'phone', 'phone layout');
+  await h.mockBackend(context, { role: 'staff' });
+  await h.openStore(page);
+  await h.waitForStockLoaded(page);
+  await expect(page.locator('#homeSearch')).toBeHidden();
+  const tiles = await page.locator('#homeLinks .home-sec-btn').all();
+  const ys = await Promise.all(tiles.map(async (t) => (await t.boundingBox()).y));
+  for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeGreaterThan(ys[i - 1]);   // stacked, one per row
+  expect(await h.noHorizontalScroll(page)).toBe(true);
 });
