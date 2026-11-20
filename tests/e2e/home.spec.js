@@ -166,24 +166,19 @@ test('desktop dashboard: actions on one row, cards side by side, search box open
   await expect(page.locator('#sideRecentList .side-row')).toHaveCount(2);
 
   const top = async (sel) => Math.round((await page.locator(sel).boundingBox()).y);
-  // stats and เบิก/รับ share one row; เบิก and รับ are the same width and fill it to the right edge
+  // stats, เบิก/รับ and the big "ค้นหาพาร์ทอะไหล่" card share one row; เบิก and รับ are the same width
   const rowY = await top('#homeStats');
   expect(Math.abs(await top('.home-main-grid') - rowY)).toBeLessThanOrEqual(1);
+  expect(Math.abs(await top('.home-browse-btn') - rowY)).toBeLessThanOrEqual(1);
   const out = await page.locator('.home-action-card.card-out').boundingBox();
   const inn = await page.locator('.home-action-card.card-in').boundingBox();
   expect(Math.abs(out.width - inn.width)).toBeLessThanOrEqual(1);
-  const searchRight = await page.locator('#homeSearch').evaluate((e) => e.getBoundingClientRect().right);
-  expect(Math.abs(inn.x + inn.width - searchRight)).toBeLessThanOrEqual(2);
-  // the part search is ready to type into, and is the widest control in the top row
-  await expect(page.locator('#homeSearchInput')).toBeFocused();
-  const searchBox = await page.locator('#homeSearch').boundingBox();
-  expect(searchBox.width).toBeGreaterThan(out.width);
-  // QR moved into the search box on desktop
+  // QR is an icon in the search box on desktop, not a big button
   await expect(page.locator('.home-scan-btn')).toBeHidden();
   await expect(page.locator('#homeSearchQr')).toBeVisible();
-  // the five menu tiles share one row
-  const tiles = await page.locator('#homeLinks .home-sec-btn').all();
-  expect(tiles.length).toBe(5);
+  // the four other menu tiles share one row (search is the big card)
+  const tiles = await page.locator('#homeLinks .home-sec-btn:visible').all();
+  expect(tiles.length).toBe(4);
   const tileY = new Set(await Promise.all(tiles.map(async (t) => Math.round((await t.boundingBox()).y))));
   expect(tileY.size).toBe(1);
   // the three cards start on the same line, inside the first screen
@@ -209,6 +204,7 @@ test('phones keep the menu list and have no dashboard search box', async ({ page
   await h.waitForStockLoaded(page);
   await expect(page.locator('#homeSearch')).toBeHidden();
   await expect(page.locator('.home-scan-btn')).toBeVisible();   // the floor needs the big QR button
+  await expect(page.locator('.home-browse-btn')).toBeHidden();  // phones use the menu list's search tile
   await expect(page.locator('#homeSearchInput')).not.toBeFocused();   // no keyboard popping up on a phone
   const tiles = await page.locator('#homeLinks .home-sec-btn').all();
   const ys = await Promise.all(tiles.map(async (t) => (await t.boundingBox()).y));

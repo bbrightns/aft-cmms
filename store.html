@@ -2444,6 +2444,9 @@ button.home-stat { font: inherit; color: inherit; width: 100%; min-height: 64px;
 .home-stat.home-stat-clickable:focus-visible { outline: 2px solid var(--agc-blue); outline-offset: 2px; }
 .home-scan-btn { width: 100%; min-height: 64px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; padding: 10px 18px; background: var(--agc-blue); color: #fff; border: 0; border-radius: 12px; cursor: pointer; text-align: left; font-family: var(--sans); box-shadow: var(--shadow); transition: background 0.15s, transform 0.15s; }
 .home-scan-btn:hover { background: var(--agc-blue2); transform: translateY(-1px); }
+.home-browse-btn { display: none; width: 100%; align-items: center; gap: 14px; padding: 10px 18px; background: var(--agc-blue); color: #fff; border: 0; border-radius: 12px; cursor: pointer; text-align: left; font-family: var(--sans); box-shadow: var(--shadow); transition: background 0.15s, transform 0.15s; }
+.home-browse-btn:hover { background: var(--agc-blue2); transform: translateY(-1px); }
+.home-browse-btn:focus-visible { outline: 3px solid var(--agc-red); outline-offset: 2px; }
 .home-scan-btn:focus-visible { outline: 3px solid var(--agc-red); outline-offset: 2px; }
 .home-scan-text { display: flex; flex-direction: column; gap: 2px; }
 .home-scan-text strong { font-size: 16px; font-weight: 800; }
@@ -2545,10 +2548,13 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
   .home-search input { flex: 1; min-width: 0; height: 100%; border: 0; background: none; font: inherit; font-size: 17px; color: var(--text); outline: none; }
   .home-search button { height: 42px; padding: 0 22px; border: 0; border-radius: 10px; background: var(--agc-blue); color: #fff; font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
   .home-layout .home-stats-row { grid-column: 1 / 6; }
-  /* desktop: QR is rarely used (it needs a webcam), so it is an icon in the search box and
-     เบิก / รับ take the rest of the row, side by side and the same width. Phones keep the big button. */
-  .home-layout .home-main-grid { grid-column: 6 / -1; }
+  /* desktop: finding a part matters most, QR is rarely used (it needs a webcam). The big blue card is
+     "ค้นหาพาร์ทอะไหล่"; QR is an icon in the search box. Phones keep the big QR button and the menu list. */
+  .home-layout .home-main-grid { grid-column: 6 / 10; }
   .home-layout .home-scan-btn { display: none; }
+  .home-layout .home-browse-btn { display: flex; grid-column: 10 / -1; min-height: 88px; height: 100%; }
+  .home-layout .home-links .home-sec-search { display: none; }   /* the big card above does this */
+  .home-layout .home-links { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
   .home-search .home-search-qr { display: inline-flex; align-items: center; justify-content: center; width: 42px; padding: 0; background: none; color: var(--agc-blue); border: 1.5px solid var(--border); }
   .home-search .home-search-qr:hover { border-color: var(--agc-blue); background: #eef3ff; }
   .home-search .home-search-qr svg { width: 18px; height: 18px; color: inherit; }
@@ -2695,9 +2701,15 @@ body.inv-scroll-compact #pageInventory .controls-bar { z-index: 190 !important; 
       <span class="home-scan-text"><strong>สแกน QR</strong><span>สแกนที่ป้ายอะไหล่ แล้วเลือกเบิกหรือรับ</span></span>
     </button>
 
+    <!--desktop only: the big "find a part" card takes the slot the QR button has on phones-->
+    <button type="button" class="home-browse-btn" onclick="goInventory()" aria-label="ค้นหาพาร์ทอะไหล่: ดูและค้นหาทุกรายการในคลัง">
+      <i data-lucide="search" style="width:28px;height:28px"></i>
+      <span class="home-scan-text"><strong>ค้นหาพาร์ทอะไหล่</strong><span>ดูและค้นหาทุกรายการในคลัง</span></span>
+    </button>
+
     <div class="home-links" id="homeLinks">
     <!--ค้นหาพาร์ทอะไหล่-->
-    <button class="home-sec-btn" onclick="goInventory()">
+    <button class="home-sec-btn home-sec-search" onclick="goInventory()">
       <div class="home-sec-icon" style="background:#eff6ff;color:#3b82f6"><i data-lucide="search" style="width:20px;height:20px"></i></div>
       <div class="home-sec-info">
         <div class="home-sec-title">ค้นหาพาร์ทอะไหล่</div>
