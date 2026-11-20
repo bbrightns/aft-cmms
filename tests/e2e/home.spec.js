@@ -166,10 +166,21 @@ test('desktop dashboard: actions on one row, cards side by side, search box open
   await expect(page.locator('#sideRecentList .side-row')).toHaveCount(2);
 
   const top = async (sel) => Math.round((await page.locator(sel).boundingBox()).y);
-  // stats, เบิก/รับ and สแกน share one row
+  // stats and เบิก/รับ share one row; เบิก and รับ are the same width and fill it to the right edge
   const rowY = await top('#homeStats');
   expect(Math.abs(await top('.home-main-grid') - rowY)).toBeLessThanOrEqual(1);
-  expect(Math.abs(await top('.home-scan-btn') - rowY)).toBeLessThanOrEqual(1);
+  const out = await page.locator('.home-action-card.card-out').boundingBox();
+  const inn = await page.locator('.home-action-card.card-in').boundingBox();
+  expect(Math.abs(out.width - inn.width)).toBeLessThanOrEqual(1);
+  const searchRight = await page.locator('#homeSearch').evaluate((e) => e.getBoundingClientRect().right);
+  expect(Math.abs(inn.x + inn.width - searchRight)).toBeLessThanOrEqual(2);
+  // the part search is ready to type into, and is the widest control in the top row
+  await expect(page.locator('#homeSearchInput')).toBeFocused();
+  const searchBox = await page.locator('#homeSearch').boundingBox();
+  expect(searchBox.width).toBeGreaterThan(out.width);
+  // QR moved into the search box on desktop
+  await expect(page.locator('.home-scan-btn')).toBeHidden();
+  await expect(page.locator('#homeSearchQr')).toBeVisible();
   // the five menu tiles share one row
   const tiles = await page.locator('#homeLinks .home-sec-btn').all();
   expect(tiles.length).toBe(5);
@@ -197,6 +208,8 @@ test('phones keep the menu list and have no dashboard search box', async ({ page
   await h.openStore(page);
   await h.waitForStockLoaded(page);
   await expect(page.locator('#homeSearch')).toBeHidden();
+  await expect(page.locator('.home-scan-btn')).toBeVisible();   // the floor needs the big QR button
+  await expect(page.locator('#homeSearchInput')).not.toBeFocused();   // no keyboard popping up on a phone
   const tiles = await page.locator('#homeLinks .home-sec-btn').all();
   const ys = await Promise.all(tiles.map(async (t) => (await t.boundingBox()).y));
   for (let i = 1; i < ys.length; i++) expect(ys[i]).toBeGreaterThan(ys[i - 1]);   // stacked, one per row
